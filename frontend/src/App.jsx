@@ -1,35 +1,87 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
+import LoginForm from './pages/LoginForm';
+import Home from './pages/Home';
+import Services from './pages/Services';
+import Clients from './pages/Clients';
+import Settings from './pages/Settings';
+import Layout from './Layout';
+import Painting from './pages/Painting';
+import Carpentry from './pages/Carpentry';
+import Electricity from './pages/Electricity';
+import Plumbing from './pages/Plumbing';
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <Routes>
+      <Route path="/" element={<LoginForm />} />
+      <Route
+        path="/home"
+        element={
+          <Layout>
+            <Home />
+          </Layout>
+        }
+      />
+      <Route
+        path="/services"
+        element={
+          <Layout>
+            <Services />
+          </Layout>
+        }
+      />
+      <Route
+        path="/clients"
+        element={
+          <Layout>
+            <Clients />
+          </Layout>
+        }
+      />
+      <Route
+        path="/settings"
+        element={
+          <Layout>
+            <Settings />
+          </Layout>
+        }
+      />
+      
+      <Route
+        path="/category/painting"
+        element={
+          <Layout>
+            <Painting />
+          </Layout>
+        }
+      />
+      <Route
+        path="/category/carpentry"
+        element={
+          <Layout>
+            <Carpentry />
+          </Layout>
+        }
+      />
+      <Route
+        path="/category/electricity"
+        element={
+          <Layout>
+            <Electricity />
+          </Layout>
+        }
+      />
+      <Route
+        path="/category/plumbing"
+        element={
+          <Layout>
+            <Plumbing />
+          </Layout>
+        }
+      />
+    </Routes>
+  );
 }
 
-export default App
+export default App;
