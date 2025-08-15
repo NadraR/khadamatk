@@ -1,0 +1,193 @@
+.login-container {
+  max-width: 400px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  text-align: right;
+  direction: rtl;
+}
+
+.platform-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.platform-header h1 {
+  color: #000;
+  font-size: 32px;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.platform-slogan {
+  color: #555;
+  font-size: 14px;
+  margin: 5px 0;
+}
+
+.english-text {
+  color: #050008; 
+  font-size: 14px;
+  margin: 5px 0;
+}
+
+.login-box {
+  background-color: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 25px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.login-title {
+  color: #000;
+  font-size: 24px;
+  margin-top: 0;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+.welcome-text {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 25px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 8px;
+  color: #333;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.radio-group {
+  display: flex;
+  gap: 15px;
+  margin-top: 8px;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 8px 15px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.radio-label:hover {
+  background-color: #f0f0f0; 
+  border-color: #050008; 
+}
+
+.radio-label.active {
+  background-color: #f0f0f0; 
+  border-color: #050008; 
+  color: #050008; 
+}
+
+.radio-input {
+  display: none;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 15px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #524d55; 
+}
+
+.submit-button {
+  width: 100%;
+  padding: 12px;
+  background-color: #050008; 
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background-color 0.3s;
+}
+
+.submit-button:hover {
+  background-color: #313030; 
+}
+
+.form-links {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.forgot-link {
+  color: #050008; 
+  text-decoration: none;
+  font-size: 14px;
+  display: block;
+  margin-bottom: 15px;
+}
+
+.register-text {
+  color: #666;
+  font-size: 14px;
+  margin: 0;
+}
+
+.register-link {
+  color: #0766f5; 
+  text-decoration: none;
+  font-weight: 500;
+}
+
+
+.mode-switch {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.mode-btn {
+  background-color: #eee;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.3s;
+}
+
+.mode-btn.active {
+  background-color: #050008;
+  color: white;
+}
+
+option:hover {
+  background-color: #f0f0f0; 
+}
+
+.lang-input{
+    width: 40%;
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    box-sizing: border-box;
+    margin-top: 10px;
+}
