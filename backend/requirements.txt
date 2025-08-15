@@ -5,7 +5,9 @@ charset-normalizer==3.4.3
 cryptography==45.0.6
 defusedxml==0.7.1
 dj-database-url==3.0.1
+dj-rest-auth==7.0.1
 Django==5.2.5
+django-allauth==65.11.0
 django-cors-headers==4.7.0
 django-environ==0.11.2
 django-filter==25.1
@@ -26,6 +28,7 @@ pycparser==2.22
 PyJWT==2.10.1
 python-decouple==3.8
 python-dotenv==1.1.1
+python-social-auth==0.3.6
 python3-openid==3.2.0
 requests==2.32.4
 requests-oauthlib==2.0.0
