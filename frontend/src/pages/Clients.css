@@ -1,0 +1,32 @@
+.clients-container {
+  font-family: 'Tajawal', sans-serif;
+  background-color: #f5f6fa;
+  min-height: 100vh;
+  padding: 20px 30px;
+}
+
+.clients-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #007bff;
+  margin-bottom: 20px;
+}
+
+.clients-list {
+  list-style: none;
+  padding: 0;
+}
+
+.clients-item {
+  background-color: white;
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  display: flex;
+  justify-content: space-between;
+}
+
+.clients-item strong {
+  color: #333;
+}

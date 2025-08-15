@@ -1,0 +1,49 @@
+.services-container {
+  font-family: 'Tajawal', sans-serif;
+  background-color: #f5f6fa;
+  min-height: 100vh;
+  padding: 20px 30px;
+}
+
+.services-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #007bff;
+  margin-bottom: 20px;
+}
+
+.add-service-btn {
+  padding: 10px 15px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+.add-service-btn:hover {
+  background-color: #0056b3;
+}
+
+.services-table {
+  width: 100%;
+  border-collapse: collapse;
+  background-color: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.services-table th,
+.services-table td {
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f0;
+  text-align: center;
+}
+
+.services-table th {
+  background-color: #f8f9fa;
+  color: #333;
+}

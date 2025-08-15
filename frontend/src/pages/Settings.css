@@ -1,0 +1,51 @@
+.settings-container {
+  font-family: 'Tajawal', sans-serif;
+  background-color: #f5f6fa;
+  min-height: 100vh;
+  padding: 20px 30px;
+}
+
+.settings-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #007bff;
+  margin-bottom: 20px;
+}
+
+.settings-form {
+  max-width: 400px;
+  background-color: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+.form-group {
+  margin-bottom: 15px;
+}
+
+.settings-form label {
+  display: block;
+  margin-bottom: 5px;
+  color: #555;
+}
+
+.settings-form input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+.settings-form button {
+  padding: 10px 15px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.settings-form button:hover {
+  background-color: #0056b3;
+}
