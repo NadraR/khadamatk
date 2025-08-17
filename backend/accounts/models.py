@@ -5,6 +5,7 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.contrib.gis.db import models as gis_models
 
+
 class User(AbstractUser):
     phone_regex = RegexValidator(
         regex=r'^01[0-9]{9}$',
@@ -53,12 +54,6 @@ class User(AbstractUser):
 
 
 class BaseProfile(models.Model):
-    user = models.OneToOneField(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
-        related_name='profile',
-        verbose_name="User"
-    )
     location = gis_models.PointField(
         srid=4326,
         null=True,
@@ -73,6 +68,12 @@ class BaseProfile(models.Model):
 
 
 class WorkerProfile(BaseProfile):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='worker_profile',
+        verbose_name="User"
+    )
     job_title = models.CharField(
         max_length=120,
         verbose_name="Job Title"
@@ -105,6 +106,12 @@ class WorkerProfile(BaseProfile):
 
 
 class ClientProfile(BaseProfile):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='client_profile',
+        verbose_name="User"
+    )
     preferred_contact_method = models.CharField(
         max_length=20,
         choices=(

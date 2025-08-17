@@ -1,11 +1,14 @@
 from django.contrib import admin
-from .models import Profile
+from .models import WorkerProfile, ClientProfile
 
-@admin.register(Profile)
-class ProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'phone', 'job_title', 'get_role')
+@admin.register(WorkerProfile)
+class WorkerProfileAdmin(admin.ModelAdmin):
+    list_display = ('user', 'job_title', 'hourly_rate', 'experience_years')
     list_filter = ('user__role',)
+    search_fields = ('user__username', 'user__email', 'job_title')
 
-    def get_role(self, obj):
-        return obj.user.role
-    get_role.short_description = 'Role'
+@admin.register(ClientProfile)
+class ClientProfileAdmin(admin.ModelAdmin):
+    list_display = ('user', 'preferred_contact_method')
+    list_filter = ('user__role',)
+    search_fields = ('user__username', 'user__email')
