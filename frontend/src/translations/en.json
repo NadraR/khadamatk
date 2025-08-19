@@ -1,0 +1,19 @@
+{
+  "platformTitle": "Khadamatk",
+  "platformSlogan": "Your platform for all services in one place",
+  "login": "Login",
+  "register": "Register",
+  "welcomeBack": "Welcome back",
+  "createAccount": "Create your account now",
+  "email": "Email",
+  "phone": "Phone number",
+  "password": "Password",
+  "confirmPassword": "Confirm Password",
+  "forgotPassword": "Forgot your password?",
+  "noAccount": "Don't have an account?",
+  "haveAccount": "Already have an account?",
+  "createNew": "Create new account",
+  "emailPlaceholder": "Enter your email",
+  "passwordPlaceholder": "Enter your password",
+  "phonePlaceholder": "Enter your phone number"
+}
