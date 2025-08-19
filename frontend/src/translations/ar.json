@@ -1,0 +1,19 @@
+{
+  "platformTitle": "خدماتك",
+  "platformSlogan": "منصتك لكل الخدمات في مكان واحد",
+  "login": "تسجيل الدخول",
+  "register": "تسجيل جديد",
+  "welcomeBack": "مرحباً بك مرة أخرى",
+  "createAccount": "أنشئ حسابك الآن",
+  "email": "البريد الإلكتروني",
+  "phone": "رقم الهاتف",
+  "password": "كلمة المرور",
+  "confirmPassword": "تأكيد كلمة المرور",
+  "forgotPassword": "نسيت كلمة المرور؟",
+  "noAccount": "ليس لديك حساب؟",
+  "haveAccount": "لديك حساب بالفعل؟",
+  "createNew": "إنشاء حساب جديد",
+  "emailPlaceholder": "أدخل بريدك الإلكتروني",
+  "passwordPlaceholder": "أدخل كلمة المرور",
+  "phonePlaceholder": "أدخل رقم الهاتف"
+}
