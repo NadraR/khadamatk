@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import './LoginForm.css';
 import { Link } from "react-router-dom";
+import { FaScrewdriver } from "react-icons/fa";
+
 
 const LoginForm = () => {
   const [userType, setUserType] = useState('client');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [mode, setMode] = useState('login'); 
@@ -15,25 +18,35 @@ const LoginForm = () => {
       alert('كلمة المرور غير متطابقة');
       return;
     }
-    console.log({ mode, userType, email, password });
+    console.log({ mode, userType, email, phone, password });
   };
 
   return (
     <div className="login-container" dir="rtl">
       <div className="platform-header">
-        <h1> خدماتك 🔧</h1>
-        <p className="platform-slogan">منصة ربط العملاء بمزودي الخدمات</p>
-        <div className="mb-4">
-            <select
-                className="lang-input"
-                id="type"
-                defaultValue=""
-            >
-                <option value="" disabled>اللغة</option>
-                <option value="عميل">English</option>
-                <option value="مزود خدمة">العربية</option>
-            </select>
-            </div>
+        <header className="header">
+  <div className="header-top">
+    <div>
+<h1 className="platform-title">
+  <FaScrewdriver style={{ marginLeft: "8px" }} /> خدماتك
+</h1>
+    <p className="platform-slogan">منصتك لكل الخدمات في مكان واحد</p>
+          </div>
+
+    <div className="lang-slogan">
+      <div className="mb-4">
+          <select className="lang-input" id="lang" defaultValue="">
+            <option value="" disabled>اللغة</option>
+            <option value="English">English</option>
+            <option value="Arabic">العربية</option>
+          </select>
+        </div>
+    </div>
+  </div>
+</header>
+
+
+        
       </div>
 
       <div className="login-box">
@@ -62,22 +75,15 @@ const LoginForm = () => {
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
             <label className="form-label">نوع المستخدم</label>
-            <div className="mb-4">
-            <label htmlFor="type" className="form-label fw-bold text-white">
-                نوع العميل
-            </label>
             <select
-                className="form-input"
-                id="type"
-                defaultValue=""
+              className="slct form-input"
+              id="type"
+              value={userType}
+              onChange={(e) => setUserType(e.target.value)}
             >
-                <option value="" disabled>نوع المستخدم</option>
-                <option value="عميل">عميل</option>
-                <option value="مزود خدمة">مزود خدمة</option>
+              <option value="client">عميل</option>
+              <option value="provider">مزود خدمة</option>
             </select>
-            </div>
-
-
           </div>
 
           <div className="form-group">
@@ -85,6 +91,7 @@ const LoginForm = () => {
             <input
               type="email"
               id="email"
+              placeholder="أدخل بريدك الإلكتروني"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="form-input"
@@ -92,13 +99,27 @@ const LoginForm = () => {
             />
           </div>
 
+          {mode === 'register' && (
+            <div className="form-group">
+              <label htmlFor="phone" className="form-label">رقم الهاتف</label>
+              <input
+                type="tel"
+                id="phone"
+                placeholder="+0123456789"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="form-input"
+                required
+              />
+            </div>
+          )}
+
           <div className="form-group">
-            <label htmlFor="password" className="form-label">
-              كلمة المرور
-            </label>
+            <label htmlFor="password" className="form-label">كلمة المرور</label>
             <input
               type="password"
               id="password"
+              placeholder="أدخل كلمة المرور"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="form-input"
@@ -108,12 +129,11 @@ const LoginForm = () => {
 
           {mode === 'register' && (
             <div className="form-group">
-              <label htmlFor="confirmPassword" className="form-label">
-                تأكيد كلمة المرور
-              </label>
+              <label htmlFor="confirmPassword" className="form-label">تأكيد كلمة المرور</label>
               <input
                 type="password"
                 id="confirmPassword"
+                placeholder="أدخل كلمة المرور مرة أخرى"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 className="form-input"
@@ -131,13 +151,19 @@ const LoginForm = () => {
           <div className="form-links">
             <a href="#forgot-password" className="forgot-link">نسيت كلمة المرور؟</a>
             <p className="register-text">
-              ليس لديك حساب؟ <Link className="register-link" onClick={() => setMode('register')}>تسجيل جديد</Link>
+              ليس لديك حساب؟{' '}
+              <Link className="register-link" onClick={() => setMode('register')}>
+                إنشاء حساب جديد
+              </Link>
             </p>
           </div>
         ) : (
           <div className="form-links">
             <p className="register-text">
-              لديك حساب بالفعل؟ <Link className="register-link" onClick={() => setMode('login')}>تسجيل الدخول</Link>
+              لديك حساب بالفعل؟{' '}
+              <Link className="register-link" onClick={() => setMode('login')}>
+                تسجيل الدخول
+              </Link>
             </p>
           </div>
         )}
