@@ -1,25 +1,28 @@
 import React from "react";
-import './Services.css';
+import { useTranslation } from "react-i18next";
+import "./Services.css";
 
 const Services = () => {
+  const { t } = useTranslation();
+
   const services = [
-    { id: 1, name: "دهان", price: "200 ج.م" },
-    { id: 2, name: "سباكة", price: "150 ج.م" },
-    { id: 3, name: "كهرباء", price: "250 ج.م" },
+    { id: 1, name: t("painting"), price: "200 ج.م" },
+    { id: 2, name: t("plumbing"), price: "150 ج.م" },
+    { id: 3, name: t("electricity"), price: "250 ج.م" },
   ];
 
   return (
-    <div className="services-container">
-      <h1 className="services-title">الخدمات</h1>
+    <div className="services-container" dir="rtl">
+      <h1 className="services-title">{t("services")}</h1>
 
-      <button className="add-service-btn">+ إضافة خدمة</button>
+      <button className="add-service-btn">+ {t("addService")}</button>
 
       <table className="services-table">
         <thead>
           <tr>
-            <th>رقم</th>
-            <th>اسم الخدمة</th>
-            <th>السعر</th>
+            <th>{t("number")}</th>
+            <th>{t("serviceName")}</th>
+            <th>{t("price")}</th>
           </tr>
         </thead>
         <tbody>

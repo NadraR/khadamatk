@@ -1,7 +1,6 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import LoginForm from './pages/LoginForm';
-import Home from './pages/Home';
+import LoginForm from './components/LoginForm';
 import Services from './pages/Services';
 import Clients from './pages/Clients';
 import Settings from './pages/Settings';
@@ -10,19 +9,47 @@ import Painting from './pages/Painting';
 import Carpentry from './pages/Carpentry';
 import Electricity from './pages/Electricity';
 import Plumbing from './pages/Plumbing';
+import HomeClient from './pages/HomeClient';
+import HomeProvider from './pages/HomeProvider';
+import AdminDashboard from './pages/AdminDashboard';
+import ServiceDetails from './pages/ServiceDetails';
 
 function App() {
   return (
     <Routes>
       <Route path="/" element={<LoginForm />} />
       <Route
-        path="/home"
+        path="/homeClient"
         element={
           <Layout>
-            <Home />
+            <HomeClient />
           </Layout>
         }
       />
+       <Route
+          path="homeProvider"
+          element={
+            <Layout>
+              <HomeProvider />
+            </Layout>
+          }
+        />
+        <Route
+          path="/adminDashboard"
+          element={
+            <Layout>
+              <AdminDashboard />
+            </Layout>
+          }
+        />
+        <Route
+          path="/service/:id"
+          element={
+            <Layout>
+              <ServiceDetails />
+            </Layout>
+          }
+        />
       <Route
         path="/services"
         element={

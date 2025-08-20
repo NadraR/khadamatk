@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     'orders',
     'ratings',
     'reviews',
+    'admin_api',
 ]
 
 SITE_ID = 1
