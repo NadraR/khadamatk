@@ -37,4 +37,4 @@ class ClientProfileCreateView(generics.CreateAPIView):
     def perform_create(self, serializer):
         if self.request.user.role != 'client':
             raise PermissionError("Only clients can create a client profile.")
-        serializer.save(user=self.request.user)
+        serializer.save(user=self.request.user) 

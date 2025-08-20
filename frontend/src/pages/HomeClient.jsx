@@ -5,11 +5,11 @@ import Slider from '../components/Slider';
 import Stats from '../components/Stats';
 import Categories from '../components/Categories';
 import Footer from '../components/Footer';
-import './Home.css';
+import './HomeClient.css';
 
-const Home = () => {
+const HomeClient = () => {
   return (
-    <div className="home">
+    <div className="home dashboard">
       {/* <Navbar /> */}
       <div className="main-content">
         <Sidebar />
@@ -24,4 +24,4 @@ const Home = () => {
   );
 };
 
-export default Home;
+export default HomeClient;

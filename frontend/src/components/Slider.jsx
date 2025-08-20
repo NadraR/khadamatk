@@ -3,26 +3,29 @@ import './Slider.css';
 import plumbingImg from "../images/plumbing.jpg";
 import electricImg from "../images/electric.jpg";
 import paintingImg from "../images/painting.jpg";
+import { useTranslation } from "react-i18next";
 
 const Slider = () => {
+  const { t } = useTranslation();
+
   const slides = [
     {
       img: plumbingImg,
       discount: '20%',
-      title: 'خدمات السباكة المتخصصة',
-      text: 'احصل على أفضل خدمات السباكة مع ضمان جودة وسرعة في الاستجابة',
+      title: t("slider.plumbingTitle"),
+      text: t("slider.plumbingText"),
     },
     {
       img: electricImg,
       discount: '15%',
-      title: 'خدمات الكهرباء',
-      text: 'أفضل فنيين الكهرباء بأعلى معايير السلامة والجودة',
+      title: t("slider.electricTitle"),
+      text: t("slider.electricText"),
     },
     {
       img: paintingImg,
       discount: '10%',
-      title: 'خدمات الدهانات',
-      text: 'ديكورات عصرية وتشطيب ممتاز مع فريق محترف',
+      title: t("slider.paintingTitle"),
+      text: t("slider.paintingText"),
     },
   ];
 
@@ -45,9 +48,9 @@ const Slider = () => {
         <div className="slide-content">
           <span className="discount">{slides[current].discount}</span>
           <div className='slide-text'>
-          <h2>{slides[current].title}</h2>
-          <p>{slides[current].text}</p>
-          <button className="btn">احجز الآن</button>
+            <h2>{slides[current].title}</h2>
+            <p>{slides[current].text}</p>
+            <button className="btn">{t("slider.bookNow")}</button>
           </div>
         </div>
 
