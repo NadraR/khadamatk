@@ -15,5 +15,132 @@
   "createNew": "إنشاء حساب جديد",
   "emailPlaceholder": "أدخل بريدك الإلكتروني",
   "passwordPlaceholder": "أدخل كلمة المرور",
-  "phonePlaceholder": "أدخل رقم الهاتف"
+  "confirmPasswordPlaceholder": " أدخل كلمة المرور مرة اخرى",
+  "phonePlaceholder": "أدخل رقم الهاتف",
+  "usernamePlaceholder": "أدخل اسم المستخدم",
+  "admin": "المشرف",
+  "providerDashboardTitle": "لوحة تحكم مزود الخدمة",
+  "currentOrders": "عدد الطلبات الحالية",
+  "completedOrders": "الطلبات المكتملة",
+  "pendingOrders": "الطلبات المعلقة",
+  "ordersList": "قائمة الطلبات",
+  "client": "العميل",
+  "service": "الخدمة",
+  "date": "التاريخ",
+  "status": "الحالة",
+  "plumbing": "سباكة",
+  "electricity": "كهرباء",
+  "pending": "معلق",
+  "completed": "مكتمل",
+  "painting": "دهان",
+  "carpentry": "نجارة",
+  "cleaning": "تنظيف",
+  "appliances": "صيانة أجهزة",
+  "footer": {
+    "customerRating": "تقييم العملاء",
+    "trustedClients": "عميل موثوق",
+    "support": "خدمة العملاء",
+    "providers": "مزود خدمة",
+    "about": "منصة رائدة تربط العملاء بمزودي الخدمات المحترفين.",
+    "address": "الرياض، المملكة العربية السعودية",
+    "servicesTitle": "الخدمات",
+    "companyTitle": "الشركة",
+    "supportTitle": "الدعم",
+    "legalTitle": "القانونية",
+    "aboutUs": "من نحن",
+    "howWeWork": "كيف نعمل",
+    "careers": "الوظائف",
+    "partnerships": "الشراكات",
+    "news": "الأخبار",
+    "helpCenter": "مركز المساعدة",
+    "contact": "اتصل بنا",
+    "faq": "الأسئلة الشائعة",
+    "report": "بلغ عن مشكلة",
+    "systemStatus": "حالة النظام",
+    "terms": "الشروط والأحكام",
+    "privacy": "سياسة الخصوصية",
+    "cancellation": "سياسة الإلغاء",
+    "compliance": "الامتثال",
+    "newsletterTitle": "اشترك في النشرة الإخبارية",
+    "newsletterText": "احصل على آخر العروض والأخبار",
+    "emailPlaceholder": "أدخل بريدك الإلكتروني",
+    "subscribe": "اشترك",
+    "rights": "جميع الحقوق محفوظة.",
+    "availableOn": "متاح على:"
+  },
+  "sidebar": {
+  "home": "الرئيسية",
+  "services": "الخدمات",
+  "clients": "العملاء",
+  "settings": "الإعدادات",
+  "logout": "تسجيل الخروج"
+},
+"slider": {
+  "plumbingTitle": "خدمات السباكة المتخصصة",
+  "plumbingText": "احصل على أفضل خدمات السباكة مع ضمان جودة وسرعة في الاستجابة.",
+  "electricTitle": "خدمات الكهرباء",
+  "electricText": "أفضل فنيين الكهرباء بأعلى معايير السلامة والجودة.",
+  "paintingTitle": "خدمات الدهانات",
+  "paintingText": "ديكورات عصرية وتشطيب ممتاز مع فريق محترف.",
+  "bookNow": "احجز الآن"
+},
+"stats": {
+  "providers": "مزود خدمة",
+  "available": "خدمة متاحة 24/7",
+  "rating": "متوسط التقييم",
+  "clients": "عميل راضي"
+},
+"carpentryDetails": {
+  "title": "خدمات النجارة",
+  "subtitle": "نوفر لك كل خدمات النجارة بجودة عالية.",
+  "id": "رقم",
+  "service": "الخدمة",
+  "price": "السعر",
+  "repair": "تصليح أثاث",
+  "doors": "تفصيل أبواب",
+  "wardrobes": "تفصيل دواليب"
+},
+"clients": {
+  "title": "العملاء",
+  "name": "الاسم",
+  "phone": "رقم الهاتف"
+},
+"electricityDetails": {
+  "title": "خدمات الكهرباء",
+  "description": "جميع أعمال الكهرباء من صيانة وتركيب."
+},
+"electricityServices": {
+  "repair": "تصليح أعطال",
+  "installation": "تمديد كهرباء",
+  "lighting": "تركيب إنارة"
+},
+"tableHeaders": {
+  "id": "رقم",
+  "service": "الخدمة",
+  "price": "السعر"
+},
+"paintingDetails": {
+  "title": "خدمات الدهان",
+  "description": "هنا هتلاقي كل خدمات الدهان اللي ممكن تحتاجها."
+},
+"paintingServices": {
+  "walls": "دهان حوائط",
+  "doors": "دهان أبواب",
+  "windows": "دهان نوافذ"
+},
+"plumbingDetailsFull": {
+  "title": "خدمات السباكة",
+  "description": "حل جميع مشاكل السباكة بسرعة وكفاءة."
+},
+"plumbingServices": {
+  "pipes": "تصليح مواسير",
+  "mixers": "تركيب خلاطات",
+  "leak": "كشف تسريب"
+},
+  "settings": "الإعدادات",
+  "username": "اسم المستخدم",
+  "enterUsername": "أدخل اسم المستخدم",
+  "saveChanges": "حفظ التغييرات",
+  "changesSaved": "تم حفظ التغييرات بنجاح!",
+  "defaultUser": "المستخدم"
 }

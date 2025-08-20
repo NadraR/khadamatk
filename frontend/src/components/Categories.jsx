@@ -1,13 +1,16 @@
 import React from 'react';
-import './Categories.css'; // Assuming you have a CSS file for styling
+import './Categories.css';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const Categories = () => {
+  const { t } = useTranslation();
+
   const categories = [
-    { name: 'دهان', emoji: '🎨', path: '/category/painting' },
-    { name: 'نجارة', emoji: '🔨', path: '/category/carpentry' },
-    { name: 'كهرباء', emoji: '⚡', path: '/category/electricity' },
-    { name: 'سباكة', emoji: '🔧', path: '/category/plumbing' }
+    { name: t('painting'), emoji: '🎨', path: '/category/painting' },
+    { name: t('carpentry'), emoji: '🔨', path: '/category/carpentry' },
+    { name: t('electricity'), emoji: '⚡', path: '/category/electricity' },
+    { name: t('plumbing'), emoji: '🔧', path: '/category/plumbing' }
   ];
 
   return (

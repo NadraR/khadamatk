@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import './LoginForm.css';
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom"; 
 import { FaScrewdriver } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 
 const LoginForm = () => {
   const [userType, setUserType] = useState('client');
+  const [username, setUsername] = useState(''); 
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [mode, setMode] = useState('login'); 
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate(); 
 
   const changeLanguage = (lang) => {
     i18n.changeLanguage(lang);
@@ -19,18 +21,30 @@ const LoginForm = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
     if (mode === 'register' && password !== confirmPassword) {
       alert(t("passwordMismatch"));
       return;
     }
-    console.log({ mode, userType, email, phone, password });
+
+    console.log({ mode, userType, username, email, phone, password });
+
+    localStorage.setItem('username', username); 
+
+if (userType === "client") {
+  navigate('/homeClient');        
+} else if (userType === "provider") {
+  navigate('/homeProvider');     
+} else if (userType === "admin") {
+  navigate('/adminDashboard');   
+} else {
+  alert('يرجى اختيار نوع المستخدم!');
+}
+
   };
 
   const [darkMode, setDarkMode] = useState(false);
-
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-  };
+  const toggleDarkMode = () => setDarkMode(!darkMode);
 
   useEffect(() => {
     if (darkMode) {
@@ -43,7 +57,7 @@ const LoginForm = () => {
   return (
     <div className="login-container" dir="rtl">
       <div className="platform-header">
-        <header className="header">
+        <div className="headerr">
           <div className="header-top">
             <div>
               <h1 className="platform-title">
@@ -54,25 +68,25 @@ const LoginForm = () => {
 
             <div className="lang-slogan">
               <div className='langmode'>
-              <div className="mb-4">
-                <select 
-                  className="lang-input" 
-                  id="lang" 
-                  onChange={(e) => changeLanguage(e.target.value)}
-                  defaultValue={i18n.language}
-                >
-                  <option value="en">English</option>
-                  <option value="ar">العربية</option>
-                </select>
-              </div>
+                <div className="mb-4">
+                  <select 
+                    className="lang-input" 
+                    id="lang" 
+                    onChange={(e) => changeLanguage(e.target.value)}
+                    defaultValue={i18n.language}
+                  >
+                    <option value="en">English</option>
+                    <option value="ar">العربية</option>
+                  </select>
+                </div>
 
-              <button onClick={toggleDarkMode} className="darkmode-btn">
-                {darkMode ? "☀️ Light" : "🌙 Dark"}
-              </button>
-            </div>
+                <button onClick={toggleDarkMode} className="darkmode-btn">
+                  {darkMode ? "☀️ Light" : "🌙 Dark"}
+                </button>
+              </div>
             </div>
           </div>
-        </header>
+        </div>
       </div>
 
       <div className="login-box">
@@ -95,21 +109,36 @@ const LoginForm = () => {
           {mode === 'login' ? t("login") : t("register")}
         </h2>
         <p className="welcome-text">
-          {mode === 'login' ? t("welcomeBack") : t("createAccount")}
+          {mode === 'login' ? t("welcomeBack") : t("create Account")}
         </p>
 
         <form onSubmit={handleSubmit} className="login-form">
+
+          <div className="form-group">
+            <label htmlFor="username" className="form-label">{t("username")}</label>
+            <input
+              type="text"
+              id="username"
+              placeholder={t("usernamePlaceholder")}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="form-input"
+              required
+            />
+          </div>
+
           <div className="form-group">
             <label className="form-label">{t("userType")}</label>
             <select
-              className="slct form-input"
-              id="type"
-              value={userType}
-              onChange={(e) => setUserType(e.target.value)}
-            >
-              <option value="client">{t("client")}</option>
-              <option value="provider">{t("provider")}</option>
-            </select>
+  className="slct form-input"
+  id="type"
+  value={userType}
+  onChange={(e) => setUserType(e.target.value)}
+>
+  <option value="client">{t("client")}</option>
+  <option value="provider">{t("provider")}</option>
+  <option value="admin">{t("admin")}</option> 
+</select>
           </div>
 
           <div className="form-group">
@@ -169,7 +198,7 @@ const LoginForm = () => {
           )}
 
           <button type="submit" className="submit-button">
-            {mode === 'login' ? t("login") : t("createAccountBtn")}
+            {mode === 'login' ? t("login") : t("create Account")}
           </button>
         </form>
 
