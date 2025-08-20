@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { FaScrewdriver } from 'react-icons/fa';
 import './Navbar.css';
-import { useTranslation } from "react-i18next"; // ✅ للترجمة
+import { useTranslation } from "react-i18next"; 
 
 const Navbar = () => {
   const [username, setUsername] = useState('');
@@ -15,10 +15,8 @@ const Navbar = () => {
     }
   }, []);
 
-  // ✅ Toggle Dark Mode
   const toggleDarkMode = () => setDarkMode(!darkMode);
 
-  // ✅ Toggle Language
   const toggleLanguage = () => {
     const newLang = i18n.language === "ar" ? "en" : "ar";
     i18n.changeLanguage(newLang);
@@ -26,7 +24,6 @@ const Navbar = () => {
     document.documentElement.dir = newLang === "ar" ? "rtl" : "ltr";
   };
 
-  // ✅ تأثير الـ Dark Mode
   useEffect(() => {
     if (darkMode) {
       document.body.classList.add("dark-mode");
@@ -47,12 +44,10 @@ const Navbar = () => {
 
         <div className="lang-slogan">
           <div className="langmode">
-            {/* ✅ زرار تغيير اللغة (toggle) */}
             <button onClick={toggleLanguage} className="darkmode-btn">
               {i18n.language === "ar" ? "English" : "العربية"}
             </button>
 
-            {/* ✅ زرار Dark/Light Mode */}
             <button onClick={toggleDarkMode} className="darkmode-btn">
               {darkMode ? "☀️ Light" : "🌙 Dark"}
             </button>
