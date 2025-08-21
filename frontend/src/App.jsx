@@ -13,6 +13,7 @@ import HomeClient from './pages/HomeClient';
 import HomeProvider from './pages/HomeProvider';
 import AdminDashboard from './pages/AdminDashboard';
 import ServiceDetails from './pages/ServiceDetails';
+import Invoices from './pages/Invoices';
 
 function App() {
   return (
@@ -26,30 +27,30 @@ function App() {
           </Layout>
         }
       />
-       <Route
-          path="homeProvider"
-          element={
-            <Layout>
-              <HomeProvider />
-            </Layout>
-          }
-        />
-        <Route
-          path="/adminDashboard"
-          element={
-            <Layout>
-              <AdminDashboard />
-            </Layout>
-          }
-        />
-        <Route
-          path="/service/:id"
-          element={
-            <Layout>
-              <ServiceDetails />
-            </Layout>
-          }
-        />
+      <Route
+        path="homeProvider"
+        element={
+          <Layout>
+            <HomeProvider />
+          </Layout>
+        }
+      />
+      <Route
+        path="/adminDashboard"
+        element={
+          <Layout>
+            <AdminDashboard />
+          </Layout>
+        }
+      />
+      <Route
+        path="/service/:id"
+        element={
+          <Layout>
+            <ServiceDetails />
+          </Layout>
+        }
+      />
       <Route
         path="/services"
         element={
@@ -74,7 +75,7 @@ function App() {
           </Layout>
         }
       />
-      
+
       <Route
         path="/category/painting"
         element={
@@ -104,6 +105,14 @@ function App() {
         element={
           <Layout>
             <Plumbing />
+          </Layout>
+        }
+      />
+      <Route
+        path="/invoices"
+        element={
+          <Layout>
+            <Invoices />
           </Layout>
         }
       />
