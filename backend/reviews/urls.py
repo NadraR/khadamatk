@@ -2,9 +2,14 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # Service reviews
     path("service/<int:service_id>/", views.service_reviews, name="service_reviews"),
-    path("<int:pk>/", views.review_detail, name="review_detail"),
+
+    # Create review (optionally linked to an order)
+    path("create/", views.create_review, name="create_review"),
+    path("create/<int:order_id>/", views.create_review, name="create_review_order"),
 ]
+
 
 
 # GET /api/reviews/service/1/ → عرض كل الريفيوز الخاصة بالخدمة رقم 1

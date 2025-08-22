@@ -2,16 +2,17 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    # -------- Orders --------
-    path("", views.order_list, name="order_list"),  # GET all orders / POST create order
-    path("<int:pk>/", views.order_detail, name="order_detail"),  # GET, PUT, DELETE single order
+    # Orders
+    path("", views.order_list, name="order_list"),
+    path("<int:pk>/", views.order_detail, name="order_detail"),
 
-    # -------- Offers --------
-    path("<int:order_id>/offers/", views.create_offer, name="create_offer"),  # POST an offer for an order
+    # Offers (GET list / POST create)
+    path("<int:order_id>/offers/", views.offer_list, name="offer_list"),
 
-    # -------- Negotiations --------
-    path("<int:order_id>/negotiations/", views.create_negotiation, name="create_negotiation"),  # POST a negotiation message
+    # Negotiations (GET list / POST create)
+    path("<int:order_id>/negotiations/", views.negotiation_list, name="negotiation_list"),
 ]
+
 
 '''
 1️⃣ Orders

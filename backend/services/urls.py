@@ -2,11 +2,19 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # Categories
     path("categories/", views.service_categories, name="service_categories"),
     path("categories/<int:pk>/", views.service_category_detail, name="service_category_detail"),
 
+    # Services
     path("", views.service_list, name="service_list"),
     path("<int:pk>/", views.service_detail, name="service_detail"),
+    path("search/", views.service_search, name="service_search"),
+
+    # Favorites
+    path("favorites/", views.favorites_list, name="favorites_list"),
+    path("favorites/add/", views.favorite_add, name="favorite_add"),
+    path("favorites/remove/<int:service_id>/", views.favorite_remove, name="favorite_remove"),
 ]
 
 

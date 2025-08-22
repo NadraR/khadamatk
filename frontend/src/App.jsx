@@ -2,7 +2,6 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import LoginForm from './pages/LoginForm';
 import Home from './pages/Home';
-import Services from './pages/Services';
 import Clients from './pages/Clients';
 import Settings from './pages/Settings';
 import Layout from './Layout';
@@ -10,6 +9,11 @@ import Painting from './pages/Painting';
 import Carpentry from './pages/Carpentry';
 import Electricity from './pages/Electricity';
 import Plumbing from './pages/Plumbing';
+import Services from './pages/Services';
+import Orders from './pages/Orders';
+import Reviews from './pages/Reviews';
+import Ratings from './pages/Ratings';
+import Search from './pages/Search';
 
 function App() {
   return (
@@ -23,11 +27,35 @@ function App() {
           </Layout>
         }
       />
-      <Route
+            <Route
         path="/services"
         element={
           <Layout>
             <Services />
+          </Layout>
+        }
+      />
+      <Route
+        path="/orders"
+        element={
+          <Layout>
+            <Orders />
+          </Layout>
+        }
+      />
+      <Route
+        path="/reviews/:serviceId"
+        element={
+          <Layout>
+            <Reviews />
+          </Layout>
+        }
+      />
+      <Route
+        path="/ratings/:serviceId"
+        element={
+          <Layout>
+            <Ratings />
           </Layout>
         }
       />
@@ -80,7 +108,16 @@ function App() {
           </Layout>
         }
       />
-    </Routes>
+    
+  <Route
+    path="/search"
+    element={
+      <Layout>
+        <Search />
+      </Layout>
+    }
+  />
+</Routes>
   );
 }
 

@@ -15,7 +15,7 @@ django-modeltranslation==0.19.16
 djangorestframework==3.16.1
 djangorestframework_simplejwt==5.5.1
 djoser==2.3.3
-pygdal==3.4.1.*
+gdal==3.11.1
 geographiclib==2.0
 geopy==2.4.1
 gunicorn==21.2.0

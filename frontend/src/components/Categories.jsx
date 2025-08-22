@@ -1,20 +1,36 @@
-import React from 'react';
-import './Categories.css'; // Assuming you have a CSS file for styling
-import { Link } from 'react-router-dom';
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import axios from "axios";
+import "./Categories.css";
 
 const Categories = () => {
-  const categories = [
-    { name: 'دهان', emoji: '🎨', path: '/category/painting' },
-    { name: 'نجارة', emoji: '🔨', path: '/category/carpentry' },
-    { name: 'كهرباء', emoji: '⚡', path: '/category/electricity' },
-    { name: 'سباكة', emoji: '🔧', path: '/category/plumbing' }
-  ];
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    axios
+      .get("http://127.0.0.1:8000/api/services/categories/")
+      .then((res) => {
+        setCategories(res.data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error fetching categories:", err);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) return <p>جاري تحميل التصنيفات...</p>;
 
   return (
     <div className="categories">
-      {categories.map((cat, index) => (
-        <Link to={cat.path} key={index} className="category-card">
-          <span className="emoji">{cat.emoji}</span>
+      {categories.map((cat) => (
+        <Link
+          to={`/services?category=${cat.id}`} // بنمرر ID الكاتيجوري في الكويري
+          key={cat.id}
+          className="category-card"
+        >
+          <span className="emoji">📌</span>
           <p>{cat.name}</p>
         </Link>
       ))}

@@ -1,7 +1,7 @@
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from .models import Order
-from invoices.models import Invoice
+# from invoices.models import Invoice
 
 @receiver(post_save, sender=Order)
 def create_invoice_when_completed(sender, instance, created, **kwargs):
