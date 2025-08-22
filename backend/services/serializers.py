@@ -1,16 +1,14 @@
 from rest_framework import serializers
-from .models import Service, ServiceCategory
+from .models import Service, ServiceCategory, Favorite
 from reviews.serializers import ReviewSerializer
+from django.db.models import Avg, Count
 
-# ---------- Categories ----------
 class ServiceCategorySerializer(serializers.ModelSerializer):
     created_at = serializers.DateTimeField(format="%Y-%m-%d %H:%M", read_only=True)
-    
     class Meta:
         model = ServiceCategory
         fields = ["id", "name", "created_at"]
 
-# ---------- Services ----------
 class ServiceSerializer(serializers.ModelSerializer):
     category = ServiceCategorySerializer(read_only=True)
     category_id = serializers.PrimaryKeyRelatedField(
@@ -35,9 +33,27 @@ class ServiceSerializer(serializers.ModelSerializer):
     def get_currency(self, obj):
         return "EGP"
 
-# ---------- Service Details with Reviews ----------
 class ServiceDetailSerializer(ServiceSerializer):
     reviews = ReviewSerializer(many=True, read_only=True)
-
     class Meta(ServiceSerializer.Meta):
         fields = ServiceSerializer.Meta.fields + ["reviews"]
+
+class FavoriteSerializer(serializers.ModelSerializer):
+    service_title = serializers.ReadOnlyField(source="service.title")
+    service_price = serializers.ReadOnlyField(source="service.price")
+    class Meta:
+        model = Favorite
+        fields = ["id", "service", "service_title", "service_price", "created_at"]
+        read_only_fields = ["created_at"]
+
+class ServiceSearchSerializer(ServiceSerializer):
+    distance_km = serializers.FloatField(read_only=True)
+    in_favorites = serializers.SerializerMethodField()
+    class Meta(ServiceSerializer.Meta):
+        fields = ServiceSerializer.Meta.fields + ["distance_km", "in_favorites"]
+
+    def get_in_favorites(self, obj):
+        user = self.context.get("request").user if self.context.get("request") else None
+        if user and user.is_authenticated:
+            return obj.favorited_by.filter(user=user).exists()
+        return False

@@ -1,23 +1,36 @@
-import React from 'react';
-import './Categories.css';
-import { Link } from 'react-router-dom';
-import { useTranslation } from 'react-i18next';
+import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import axios from "axios";
+import "./Categories.css";
 
 const Categories = () => {
-  const { t } = useTranslation();
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const categories = [
-    { name: t('painting'), emoji: '🎨', path: '/category/painting' },
-    { name: t('carpentry'), emoji: '🔨', path: '/category/carpentry' },
-    { name: t('electricity'), emoji: '⚡', path: '/category/electricity' },
-    { name: t('plumbing'), emoji: '🔧', path: '/category/plumbing' }
-  ];
+  useEffect(() => {
+    axios
+      .get("http://127.0.0.1:8000/api/services/categories/")
+      .then((res) => {
+        setCategories(res.data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error fetching categories:", err);
+        setLoading(false);
+      });
+  }, []);
+
+  if (loading) return <p>جاري تحميل التصنيفات...</p>;
 
   return (
     <div className="categories">
-      {categories.map((cat, index) => (
-        <Link to={cat.path} key={index} className="category-card">
-          <span className="emoji">{cat.emoji}</span>
+      {categories.map((cat) => (
+        <Link
+          to={`/services?category=${cat.id}`} // بنمرر ID الكاتيجوري في الكويري
+          key={cat.id}
+          className="category-card"
+        >
+          <span className="emoji">📌</span>
           <p>{cat.name}</p>
         </Link>
       ))}
