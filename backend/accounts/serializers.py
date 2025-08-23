@@ -2,8 +2,31 @@ from rest_framework import serializers
 from djoser.serializers import UserCreateSerializer as BaseUserCreateSerializer
 from .models import User, WorkerProfile, ClientProfile
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from django.contrib.auth import authenticate
+from django import forms
+from django.contrib.auth import get_user_model
 
 
+
+# 🔹 Custom Token Serializer (للتوكين)
+class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """
+    Custom Token Serializer - لو عايزة تزودي بيانات في الـ JWT
+    """
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+
+        # تزودي بيانات زيادة في الـ payload
+        token['username'] = user.username
+        token['email'] = user.email
+        token['role'] = user.role   # ممكن تضيفي role كمان
+
+        return token
+
+
+# 🔹 Custom User Create Serializer (للتسجيل)
 class CustomUserCreateSerializer(BaseUserCreateSerializer):
     role = serializers.ChoiceField(
         choices=User.ROLE_CHOICES,
@@ -70,6 +93,7 @@ class CustomUserCreateSerializer(BaseUserCreateSerializer):
         return data
 
 
+# 🔹 User Serializer
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -77,6 +101,7 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ['email', 'role']
 
 
+# 🔹 Worker Profile Serializer
 class WorkerProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = WorkerProfile
@@ -88,12 +113,48 @@ class WorkerProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ["user", "created_at", "updated_at"]
 
 
+# 🔹 Client Profile Serializer
 class ClientProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = ClientProfile
-        fields = [
-            "id", "user", "preferred_contact_method",
-            "address", "notes", "location",
-            "created_at", "updated_at"
-        ]
+        # fields = [
+        #     "id", "user", "preferred_contact_method",
+        #     "address", "notes", "location",
+        #     "created_at", "updated_at"
+        # ]
+        fields = '__all__'
+        widgets = {
+            'location': forms.TextInput(attrs={'placeholder': 'lat, lng'})
+        }
         read_only_fields = ["user", "created_at", "updated_at"]
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'email', 'first_name', 'last_name')  # اختار اللي تحب تعرضه
+
+
+User = get_user_model()
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        email = attrs.get('email')
+        password = attrs.get('password')
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("Invalid email or password.")
+
+        if not user.check_password(password):
+            raise serializers.ValidationError("Invalid email or password.")
+
+        if not user.is_active:
+            raise serializers.ValidationError("User account is disabled.")
+
+        attrs['user'] = user
+        return attrs

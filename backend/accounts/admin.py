@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import WorkerProfile, ClientProfile
+from .forms import ClientProfileForm  # استدعاء الفورم الجديد
 
 @admin.register(WorkerProfile)
 class WorkerProfileAdmin(admin.ModelAdmin):
@@ -9,6 +10,7 @@ class WorkerProfileAdmin(admin.ModelAdmin):
 
 @admin.register(ClientProfile)
 class ClientProfileAdmin(admin.ModelAdmin):
+    form = ClientProfileForm  # ربط الفورم بالـ Admin
     list_display = ('user', 'preferred_contact_method')
     list_filter = ('user__role',)
     search_fields = ('user__username', 'user__email')
