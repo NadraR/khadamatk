@@ -41,14 +41,17 @@ class AuthService {
       
       // حفظ بيانات المستخدم
       const userData = {
+        id: responseData.id || responseData.user?.id,
         email: responseData.email || responseData.user?.email,
         role: responseData.role || responseData.user?.role || 'client',
         auth_provider: responseData.auth_provider || 'email',
-        hasLocation: responseData.hasLocation || false // إضافة حالة الموقع
+        hasLocation: responseData.has_location || responseData.hasLocation || false,
+        name: responseData.name || responseData.user?.name || '',
+        profile_completed: responseData.profile_completed || false
       };
       
       this.saveUserToStorage(userData);
-      return responseData;
+      return userData;
     }
     
     throw new Error('لم يتم استلام التوكن من الخادم');
@@ -58,11 +61,16 @@ class AuthService {
   async login(email, password) {
     try {
       const data = await apiService.post('/accounts/login/', { email, password });
-      return this.handleLoginSuccess(data);
+      const userData = this.handleLoginSuccess(data);
+      
+      return {
+        success: true,
+        data: userData
+      };
     } catch (error) {
       console.error('خطأ في تسجيل الدخول:', error);
-      const errorMessage = error.response?.data?.message || 
-                          error.response?.data?.detail || 
+      const errorMessage = error.data?.message || 
+                          error.data?.detail || 
                           error.message || 
                           'فشل في تسجيل الدخول';
       throw new Error(errorMessage);
@@ -78,11 +86,16 @@ class AuthService {
         role, 
         ...userData 
       });
-      return this.handleLoginSuccess(data);
+      const userDataResponse = this.handleLoginSuccess(data);
+      
+      return {
+        success: true,
+        data: userDataResponse
+      };
     } catch (error) {
       console.error('خطأ في التسجيل:', error);
-      const errorMessage = error.response?.data?.message || 
-                          error.response?.data?.detail || 
+      const errorMessage = error.data?.message || 
+                          error.data?.detail || 
                           error.message || 
                           'فشل في إنشاء الحساب';
       throw new Error(errorMessage);
@@ -90,31 +103,37 @@ class AuthService {
   }
 
   // تسجيل الدخول باستخدام Google
-async googleLogin(idToken, role = 'client') {
-  if (!idToken) throw new Error('لم يتم استلام توكن من Google');
+  async googleLogin(idToken, role = 'client') {
+    if (!idToken) throw new Error('لم يتم استلام توكن من Google');
 
-  try {
-    console.log('جاري تسجيل الدخول بـ Google:', { 
-      idTokenPreview: idToken.substring(0, 20) + '...', 
-      role 
-    });
+    try {
+      console.log('جاري تسجيل الدخول بـ Google:', { 
+        idTokenPreview: idToken.substring(0, 20) + '...', 
+        role 
+      });
 
-    const data = await apiService.post('/accounts/google-login/', { 
-      access_token: idToken, // نفس الاسم الذي يستقبله الخادم
-      role 
-    });
+      const data = await apiService.post('/accounts/google-login/', { 
+        access_token: idToken,
+        role 
+      });
 
-    console.log('استجابة الخادم Google login:', data);
-    return this.handleLoginSuccess(data);
-    
-  } catch (error) {
-    console.error('خطأ في تسجيل الدخول بجوجل:', error);
-    const serverError = error.response?.data;
-    console.error('تفاصيل الخادم:', serverError);
-    const errorMessage = serverError?.message || serverError?.detail || error.message || 'فشل في تسجيل الدخول باستخدام Google';
-    throw new Error(errorMessage);
+      console.log('استجابة الخادم Google login:', data);
+      const userData = this.handleLoginSuccess(data);
+      
+      return {
+        success: true,
+        data: userData
+      };
+      
+    } catch (error) {
+      console.error('خطأ في تسجيل الدخول بجوجل:', error);
+      const serverError = error.data;
+      console.error('تفاصيل الخادم:', serverError);
+      const errorMessage = serverError?.message || serverError?.detail || error.message || 'فشل في تسجيل الدخول باستخدام Google';
+      throw new Error(errorMessage);
+    }
   }
-}
+
   // تسجيل الخروج ومسح البيانات
   async logout() {
     try {
@@ -194,10 +213,27 @@ async googleLogin(idToken, role = 'client') {
   }
 
   // تحديث حالة الموقع
-  setLocationStatus(hasLocation) {
+  async setLocationStatus(hasLocation, locationData = null) {
     if (this.user) {
-      this.user.hasLocation = hasLocation;
-      this.saveUserToStorage(this.user);
+      try {
+        // تحديث بيانات المستخدم على الخادم
+        const updatedUser = await apiService.patch(`/accounts/user/${this.user.id}/`, {
+          has_location: hasLocation,
+          ...(locationData && { location: locationData })
+        });
+        
+        // تحديث البيانات المحلية
+        this.user.hasLocation = hasLocation;
+        if (locationData) {
+          this.user.location = locationData;
+        }
+        this.saveUserToStorage(this.user);
+        
+        return updatedUser;
+      } catch (error) {
+        console.error('خطأ في تحديث حالة الموقع:', error);
+        throw new Error('فشل في تحديث الموقع');
+      }
     }
   }
 
@@ -236,7 +272,49 @@ async googleLogin(idToken, role = 'client') {
       throw new Error('تعذر تحميل بيانات المستخدم');
     }
   }
+
+  // تحديث بيانات المستخدم
+  async updateUserProfile(userData) {
+    try {
+      if (!this.user) throw new Error('لا يوجد مستخدم مسجل');
+      
+      const updatedUser = await apiService.patch(`/accounts/user/${this.user.id}/`, userData);
+      this.saveUserToStorage({ ...this.user, ...updatedUser });
+      
+      return updatedUser;
+    } catch (error) {
+      console.error('خطأ في تحديث بيانات المستخدم:', error);
+      throw new Error('فشل في تحديث البيانات');
+    }
+  }
+
+  // طلب إعادة تعيين كلمة المرور
+  async requestPasswordReset(email) {
+    try {
+      await apiService.post('/accounts/password/reset/', { email });
+      return true;
+    } catch (error) {
+      console.error('خطأ في طلب إعادة تعيين كلمة المرور:', error);
+      throw new Error('فشل في إرسال طلب إعادة التعيين');
+    }
+  }
+
+  // تأكيد إعادة تعيين كلمة المرور
+  async confirmPasswordReset(uid, token, newPassword) {
+    try {
+      await apiService.post('/accounts/password/reset/confirm/', {
+        uid,
+        token,
+        new_password: newPassword
+      });
+      return true;
+    } catch (error) {
+      console.error('خطأ في تأكيد إعادة تعيين كلمة المرور:', error);
+      throw new Error('فشل في إعادة تعيين كلمة المرور');
+    }
+  }
 }
 
 // تصدير instance واحدة لاستخدامها في التطبيق
 export const authService = new AuthService();
+export default authService;
