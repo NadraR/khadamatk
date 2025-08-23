@@ -42,18 +42,18 @@ class CustomUserCreateSerializer(BaseUserCreateSerializer):
         return attrs
 
     def create(self, validated_data):
-        """إنشاء يوزر جديد + إضافة role + إنشاء JWT tokens"""
+        """إنشاء يوزر جديد + إضافة role + إنشاء profile"""
         role = validated_data.pop('role')
         user = super().create(validated_data)
         user.role = role
         user.save()
 
-        # إنشاء JWT tokens مباشرة بعد التسجيل
-        refresh = RefreshToken.for_user(user)
-        self.tokens = {
-            'refresh': str(refresh),
-            'access': str(refresh.access_token)
-        }
+        # إنشاء profile حسب الدور
+        if role == "worker":
+            WorkerProfile.objects.create(user=user)
+        elif role == "client":
+            ClientProfile.objects.create(user=user)
+
         return user
 
     def update(self, instance, validated_data):
@@ -61,13 +61,6 @@ class CustomUserCreateSerializer(BaseUserCreateSerializer):
         if 'role' in validated_data and validated_data['role'] != instance.role:
             raise serializers.ValidationError({"role": "Role cannot be changed after registration."})
         return super().update(instance, validated_data)
-
-    def to_representation(self, instance):
-        """إرجاع البيانات + التوكنز"""
-        data = super().to_representation(instance)
-        if hasattr(self, 'tokens'):
-            data.update(self.tokens)
-        return data
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -82,7 +75,7 @@ class WorkerProfileSerializer(serializers.ModelSerializer):
         model = WorkerProfile
         fields = [
             "id", "user", "job_title", "hourly_rate",
-            "experience_years", "skills", "location",
+            "experience_years", "skills",
             "created_at", "updated_at"
         ]
         read_only_fields = ["user", "created_at", "updated_at"]
@@ -93,7 +86,7 @@ class ClientProfileSerializer(serializers.ModelSerializer):
         model = ClientProfile
         fields = [
             "id", "user", "preferred_contact_method",
-            "address", "notes", "location",
+            "address", "notes",
             "created_at", "updated_at"
         ]
         read_only_fields = ["user", "created_at", "updated_at"]

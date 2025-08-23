@@ -1,0 +1,212 @@
+/* RoleSelector.css */
+.role-selector-container {
+  padding: 1rem;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.role-selector-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #202124;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.role-selector-description {
+  color: #5f6368;
+  text-align: center;
+  margin-bottom: 1.5rem;
+  font-size: 0.9rem;
+}
+
+.role-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.role-option {
+  border: 2px solid #e8eaed;
+  border-radius: 12px;
+  padding: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.role-option:hover:not(.disabled) {
+  border-color: #4285f4;
+  box-shadow: 0 2px 8px rgba(66, 133, 244, 0.15);
+}
+
+.role-option.selected {
+  border-color: #4285f4;
+  background-color: #e8f0fe;
+}
+
+.role-option.disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.role-option:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.3);
+}
+
+.role-option-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.role-icon {
+  font-size: 1.5rem;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8f9fa;
+  border-radius: 50%;
+}
+
+.role-option.selected .role-icon {
+  background: #d2e3fc;
+}
+
+.role-text {
+  flex: 1;
+}
+
+.role-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #202124;
+  margin-bottom: 0.25rem;
+}
+
+.role-description {
+  font-size: 0.85rem;
+  color: #5f6368;
+  margin: 0;
+}
+
+.radio-indicator {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #dadce0;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.role-option.selected .radio-indicator {
+  border-color: #4285f4;
+  background-color: #4285f4;
+}
+
+.radio-circle {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: white;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.role-option.selected .radio-circle {
+  opacity: 1;
+}
+
+.role-selector-disabled-message {
+  text-align: center;
+  color: #5f6368;
+  font-size: 0.85rem;
+  margin-top: 1rem;
+  padding: 0.5rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+/* تحسينات للوضع الداكن */
+@media (prefers-color-scheme: dark) {
+  .role-selector-title {
+    color: #e8eaed;
+  }
+  
+  .role-selector-description {
+    color: #9aa0a6;
+  }
+  
+  .role-option {
+    border-color: #5f6368;
+    background: #303134;
+  }
+  
+  .role-option.selected {
+    border-color: #8ab4f8;
+    background-color: #1b3a7c;
+  }
+  
+  .role-icon {
+    background: #202124;
+  }
+  
+  .role-option.selected .role-icon {
+    background: #1b3a7c;
+  }
+  
+  .role-title {
+    color: #e8eaed;
+  }
+  
+  .role-description {
+    color: #9aa0a6;
+  }
+  
+  .radio-indicator {
+    border-color: #5f6368;
+  }
+  
+  .role-selector-disabled-message {
+    color: #9aa0a6;
+    background: #202124;
+  }
+}
+
+/* تحسينات للهواتف */
+@media (max-width: 480px) {
+  .role-selector-container {
+    padding: 0.5rem;
+  }
+  
+  .role-option-content {
+    gap: 0.5rem;
+  }
+  
+  .role-icon {
+    width: 32px;
+    height: 32px;
+    font-size: 1.25rem;
+  }
+  
+  .role-title {
+    font-size: 0.9rem;
+  }
+  
+  .role-description {
+    font-size: 0.8rem;
+  }
+}
+
+/* تحسينات للوضع المتركز (عند استخدامه في مودال) */
+.role-selector-container.modal-version {
+  padding: 0;
+}
+
+.role-selector-container.modal-version .role-selector-title {
+  margin-top: 0;
+}
