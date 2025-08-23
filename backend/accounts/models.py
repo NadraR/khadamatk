@@ -29,6 +29,14 @@ class User(AbstractUser):
         verbose_name="Role"
     )
 
+    auth_provider = models.CharField(
+        max_length=50,
+        default="email",   # أو "local"
+        null=False,
+        blank=False,
+        verbose_name="Authentication Provider"
+    )
+
     # Custom related_name to avoid clashes
     groups = models.ManyToManyField(
         Group,
