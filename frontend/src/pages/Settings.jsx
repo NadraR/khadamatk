@@ -1,31 +1,33 @@
 import React, { useState } from "react";
-import './Settings.css';
+import { useTranslation } from "react-i18next";
+import "./Settings.css";
 
 const Settings = () => {
-  const [username, setUsername] = useState("المستخدم");
+  const { t } = useTranslation();
+  const [username, setUsername] = useState(t("defaultUser"));
   const [email, setEmail] = useState("example@email.com");
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    alert("تم حفظ التغييرات بنجاح!");
+    alert(t("changesSaved"));
   };
 
   return (
-    <div className="settings-container">
-      <h1 className="settings-title">الإعدادات</h1>
+    <div className="settings-container" dir="rtl">
+      <h1 className="settings-title">{t("settings")}</h1>
       <form className="settings-form" onSubmit={handleSubmit}>
         <div className="form-group">
-          <label>اسم المستخدم:</label>
+          <label>{t("username")}:</label>
           <input
             type="text"
             value={username}
-            placeholder="أدخل اسم المستخدم"
+            placeholder={t("enterUsername")}
             onChange={(e) => setUsername(e.target.value)}
           />
         </div>
 
         <div className="form-group">
-          <label>البريد الإلكتروني:</label>
+          <label>{t("email")}:</label>
           <input
             type="email"
             value={email}
@@ -34,7 +36,7 @@ const Settings = () => {
           />
         </div>
 
-        <button type="submit">حفظ التغييرات</button>
+        <button type="submit">{t("saveChanges")}</button>
       </form>
     </div>
   );

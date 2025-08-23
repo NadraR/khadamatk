@@ -66,7 +66,6 @@ INSTALLED_APPS = [
     # Local apps
     'services',
     'orders',
-    'ratings',
     'reviews',
     'admin_api',
     'location',

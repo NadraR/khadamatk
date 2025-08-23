@@ -1,0 +1,148 @@
+{
+  "platformTitle": "Khadamatak",
+  "platformSlogan": "Your platform for all services in one place",
+  "login": "Login",
+  "register": "Register",
+  "welcomeBack": "Welcome back",
+  "createAccount": "Create your account now",
+  "email": "Email",
+  "phone": "Phone number",
+  "password": "Password",
+  "confirmPassword": "Confirm Password",
+  "forgotPassword": "Forgot your password?",
+  "noAccount": "Don't have an account?",
+  "haveAccount": "Already have an account?",
+  "createNew": "Create new account",
+  "emailPlaceholder": "Enter your email",
+  "passwordPlaceholder": "Enter your password",
+  "confirmPasswordPlaceholder": "Enter your password again",
+  "phonePlaceholder": "Enter your phone number",
+  "create Account": "Create Account",
+  "usernamePlaceholder": "Enter your username",
+  "admin": "Admin",
+  "providerDashboardTitle": "Service Provider Dashboard",
+  "currentOrders": "Current Orders",
+  "completedOrders": "Completed Orders",
+  "pendingOrders": "Pending Orders",
+  "ordersList": "Orders List",
+  "client": "Client",
+  "service": "Service",
+  "date": "Date",
+  "status": "Status",
+  "plumbing": "Plumbing",
+  "electricity": "Electricity",
+  "pending": "Pending",
+  "completed": "Completed",
+  "painting": "Painting",
+  "carpentry": "Carpentry",
+  "cleaning": "Cleaning",
+  "appliances": "Appliance Repair",
+  "footer": {
+    "customerRating": "Customer Rating",
+    "trustedClients": "Trusted Clients",
+    "support": "Customer Support",
+    "providers": "Service Providers",
+    "about": "A leading platform connecting clients with professional service providers.",
+    "address": "Riyadh, Saudi Arabia",
+    "servicesTitle": "Services",
+    "companyTitle": "Company",
+    "supportTitle": "Support",
+    "legalTitle": "Legal",
+    "aboutUs": "About Us",
+    "howWeWork": "How We Work",
+    "careers": "Careers",
+    "partnerships": "Partnerships",
+    "news": "News",
+    "helpCenter": "Help Center",
+    "contact": "Contact Us",
+    "faq": "FAQ",
+    "report": "Report a Problem",
+    "systemStatus": "System Status",
+    "terms": "Terms & Conditions",
+    "privacy": "Privacy Policy",
+    "cancellation": "Cancellation Policy",
+    "compliance": "Compliance",
+    "newsletterTitle": "Subscribe to our Newsletter",
+    "newsletterText": "Get the latest offers and updates",
+    "emailPlaceholder": "Enter your email",
+    "subscribe": "Subscribe",
+    "rights": "All rights reserved.",
+    "availableOn": "Available on:"
+  },
+  "sidebar": {
+  "home": "Home",
+  "services": "Services",
+  "clients": "Clients",
+  "settings": "Settings",
+  "logout": "Logout"
+},
+"slider": {
+  "plumbingTitle": "Specialized Plumbing Services",
+  "plumbingText": "Get the best plumbing services with guaranteed quality and quick response.",
+  "electricTitle": "Electrical Services",
+  "electricText": "Top electricians with the highest safety and quality standards.",
+  "paintingTitle": "Painting Services",
+  "paintingText": "Modern decorations and excellent finishing with a professional team.",
+  "bookNow": "Book Now"
+},
+"stats": {
+  "providers": "Service Providers",
+  "available": "Available 24/7",
+  "rating": "Average Rating",
+  "clients": "Satisfied Clients"
+},
+"carpentryServices": {
+  "title": "Carpentry Services",
+  "subtitle": "We provide you with all carpentry services with high quality.",
+  "id": "ID",
+  "service": "Service",
+  "price": "Price",
+  "repair": "Furniture Repair",
+  "doors": "Custom Doors",
+  "wardrobes": "Custom Wardrobes"
+},
+"clients": {
+  "title": "Clients",
+  "name": "Name",
+  "phone": "Phone"
+},
+"electricityInfo": {
+  "title": "Electricity Services",
+  "description": "All kinds of electrical maintenance and installations."
+},
+"electricityServices": {
+  "repair": "Fault Repair",
+  "installation": "Electrical Wiring",
+  "lighting": "Lighting Installation"
+},
+"tableHeaders": {
+  "id": "ID",
+  "service": "Service",
+  "price": "Price"
+},
+"paintingInfo": {
+  "title": "Painting Services",
+  "description": "Find all painting services you may need."
+},
+"paintingServices": {
+  "walls": "Wall Painting",
+  "doors": "Door Painting",
+  "windows": "Window Painting"
+},
+"plumbingInfo": {
+  "title": "Plumbing Services",
+  "description": "Solve all plumbing issues quickly and efficiently."
+},
+"plumbingServices": {
+  "pipes": "Pipe Repair",
+  "mixers": "Mixer Installation",
+  "leak": "Leak Detection"
+},
+"settings": "Settings",
+"username": "Username",
+"userEmail": "Email",
+"enterUsername": "Enter username",
+"saveChanges": "Save Changes",
+"changesSaved": "Changes saved successfully!",
+"defaultUser": "User"
+}

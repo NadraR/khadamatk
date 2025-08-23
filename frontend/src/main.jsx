@@ -3,6 +3,8 @@ import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { GoogleOAuthProvider } from "@react-oauth/google";
 import App from "./App";
+import "./index.css"; 
+import "./i18n";
 import "./index.css";
 
 // احصلي على CLIENT_ID من متغيرات البيئة أو استخدمي قيمة افتراضية
