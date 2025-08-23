@@ -153,6 +153,10 @@ class ClientProfileUpdateView(generics.RetrieveUpdateAPIView):
     serializer_class = ClientProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def perform_create(self, serializer):
+        if self.request.user.role != 'client':
+            raise PermissionError("Only clients can create a client profile.")
+        serializer.save(user=self.request.user) 
     def get_object(self):
         if self.request.user.role != "client":
             raise PermissionDenied("Only clients can update client profiles.")

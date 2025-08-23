@@ -1,3 +1,25 @@
-from django.shortcuts import render
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from rest_framework import status, permissions
+from django.shortcuts import get_object_or_404
+from .models import Rating
+from .serializers import RatingSerializer
+from services.models import Service
 
-# Create your views here.
+@api_view(["GET"])
+def service_ratings(request, service_id):
+    qs = Rating.objects.filter(service_id=service_id).select_related("customer").order_by("-created_at")
+    return Response(RatingSerializer(qs, many=True).data)
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def add_or_update_rating(request, service_id):
+    service = get_object_or_404(Service.objects.alive(), pk=service_id)
+    score = int(request.data.get("score", 0))
+    if score < 1 or score > 5:
+        return Response({"error": "Score must be between 1 and 5"}, status=status.HTTP_400_BAD_REQUEST)
+
+    rating, created = Rating.objects.update_or_create(
+        service=service, customer=request.user, defaults={"score": score}
+    )
+    return Response(RatingSerializer(rating).data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)

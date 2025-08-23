@@ -1,23 +1,26 @@
 import React from "react";
 import "./Carpentry.css";
+import { useTranslation } from "react-i18next";
 
 const Carpentry = () => {
+  const { t } = useTranslation();
+
   const services = [
-    { id: 1, name: "تصليح أثاث", price: "300 ج.م" },
-    { id: 2, name: "تفصيل أبواب", price: "500 ج.م" },
-    { id: 3, name: "تفصيل دواليب", price: "800 ج.م" },
+    { id: 1, name: t("carpentry.repair"), price: "300 ج.م" },
+    { id: 2, name: t("carpentry.doors"), price: "500 ج.م" },
+    { id: 3, name: t("carpentry.wardrobes"), price: "800 ج.م" },
   ];
 
   return (
     <div className="category-page">
-      <h1>خدمات النجارة 🔨</h1>
-      <p>نوفر لك كل خدمات النجارة بجودة عالية.</p>
+      <h1>{t("carpentry.title")} 🔨</h1>
+      <p>{t("carpentry.subtitle")}</p>
       <table>
         <thead>
           <tr>
-            <th>رقم</th>
-            <th>الخدمة</th>
-            <th>السعر</th>
+            <th>{t("carpentry.id")}</th>
+            <th>{t("carpentry.service")}</th>
+            <th>{t("carpentry.price")}</th>
           </tr>
         </thead>
         <tbody>
