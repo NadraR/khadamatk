@@ -2,13 +2,21 @@
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.utils import timezone
+<<<<<<< HEAD
 from orders.models import Order
+=======
+from orders.models import Booking
+>>>>>>> cdf5adee20680c4021187124d2966897cb0e740f
 from .models import Invoice
 import logging
 
 logger = logging.getLogger(__name__)
 
+<<<<<<< HEAD
 @receiver(post_save, sender=Order)
+=======
+@receiver(post_save, sender=Booking)
+>>>>>>> cdf5adee20680c4021187124d2966897cb0e740f
 def handle_booking_status_change(sender, instance, created, **kwargs):
     """
     إدارة الفواتير تلقائياً عند تغيير حالة الحجز

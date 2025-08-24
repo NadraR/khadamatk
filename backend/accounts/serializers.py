@@ -111,12 +111,11 @@ class WorkerProfileSerializer(serializers.ModelSerializer):
 class ClientProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = ClientProfile
-        fields = [
-            "id", "user", "preferred_contact_method",
-            "address", "notes",
-            "created_at", "updated_at"
-        ]
-        read_only_fields = ["address", "notes","user", "created_at", "updated_at"]
+        # fields = [
+        #     "id", "user", "preferred_contact_method",
+        #     "address", "notes", "location",
+        #     "created_at", "updated_at"
+        # ]
         fields = '__all__'
         widgets = {
             'location': forms.TextInput(attrs={'placeholder': 'lat, lng'})

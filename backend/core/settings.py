@@ -73,6 +73,7 @@ INSTALLED_APPS = [
     'admin_api',
     'location',
     ]
+   
 
 SITE_ID = 1
 

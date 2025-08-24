@@ -17,7 +17,15 @@ import Painting from './pages/Painting';
 import Carpentry from './pages/Carpentry';
 import Electricity from './pages/Electricity';
 import Plumbing from './pages/Plumbing';
+<<<<<<< HEAD
 // import Home from './pages/Home'; // لو محتاج الصفحة دي
+=======
+import HomeClient from './pages/HomeClient';
+import HomeProvider from './pages/HomeProvider';
+import AdminDashboard from './pages/AdminDashboard';
+import ServiceDetails from './pages/ServiceDetails';
+import Invoices from './pages/Invoices';
+>>>>>>> cdf5adee20680c4021187124d2966897cb0e740f
 
 function App() {
   return (
@@ -32,16 +40,24 @@ function App() {
           </Layout>
         }
       />
+<<<<<<< HEAD
 
       <Route
         path="/homeProvider"
+=======
+      <Route
+        path="homeProvider"
+>>>>>>> cdf5adee20680c4021187124d2966897cb0e740f
         element={
           <Layout>
             <HomeProvider />
           </Layout>
         }
       />
+<<<<<<< HEAD
 
+=======
+>>>>>>> cdf5adee20680c4021187124d2966897cb0e740f
       <Route
         path="/adminDashboard"
         element={
@@ -50,7 +66,10 @@ function App() {
           </Layout>
         }
       />
+<<<<<<< HEAD
 
+=======
+>>>>>>> cdf5adee20680c4021187124d2966897cb0e740f
       <Route
         path="/service/:id"
         element={
@@ -59,7 +78,10 @@ function App() {
           </Layout>
         }
       />
+<<<<<<< HEAD
 
+=======
+>>>>>>> cdf5adee20680c4021187124d2966897cb0e740f
       <Route
         path="/services"
         element={
@@ -149,12 +171,20 @@ function App() {
           </Layout>
         }
       />
+<<<<<<< HEAD
 
       <Route
         path="/search"
         element={
           <Layout>
             <Search />
+=======
+      <Route
+        path="/invoices"
+        element={
+          <Layout>
+            <Invoices />
+>>>>>>> cdf5adee20680c4021187124d2966897cb0e740f
           </Layout>
         }
       />
