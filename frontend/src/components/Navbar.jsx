@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { FaScrewdriver, FaBell } from 'react-icons/fa';
 import './Navbar.css';
+<<<<<<< HEAD
 import { useTranslation } from "react-i18next";
+=======
+import { useTranslation } from "react-i18next"; 
+>>>>>>> cdf5adee20680c4021187124d2966897cb0e740f
 
 const Navbar = () => {
   const [username, setUsername] = useState('');
@@ -16,10 +20,15 @@ const Navbar = () => {
     }
   }, []);
 
+<<<<<<< HEAD
   // Toggle Dark Mode
   const toggleDarkMode = () => setDarkMode(!darkMode);
 
   // Toggle Language
+=======
+  const toggleDarkMode = () => setDarkMode(!darkMode);
+
+>>>>>>> cdf5adee20680c4021187124d2966897cb0e740f
   const toggleLanguage = () => {
     const newLang = i18n.language === "ar" ? "en" : "ar";
     i18n.changeLanguage(newLang);
@@ -27,7 +36,10 @@ const Navbar = () => {
     document.documentElement.dir = newLang === "ar" ? "rtl" : "ltr";
   };
 
+<<<<<<< HEAD
   // تأثير الـ Dark Mode
+=======
+>>>>>>> cdf5adee20680c4021187124d2966897cb0e740f
   useEffect(() => {
     if (darkMode) {
       document.body.classList.add("dark-mode");
@@ -54,12 +66,18 @@ const Navbar = () => {
 
         <div className="lang-slogan">
           <div className="langmode">
+<<<<<<< HEAD
             {/* زرار تغيير اللغة */}
+=======
+>>>>>>> cdf5adee20680c4021187124d2966897cb0e740f
             <button onClick={toggleLanguage} className="darkmode-btn">
               {i18n.language === "ar" ? "English" : "العربية"}
             </button>
 
+<<<<<<< HEAD
             {/* زرار Dark/Light Mode */}
+=======
+>>>>>>> cdf5adee20680c4021187124d2966897cb0e740f
             <button onClick={toggleDarkMode} className="darkmode-btn">
               {darkMode ? "☀️ Light" : "🌙 Dark"}
             </button>

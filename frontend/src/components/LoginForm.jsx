@@ -15,9 +15,14 @@ const LoginForm = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate(); 
 
-  const changeLanguage = (lang) => {
-    i18n.changeLanguage(lang);
+  const toggleLanguage = () => {
+    const newLang = i18n.language === "ar" ? "en" : "ar";
+    i18n.changeLanguage(newLang);
+    document.documentElement.lang = newLang;
+    document.documentElement.dir = newLang === "ar" ? "rtl" : "ltr";
   };
+
+ 
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -65,19 +70,13 @@ if (userType === "client") {
               </h1>
               <p className="platform-slogan">{t("platformSlogan")}</p>
             </div>
-
+              
             <div className="lang-slogan">
               <div className='langmode'>
                 <div className="mb-4">
-                  <select 
-                    className="lang-input" 
-                    id="lang" 
-                    onChange={(e) => changeLanguage(e.target.value)}
-                    defaultValue={i18n.language}
-                  >
-                    <option value="en">English</option>
-                    <option value="ar">العربية</option>
-                  </select>
+                  <button onClick={toggleLanguage} className="darkmode-btn">
+              {i18n.language === "ar" ? "English" : "العربية"}
+            </button>
                 </div>
 
                 <button onClick={toggleDarkMode} className="darkmode-btn">

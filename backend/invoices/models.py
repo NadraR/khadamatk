@@ -12,6 +12,7 @@ class Invoice(models.Model):
     
     booking = models.OneToOneField(
         'orders.Order', 
+
         on_delete=models.CASCADE,
         related_name='invoice',
         verbose_name='الحجز'
