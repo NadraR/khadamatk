@@ -34,6 +34,14 @@ class User(AbstractUser):
         default='email'
     )
 
+    auth_provider = models.CharField(
+        max_length=50,
+        default="email",   # أو "local"
+        null=False,
+        blank=False,
+        verbose_name="Authentication Provider"
+    )
+
     # Custom related_name to avoid clashes
     groups = models.ManyToManyField(
         Group,
@@ -59,6 +67,13 @@ class User(AbstractUser):
 
 
 class BaseProfile(models.Model):
+
+    # location = gis_models.PointField(
+    #     srid=4326,
+    #     null=True,
+    #     blank=True,
+    #     verbose_name="Geographic Location"
+    # )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Created At")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Updated At")
 
