@@ -6,7 +6,7 @@ from services.models import Service
 class Rating(models.Model):
     service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name="ratings")
     customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="ratings")
-    score = models.PositiveSmallIntegerField()  # 1..5
+    score = models.PositiveSmallIntegerField(default=5)  # 1..5
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:

@@ -17,4 +17,5 @@ urlpatterns = [
     path('orders/', admin_orders, name='admin-orders-list'),
     path('reviews/', admin_reviews, name='admin-reviews-list'),
     path('ratings/', admin_ratings, name='admin-ratings-list'),
+    
 ]
