@@ -10,7 +10,7 @@ class IsOwnerOrAdmin(permissions.BasePermission):
     صلاحية للتحقق إذا كان المستخدم هو صاحب الفاتورة أو مدير
     """
     def has_object_permission(self, request, view, obj):
-        return obj.booking.user == request.user or request.user.is_staff
+        return obj.booking.customer == request.user or request.user.is_staff
 
 class InvoiceViewSet(viewsets.ModelViewSet):
     queryset = Invoice.objects.all()
@@ -21,6 +21,13 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         if self.request.user.is_staff:
             return Invoice.objects.all()
         return Invoice.objects.filter(booking__user=self.request.user)
+    
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self.perform_destroy(instance)
+        return Response({
+            "status": _("تم حذف الفاتورة بنجاح")
+        })
     
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
     def mark_paid(self, request, pk=None):

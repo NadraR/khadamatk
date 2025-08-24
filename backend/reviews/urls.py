@@ -2,19 +2,17 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    # Service reviews
+    # GET /api/reviews/service/1/ → كل الريفيوز الخاصة بخدمة معينة
+    # POST /api/reviews/service/1/ → إضافة ريفيو جديد لخدمة معينة
     path("service/<int:service_id>/", views.service_reviews, name="service_reviews"),
 
-    # Create review (optionally linked to an order)
+    # POST /api/reviews/create/ → إنشاء ريفيو بدون order
+    # POST /api/reviews/create/5/ → إنشاء ريفيو مرتبط بـ order
     path("create/", views.create_review, name="create_review"),
     path("create/<int:order_id>/", views.create_review, name="create_review_order"),
+
+    # GET /api/reviews/5/ → عرض ريفيو واحد
+    # PUT /api/reviews/5/ → تعديل ريفيو
+    # DELETE /api/reviews/5/ → حذف ريفيو
+    path("<int:review_id>/", views.review_detail, name="review_detail"),
 ]
-
-
-
-# GET /api/reviews/service/1/ → عرض كل الريفيوز الخاصة بالخدمة رقم 1
-# POST /api/reviews/service/1/ → إنشاء ريفيو جديد للخدمة رقم 1
-
-# GET /api/reviews/5/ → عرض تفاصيل الريفيو رقم 5
-# PUT /api/reviews/5/ → تعديل الريفيو رقم 5
-# DELETE /api/reviews/5/ → حذف الريفيو رقم 5
