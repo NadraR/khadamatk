@@ -1,6 +1,6 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
-import LoginForm from './pages/LoginForm'; // اختر المسار الصحيح
+import LoginForm from './components/LoginForm'; 
 import HomeClient from './pages/HomeClient';
 import HomeProvider from './pages/HomeProvider';
 import AdminDashboard from './pages/AdminDashboard';
@@ -17,7 +17,7 @@ import Painting from './pages/Painting';
 import Carpentry from './pages/Carpentry';
 import Electricity from './pages/Electricity';
 import Plumbing from './pages/Plumbing';
-import Home from './pages/Home'; // لو محتاج الصفحة دي
+// import Home from './pages/Home'; // لو محتاج الصفحة دي
 
 function App() {
   return (
