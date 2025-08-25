@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../api";
+import { ACCESS_TOKEN } from "../constants";
+import "./Services.css";
 
 const Services = () => {
   const [services, setServices] = useState([]);
@@ -10,20 +12,31 @@ const Services = () => {
     title: "",
     description: "",
     price: "",
-    category_id: 1,
     city: "Cairo",
     is_active: true,
+    category_id: "",
   });
 
-  const baseURL = "http://127.0.0.1:8000/api/services/";
+  const token = localStorage.getItem(ACCESS_TOKEN);
+  const baseURL = `${import.meta.env.VITE_API_URL}/services/`;
 
-  // --- جلب الخدمات من الباك اند
   const fetchServices = async () => {
+    setLoading(true);
     try {
-      const response = await axios.get(baseURL);
-      setServices(response.data);
+      const response = await api.get(baseURL, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (Array.isArray(response.data)) {
+        setServices(response.data);
+      } else if (response.data && typeof response.data === "object") {
+        setServices(Array.isArray(response.data.results) ? response.data.results : []);
+      } else {
+        setServices([]);
+      }
     } catch (err) {
-      console.error("Error fetching services:", err);
+      console.error("Error fetching services:", err.response?.data || err);
+      setServices([]);
     } finally {
       setLoading(false);
     }
@@ -33,37 +46,37 @@ const Services = () => {
     fetchServices();
   }, []);
 
-  // --- تغيير قيم الفورم
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value, type, checked } = e.target;
+    setFormData({
+      ...formData,
+      [name]: type === "checkbox" ? checked : value,
+    });
   };
 
-  // --- إضافة أو تعديل خدمة
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // كل الحقول مطابقة للـ serializer
       const dataToSend = {
         title: formData.title,
         description: formData.description || "",
         price: parseFloat(formData.price),
-        // category_id: parseInt(formData.category_id),
         city: formData.city || "Cairo",
         is_active: formData.is_active,
+        category_id: formData.category_id,
       };
 
       if (editId) {
-        await axios.put(`${baseURL}${editId}/`, dataToSend, {
-          headers: { "Content-Type": "application/json" },
+        await api.put(`${baseURL}${editId}/`, dataToSend, {
+          headers: { Authorization: `Bearer ${token}` },
         });
       } else {
-        await axios.post(baseURL, dataToSend, {
-          headers: { "Content-Type": "application/json" },
+        await api.post(baseURL, dataToSend, {
+          headers: { Authorization: `Bearer ${token}` },
         });
       }
 
-      // إعادة تعيين الفورم وجلب البيانات الجديدة
-      setFormData({ title: "", description: "", price: "", city: "Cairo", is_active: true });
+      setFormData({ title: "", description: "", price: "", city: "Cairo", is_active: true, category_id: "" });
       setEditId(null);
       setShowForm(false);
       fetchServices();
@@ -73,12 +86,11 @@ const Services = () => {
     }
   };
 
-  // --- حذف خدمة
   const handleDelete = async (id) => {
     if (window.confirm("هل تريد حذف هذه الخدمة؟")) {
       try {
-        await axios.delete(`${baseURL}${id}/`, {
-          headers: { "Content-Type": "application/json" },
+        await api.delete(`${baseURL}${id}/`, {
+          headers: { Authorization: `Bearer ${token}` },
         });
         fetchServices();
       } catch (err) {
@@ -88,98 +100,71 @@ const Services = () => {
     }
   };
 
-  if (loading) return <p>جاري تحميل الخدمات...</p>;
+  if (loading) return <p className="loading-text">جاري تحميل الخدمات...</p>;
 
   return (
-    <div dir="rtl" style={{ maxWidth: 900, margin: "0 auto" }}>
-      <h1>الخدمات</h1>
+    <div className="services-container" dir="rtl">
+      <h1 className="services-header">الخدمات</h1>
 
-      <button onClick={() => setShowForm(!showForm)} style={{ marginBottom: 20 }}>
+      <button onClick={() => setShowForm(!showForm)} className="toggle-form-btn">
         {editId ? "تعديل خدمة" : "+ إضافة خدمة"}
       </button>
 
       {showForm && (
-        <form onSubmit={handleSubmit} style={{ marginBottom: 30 }}>
-          <input
-            type="text"
-            name="title"
-            placeholder="اسم الخدمة"
-            value={formData.title}
-            onChange={handleChange}
-            required
-          />
-          <input
-            type="text"
-            name="description"
-            placeholder="وصف الخدمة"
-            value={formData.description}
-            onChange={handleChange}
-          />
-          <input
-            type="number"
-            name="price"
-            placeholder="السعر"
-            value={formData.price}
-            onChange={handleChange}
-            required
-          />
-          {/* <input
-            type="number"
-            name="category_id"
-            placeholder="رقم الفئة"
-            value={formData.category_id}
-            onChange={handleChange}
-            required
-          /> */}
-          <input
-            type="text"
-            name="city"
-            placeholder="المدينة"
-            value={formData.city}
-            onChange={handleChange}
-            required
-          />
-          <button type="submit">{editId ? "حفظ التعديلات" : "إضافة"}</button>
+        <form onSubmit={handleSubmit} className="service-form">
+          <input type="text" name="title" placeholder="اسم الخدمة" value={formData.title} onChange={handleChange} required className="form-input" />
+          <input type="text" name="description" placeholder="وصف الخدمة" value={formData.description} onChange={handleChange} className="form-input" />
+          <input type="number" name="price" placeholder="السعر" value={formData.price} onChange={handleChange} required className="form-input" />
+          <select name="category_id" value={formData.category_id} onChange={handleChange} required className="form-select">
+            <option value="">اختر التصنيف</option>
+            <option value="1">كهرباء</option>
+            <option value="2">سباكة</option>
+            <option value="3">نجارة</option>
+          </select>
+          <input type="text" name="city" placeholder="المدينة" value={formData.city} onChange={handleChange} required className="form-input" />
+          <label className="form-checkbox">
+            نشطة:
+            <input type="checkbox" name="is_active" checked={formData.is_active} onChange={handleChange} />
+          </label>
+          <button type="submit" className="submit-btn">{editId ? "حفظ التعديلات" : "إضافة"}</button>
         </form>
       )}
 
-      <table border="1" cellPadding="5" style={{ width: "100%" }}>
+      <table className="services-table">
         <thead>
           <tr>
             <th>رقم</th>
             <th>اسم الخدمة</th>
             <th>السعر</th>
-            <th>فئة</th>
             <th>المدينة</th>
+            <th>نشطة</th>
             <th>إجراءات</th>
           </tr>
         </thead>
         <tbody>
-          {services.map((s) => (
+          {Array.isArray(services) && services.map((s) => (
             <tr key={s.id}>
               <td>{s.id}</td>
               <td>{s.title}</td>
               <td>{s.price} ج.م</td>
-              <td>{s.category?.name || "-"}</td>
               <td>{s.city}</td>
+              <td>{s.is_active ? "نعم" : "لا"}</td>
               <td>
-                <button
-                  onClick={() => {
-                    setFormData({
-                      title: s.title,
-                      description: s.description || "",
-                      price: s.price,
-                      // category_id: s.category?.id || 1,
-                      city: s.city || "Cairo",
-                      is_active: s.is_active,
-                    });
-                    setEditId(s.id);
-                    setShowForm(true);
-                  }}
-                >
+                <button onClick={() => {
+                  setFormData({
+                    title: s.title,
+                    description: s.description || "",
+                    price: s.price,
+                    city: s.city || "Cairo",
+                    is_active: s.is_active,
+                    category_id: s.category_id || "",
+                  });
+                  setEditId(s.id);
+                  setShowForm(true);
+                }} className="action-btn edit-btn">
                   تعديل
                 </button>
-                <button onClick={() => handleDelete(s.id)} style={{ marginLeft: 5 }}>
+                <button onClick={() => handleDelete(s.id)} className="action-btn delete-btn">
                   حذف
                 </button>
               </td>

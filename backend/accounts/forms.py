@@ -12,8 +12,4 @@ class ClientProfileForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         for field_name, field in self.fields.items():
             if 'gis' in str(type(field)):  # لو لسه في GIS field
-<<<<<<< HEAD
                 field.widget = forms.TextInput()
-=======
-                field.widget = forms.TextInput()
->>>>>>> cdf5adee20680c4021187124d2966897cb0e740f
