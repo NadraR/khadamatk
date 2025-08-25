@@ -29,5 +29,7 @@ urlpatterns = [
     path('api/ratings/', include('ratings.urls')),
     path('api/', include('accounts.urls')),
     path('api/invoices/', include('invoices.urls')),
+    path('api/location/', include('location.urls')),
+    
 
 ]
