@@ -2,8 +2,31 @@ from rest_framework import serializers
 from djoser.serializers import UserCreateSerializer as BaseUserCreateSerializer
 from .models import User, WorkerProfile, ClientProfile
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from django.contrib.auth import authenticate
+from django import forms
+from django.contrib.auth import get_user_model
 
 
+
+# 🔹 Custom Token Serializer (للتوكين)
+class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
+    """
+    Custom Token Serializer - لو عايزة تزودي بيانات في الـ JWT
+    """
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+
+        # تزودي بيانات زيادة في الـ payload
+        token['username'] = user.username
+        token['email'] = user.email
+        token['role'] = user.role   # ممكن تضيفي role كمان
+
+        return token
+
+
+# 🔹 Custom User Create Serializer (للتسجيل)
 class CustomUserCreateSerializer(BaseUserCreateSerializer):
     role = serializers.ChoiceField(
         choices=User.ROLE_CHOICES,
@@ -42,18 +65,18 @@ class CustomUserCreateSerializer(BaseUserCreateSerializer):
         return attrs
 
     def create(self, validated_data):
-        """إنشاء يوزر جديد + إضافة role + إنشاء JWT tokens"""
+        """إنشاء يوزر جديد + إضافة role + إنشاء profile"""
         role = validated_data.pop('role')
         user = super().create(validated_data)
         user.role = role
         user.save()
 
-        # إنشاء JWT tokens مباشرة بعد التسجيل
-        refresh = RefreshToken.for_user(user)
-        self.tokens = {
-            'refresh': str(refresh),
-            'access': str(refresh.access_token)
-        }
+        # إنشاء profile حسب الدور
+        if role == "worker":
+            WorkerProfile.objects.create(user=user)
+        elif role == "client":
+            ClientProfile.objects.create(user=user)
+
         return user
 
     def update(self, instance, validated_data):
@@ -62,14 +85,8 @@ class CustomUserCreateSerializer(BaseUserCreateSerializer):
             raise serializers.ValidationError({"role": "Role cannot be changed after registration."})
         return super().update(instance, validated_data)
 
-    def to_representation(self, instance):
-        """إرجاع البيانات + التوكنز"""
-        data = super().to_representation(instance)
-        if hasattr(self, 'tokens'):
-            data.update(self.tokens)
-        return data
 
-
+# 🔹 User Serializer
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -77,23 +94,61 @@ class UserSerializer(serializers.ModelSerializer):
         read_only_fields = ['email', 'role']
 
 
+# 🔹 Worker Profile Serializer
 class WorkerProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = WorkerProfile
         fields = [
             "id", "user", "job_title", "hourly_rate",
-            "experience_years", "skills", "location",
+            "experience_years", "skills",
+
             "created_at", "updated_at"
         ]
         read_only_fields = ["user", "created_at", "updated_at"]
 
 
+# 🔹 Client Profile Serializer
 class ClientProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = ClientProfile
-        fields = [
-            "id", "user", "preferred_contact_method",
-            "address", "notes", "location",
-            "created_at", "updated_at"
-        ]
+        # fields = [
+        #     "id", "user", "preferred_contact_method",
+        #     "address", "notes", "location",
+        #     "created_at", "updated_at"
+        # ]
+        fields = '__all__'
+        widgets = {
+            'location': forms.TextInput(attrs={'placeholder': 'lat, lng'})
+        }
         read_only_fields = ["user", "created_at", "updated_at"]
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'email', 'first_name', 'last_name')  # اختار اللي تحب تعرضه
+
+
+User = get_user_model()
+
+class LoginSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+    password = serializers.CharField(write_only=True)
+
+    def validate(self, attrs):
+        email = attrs.get('email')
+        password = attrs.get('password')
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("Invalid email or password.")
+
+        if not user.check_password(password):
+            raise serializers.ValidationError("Invalid email or password.")
+
+        if not user.is_active:
+            raise serializers.ValidationError("User account is disabled.")
+
+        attrs['user'] = user
+        return attrs

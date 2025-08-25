@@ -14,7 +14,8 @@ class User(AbstractUser):
     phone = models.CharField(
         max_length=11, 
         validators=[phone_regex], 
-        unique=True,
+        unique=False,
+        blank=True, null=True,
         verbose_name="Phone Number"
     )
     email = models.EmailField(unique=True, verbose_name="Email Address")
@@ -27,6 +28,26 @@ class User(AbstractUser):
         max_length=10, 
         choices=ROLE_CHOICES,
         verbose_name="Role"
+    )
+    auth_provider = models.CharField(
+        max_length=50,
+        default='email'
+    )
+
+    auth_provider = models.CharField(
+        max_length=50,
+        default="email",   # أو "local"
+        null=False,
+        blank=False,
+        verbose_name="Authentication Provider"
+    )
+
+    auth_provider = models.CharField(
+        max_length=50,
+        default="email",   # أو "local"
+        null=False,
+        blank=False,
+        verbose_name="Authentication Provider"
     )
 
     # Custom related_name to avoid clashes
@@ -54,12 +75,13 @@ class User(AbstractUser):
 
 
 class BaseProfile(models.Model):
-    location = gis_models.PointField(
-        srid=4326,
-        null=True,
-        blank=True,
-        verbose_name="Geographic Location"
-    )
+
+    # location = gis_models.PointField(
+    #     srid=4326,
+    #     null=True,
+    #     blank=True,
+    #     verbose_name="Geographic Location"
+    # )
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Created At")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Updated At")
 
@@ -76,21 +98,24 @@ class WorkerProfile(BaseProfile):
     )
     job_title = models.CharField(
         max_length=120,
-        verbose_name="Job Title"
+        verbose_name="Job Title",
+        blank=True, null=True
     )
     hourly_rate = models.DecimalField(
         max_digits=7,
         decimal_places=2,
         validators=[MinValueValidator(0)],
-        verbose_name="Hourly Rate"
+        verbose_name="Hourly Rate",
+        blank=True, null=True
     )
     experience_years = models.PositiveIntegerField(
         default=0,
-        verbose_name="Years of Experience"
+        verbose_name="Years of Experience",
+        blank=True, null=True
     )
     skills = models.TextField(
         blank=True,
-        verbose_name="Skills"
+        verbose_name="Skills",
     )
 
     class Meta:
@@ -98,7 +123,7 @@ class WorkerProfile(BaseProfile):
         verbose_name_plural = 'Worker Profiles'
 
     def __str__(self):
-        return f"{self.user.username} - {self.job_title}"
+        return f"{self.user.username} - {self.job_title or 'No Title'}"
 
     def clean(self):
         if self.user.role != 'worker':

@@ -33,6 +33,15 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
  }
 
+ html[dir="rtl"] .slide-content {
+  align-items: flex-end;
+  text-align: right;
+}
+html[dir="ltr"] .slide-content {
+  align-items: flex-start;
+  text-align: left;
+}
+
 
 .discount {
   background: linear-gradient(135deg, #ff9800, #e68900);
@@ -82,12 +91,25 @@
   background: linear-gradient(135deg, #e0e0e0, #888, #111);
   transform: translateY(-50%) scale(1.1);
 }
-.arrow.left {
+
+html[dir="rtl"] .arrow.left {
+  right: 12px;
+}
+html[dir="rtl"] .arrow.right {
+  left: 12px;
+}
+html[dir="ltr"] .arrow.left {
+  left: 12px;
+}
+html[dir="ltr"] .arrow.right {
+  right: 12px;
+}
+/* .arrow.left {
   left: 12px;
 }
 .arrow.right {
   right: 12px;
-}
+} */
 .slide-content h2,
 .slide-content p,
 .slide-content .discount {

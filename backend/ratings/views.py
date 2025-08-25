@@ -14,7 +14,7 @@ def service_ratings(request, service_id):
 @api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
 def add_or_update_rating(request, service_id):
-    service = get_object_or_404(Service.objects.alive(), pk=service_id)
+    service = get_object_or_404(Service, pk=service_id)
     score = int(request.data.get("score", 0))
     if score < 1 or score > 5:
         return Response({"error": "Score must be between 1 and 5"}, status=status.HTTP_400_BAD_REQUEST)
