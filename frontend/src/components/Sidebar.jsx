@@ -16,7 +16,7 @@ const Sidebar = () => {
             <span>{t("sidebar.home")}</span>
           </Link>
 
-          <Link to="/Services" className="sidebar-item">
+          <Link to="/services" className="sidebar-item">
             <FaWrench className="icon wrench" />
             <span>{t("sidebar.services")}</span>
           </Link>

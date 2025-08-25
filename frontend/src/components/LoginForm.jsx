@@ -3,6 +3,8 @@ import './LoginForm.css';
 import { Link, useNavigate } from "react-router-dom"; 
 import { FaScrewdriver } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
+import { ACCESS_TOKEN,REFRESH_TOKEN } from '../constants';
+import api from '../api'; 
 
 const LoginForm = () => {
   const [userType, setUserType] = useState('client');
@@ -15,33 +17,61 @@ const LoginForm = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate(); 
 
-  const changeLanguage = (lang) => {
-    i18n.changeLanguage(lang);
+  const toggleLanguage = () => {
+    const newLang = i18n.language === "ar" ? "en" : "ar";
+    i18n.changeLanguage(newLang);
+    document.documentElement.lang = newLang;
+    document.documentElement.dir = newLang === "ar" ? "rtl" : "ltr";
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+ 
 
-    if (mode === 'register' && password !== confirmPassword) {
-      alert(t("passwordMismatch"));
-      return;
+  const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  if (mode === 'register' && password !== confirmPassword) {
+    alert(t("passwordMismatch"));
+    return;
+  }
+
+  try {
+    if (mode === "login") {
+      // إرسال البيانات للباك إند
+      const response = await api.post("/token/", {
+        username,
+        password,
+      });
+
+      const data = response.data;
+      // تخزين التوكنات في localStorage
+      localStorage.setItem(ACCESS_TOKEN, data.access);
+      localStorage.setItem(REFRESH_TOKEN, data.refresh);
+
+      // بعد التخزين روح على الصفحة المناسبة
+      if (userType === "client") {
+        navigate("/homeClient");
+      } else if (userType === "provider") {
+        navigate("/homeProvider");
+      } else if (userType === "admin") {
+        navigate("/adminDashboard");
+      }
+    } else {
+      // تسجيل مستخدم جديد (لو عندك API خاص بالتسجيل)
+      const response = await api.post("/api/accounts/register/", {
+        username,
+        email,
+        phone,
+        password,
+      });
+
+      alert("تم إنشاء الحساب بنجاح! تقدر تسجل دخول دلوقتي.");
+      setMode("login");
     }
-
-    console.log({ mode, userType, username, email, phone, password });
-
-    localStorage.setItem('username', username); 
-
-if (userType === "client") {
-  navigate('/homeClient');        
-} else if (userType === "provider") {
-  navigate('/homeProvider');     
-} else if (userType === "admin") {
-  navigate('/adminDashboard');   
-} else {
-  alert('يرجى اختيار نوع المستخدم!');
-}
-
-  };
+  } catch (err) {
+    console.error("Login/Register error:", err.response?.data || err);
+    alert("خطأ في الدخول أو التسجيل.");
+  }
+};
 
   const [darkMode, setDarkMode] = useState(false);
   const toggleDarkMode = () => setDarkMode(!darkMode);
@@ -65,19 +95,13 @@ if (userType === "client") {
               </h1>
               <p className="platform-slogan">{t("platformSlogan")}</p>
             </div>
-
+              
             <div className="lang-slogan">
               <div className='langmode'>
                 <div className="mb-4">
-                  <select 
-                    className="lang-input" 
-                    id="lang" 
-                    onChange={(e) => changeLanguage(e.target.value)}
-                    defaultValue={i18n.language}
-                  >
-                    <option value="en">English</option>
-                    <option value="ar">العربية</option>
-                  </select>
+                  <button onClick={toggleLanguage} className="darkmode-btn">
+              {i18n.language === "ar" ? "English" : "العربية"}
+            </button>
                 </div>
 
                 <button onClick={toggleDarkMode} className="darkmode-btn">

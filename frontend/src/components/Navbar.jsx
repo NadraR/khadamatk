@@ -20,6 +20,7 @@ const Navbar = () => {
   const toggleDarkMode = () => setDarkMode(!darkMode);
 
   // Toggle Language
+
   const toggleLanguage = () => {
     const newLang = i18n.language === "ar" ? "en" : "ar";
     i18n.changeLanguage(newLang);

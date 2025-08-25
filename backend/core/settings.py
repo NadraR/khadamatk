@@ -40,7 +40,7 @@ SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # Application definition
 
 INSTALLED_APPS = [
-    'accounts.apps.AccountsConfig',  
+    # 'accounts.apps.AccountsConfig',  
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -64,11 +64,16 @@ INSTALLED_APPS = [
     'modeltranslation',
     
     # Local apps
-    'services',
+    'accounts',
+    'invoices',
     'orders',
+    'ratings',  # <--- اضيفي ده
     'reviews',
+    'services',
     'admin_api',
-]
+    'location',
+    ]
+   
 
 SITE_ID = 1
 

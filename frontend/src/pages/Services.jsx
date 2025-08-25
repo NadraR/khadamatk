@@ -1,40 +1,42 @@
-<<<<<<< HEAD
-import React from "react";
-import { useTranslation } from "react-i18next";
-import "./Services.css";
-
-const Services = () => {
-  const { t } = useTranslation();
-
-  const services = [
-    { id: 1, name: t("painting"), price: "200 ج.م" },
-    { id: 2, name: t("plumbing"), price: "150 ج.م" },
-    { id: 3, name: t("electricity"), price: "250 ج.م" },
-  ];
-=======
 import React, { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
-import { listServices, createService, updateService, deleteService } from "../api/services";
+import api from "../api";
+import { ACCESS_TOKEN } from "../constants";
 import "./Services.css";
 
 const Services = () => {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchParams] = useSearchParams();
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState(null);
-  const [formData, setFormData] = useState({ title: "", price: "" });
+  const [formData, setFormData] = useState({
+    title: "",
+    description: "",
+    price: "",
+    city: "Cairo",
+    is_active: true,
+    category_id: "",
+  });
 
-  const categoryId = searchParams.get("category");
+  const token = localStorage.getItem(ACCESS_TOKEN);
+  const baseURL = `${import.meta.env.VITE_API_URL}/services/`;
 
-  // جلب الخدمات
   const fetchServices = async () => {
+    setLoading(true);
     try {
-      const params = categoryId ? { category: categoryId } : {};
-      const response = await listServices(params);
-      setServices(response.data);
-    } catch (error) {
-      console.error("Error fetching services:", error);
+      const response = await api.get(baseURL, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (Array.isArray(response.data)) {
+        setServices(response.data);
+      } else if (response.data && typeof response.data === "object") {
+        setServices(Array.isArray(response.data.results) ? response.data.results : []);
+      } else {
+        setServices([]);
+      }
+    } catch (err) {
+      console.error("Error fetching services:", err.response?.data || err);
+      setServices([]);
     } finally {
       setLoading(false);
     }
@@ -42,113 +44,127 @@ const Services = () => {
 
   useEffect(() => {
     fetchServices();
-  }, [categoryId]);
+  }, []);
 
-  // تغيير قيم الفورم
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value, type, checked } = e.target;
+    setFormData({
+      ...formData,
+      [name]: type === "checkbox" ? checked : value,
+    });
   };
 
-  // إضافة أو تعديل خدمة
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const dataToSend = {
+        title: formData.title,
+        description: formData.description || "",
+        price: parseFloat(formData.price),
+        city: formData.city || "Cairo",
+        is_active: formData.is_active,
+        category_id: formData.category_id,
+      };
+
       if (editId) {
-        await updateService(editId, formData);
+        await api.put(`${baseURL}${editId}/`, dataToSend, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
       } else {
-        await createService(formData);
+        await api.post(baseURL, dataToSend, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
       }
-      setFormData({ title: "", price: "" });
+
+      setFormData({ title: "", description: "", price: "", city: "Cairo", is_active: true, category_id: "" });
       setEditId(null);
       setShowForm(false);
       fetchServices();
-    } catch (error) {
-      console.error("Error saving service:", error);
+    } catch (err) {
+      console.error("Error saving service:", err.response?.data || err);
+      alert("حدث خطأ أثناء حفظ الخدمة، تحقق من البيانات أو الباك اند.");
     }
   };
 
-  // حذف خدمة
   const handleDelete = async (id) => {
     if (window.confirm("هل تريد حذف هذه الخدمة؟")) {
       try {
-        await deleteService(id);
+        await api.delete(`${baseURL}${id}/`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         fetchServices();
-      } catch (error) {
-        console.error("Error deleting service:", error);
+      } catch (err) {
+        console.error("Error deleting service:", err.response?.data || err);
+        alert("حدث خطأ أثناء حذف الخدمة.");
       }
     }
   };
 
-  if (loading) return <p>جاري تحميل الخدمات...</p>;
->>>>>>> e6997eb (update services, reviews, and orders app)
+  if (loading) return <p className="loading-text">جاري تحميل الخدمات...</p>;
 
   return (
     <div className="services-container" dir="rtl">
-      <h1 className="services-title">{t("services")}</h1>
+      <h1 className="services-header">الخدمات</h1>
 
-<<<<<<< HEAD
-      <button className="add-service-btn">+ {t("addService")}</button>
-=======
-      <button className="add-service-btn" onClick={() => setShowForm(!showForm)}>
+      <button onClick={() => setShowForm(!showForm)} className="toggle-form-btn">
         {editId ? "تعديل خدمة" : "+ إضافة خدمة"}
       </button>
 
       {showForm && (
-        <form className="service-form" onSubmit={handleSubmit}>
-          <input
-            type="text"
-            name="title"
-            placeholder="اسم الخدمة"
-            value={formData.title}
-            onChange={handleChange}
-            required
-          />
-          <input
-            type="number"
-            name="price"
-            placeholder="السعر"
-            value={formData.price}
-            onChange={handleChange}
-            required
-          />
-          <button type="submit">{editId ? "حفظ التعديلات" : "إضافة"}</button>
+        <form onSubmit={handleSubmit} className="service-form">
+          <input type="text" name="title" placeholder="اسم الخدمة" value={formData.title} onChange={handleChange} required className="form-input" />
+          <input type="text" name="description" placeholder="وصف الخدمة" value={formData.description} onChange={handleChange} className="form-input" />
+          <input type="number" name="price" placeholder="السعر" value={formData.price} onChange={handleChange} required className="form-input" />
+          <select name="category_id" value={formData.category_id} onChange={handleChange} required className="form-select">
+            <option value="">اختر التصنيف</option>
+            <option value="1">كهرباء</option>
+            <option value="2">سباكة</option>
+            <option value="3">نجارة</option>
+          </select>
+          <input type="text" name="city" placeholder="المدينة" value={formData.city} onChange={handleChange} required className="form-input" />
+          <label className="form-checkbox">
+            نشطة:
+            <input type="checkbox" name="is_active" checked={formData.is_active} onChange={handleChange} />
+          </label>
+          <button type="submit" className="submit-btn">{editId ? "حفظ التعديلات" : "إضافة"}</button>
         </form>
       )}
->>>>>>> e6997eb (update services, reviews, and orders app)
 
       <table className="services-table">
         <thead>
           <tr>
-<<<<<<< HEAD
-            <th>{t("number")}</th>
-            <th>{t("serviceName")}</th>
-            <th>{t("price")}</th>
-=======
             <th>رقم</th>
             <th>اسم الخدمة</th>
             <th>السعر</th>
+            <th>المدينة</th>
+            <th>نشطة</th>
             <th>إجراءات</th>
->>>>>>> e6997eb (update services, reviews, and orders app)
           </tr>
         </thead>
         <tbody>
-          {services.map((service) => (
-            <tr key={service.id}>
-              <td>{service.id}</td>
-              <td>{service.title}</td>
-              <td>{service.price} ج.م</td>
+          {Array.isArray(services) && services.map((s) => (
+            <tr key={s.id}>
+              <td>{s.id}</td>
+              <td>{s.title}</td>
+              <td>{s.price} ج.م</td>
+              <td>{s.city}</td>
+              <td>{s.is_active ? "نعم" : "لا"}</td>
               <td>
-                <button
-                  className="edit-btn"
-                  onClick={() => {
-                    setFormData({ title: service.title, price: service.price });
-                    setEditId(service.id);
-                    setShowForm(true);
-                  }}
-                >
+                <button onClick={() => {
+                  setFormData({
+                    title: s.title,
+                    description: s.description || "",
+                    price: s.price,
+                    city: s.city || "Cairo",
+                    is_active: s.is_active,
+                    category_id: s.category_id || "",
+                  });
+                  setEditId(s.id);
+                  setShowForm(true);
+                }} className="action-btn edit-btn">
                   تعديل
                 </button>
-                <button className="delete-btn" onClick={() => handleDelete(service.id)}>
+                <button onClick={() => handleDelete(s.id)} className="action-btn delete-btn">
                   حذف
                 </button>
               </td>
