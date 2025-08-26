@@ -3,8 +3,8 @@ import './LoginForm.css';
 import { Link, useNavigate } from "react-router-dom"; 
 import { FaScrewdriver } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
-import { ACCESS_TOKEN,REFRESH_TOKEN } from '../constants';
-import api from '../api'; 
+import api from "../api";
+import { ACCESS_TOKEN, REFRESH_TOKEN } from "../constants";
 
 const LoginForm = () => {
   const [userType, setUserType] = useState('client');
@@ -30,6 +30,8 @@ const LoginForm = () => {
   e.preventDefault();
 
   if (mode === 'register' && password !== confirmPassword) {
+      result = await authService.register(email, password, userType);
+
     alert(t("passwordMismatch"));
     return;
   }
@@ -37,7 +39,7 @@ const LoginForm = () => {
   try {
     if (mode === "login") {
       // إرسال البيانات للباك إند
-      const response = await api.post("/token/", {
+      const response = await api.post("/auth/jwt/create/", {
         username,
         password,
       });
@@ -57,7 +59,7 @@ const LoginForm = () => {
       }
     } else {
       // تسجيل مستخدم جديد (لو عندك API خاص بالتسجيل)
-      const response = await api.post("/api/accounts/register/", {
+      const response = await api.post("/auth/users/", {
         username,
         email,
         phone,
