@@ -63,6 +63,7 @@ INSTALLED_APPS = [
     'dj_rest_auth.registration',
     'modeltranslation',
     
+    
     # Local apps
     'accounts',
     'invoices',
@@ -231,4 +232,18 @@ if "runserver" in sys.argv or "migrate" in sys.argv:
     print("Database Name:", DATABASES["default"].get("NAME"))
     print("Database Host:", DATABASES["default"].get("HOST"))
     print("Database Port:", DATABASES["default"].get("PORT"))
+
+DJOSER = {
+    "SERIALIZERS": {
+        "user_create": "accounts.serializers.CustomUserCreateSerializer",
+        "user": "accounts.serializers.UserSerializer",
+        "current_user": "accounts.serializers.UserSerializer",
+    },
+    "PERMISSIONS": {
+        "user_create": ["rest_framework.permissions.AllowAny"],
+        "user": ["rest_framework.permissions.IsAuthenticated"],
+    },
+    "LOGIN_FIELD": "username",   # أو "email" لو عايزة تسجيل/تسجيل دخول بالإيميل
+}
+CORS_ALLOW_ALL_ORIGINS = True
 
