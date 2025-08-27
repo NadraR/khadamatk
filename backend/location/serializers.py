@@ -8,14 +8,14 @@ class UserLocationSerializer(serializers.ModelSerializer):
         write_only=True, 
         min_value=-90, 
         max_value=90, 
-        required=False,
+        required=True,
         help_text="خط العرض (من -90 إلى 90)"
     )
     lng = serializers.FloatField(
         write_only=True, 
         min_value=-180, 
         max_value=180, 
-        required=False,
+        required=True,
         help_text="خط الطول (من -180 إلى 180)"
     )
     username = serializers.CharField(source='user.username', read_only=True)

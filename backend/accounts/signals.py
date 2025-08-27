@@ -6,7 +6,9 @@ from .models import WorkerProfile, ClientProfile
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
-        if instance.role == 'worker':
-            WorkerProfile.objects.create(user=instance)
-        elif instance.role == 'client':
-            ClientProfile.objects.create(user=instance)
+        
+        if hasattr(instance, 'role'):
+            if instance.role == 'worker':
+                WorkerProfile.objects.get_or_create(user=instance)
+            elif instance.role == 'client':
+                ClientProfile.objects.get_or_create(user=instance)

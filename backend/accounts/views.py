@@ -9,6 +9,10 @@ from .serializers import MyTokenObtainPairSerializer
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from rest_framework.views import APIView
+from django.conf import settings
+from google.oauth2 import id_token
+from google.auth.transport import requests
+from allauth.socialaccount.models import SocialAccount
 from django.contrib.auth import get_user_model
 User = get_user_model()
 
@@ -135,3 +139,59 @@ class LogoutView(APIView):
 
         return Response({"success": "Logged out successfully."},
                         status=status.HTTP_205_RESET_CONTENT)
+
+class GoogleLoginView(APIView):
+    permission_classes = [permissions.AllowAny]
+    
+    def post(self, request):
+        token = request.data.get('token')
+        
+        if not token:
+            return Response({'error': 'Token is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # تحقق من صحة الـ token
+            idinfo = id_token.verify_oauth2_token(
+                token, 
+                requests.Request(), 
+                settings.GOOGLE_OAUTH_CLIENT_ID
+            )
+            
+            # استخراج البيانات
+            email = idinfo['email']
+            first_name = idinfo.get('given_name', '')
+            last_name = idinfo.get('family_name', '')
+            
+            # البحث عن user موجود أو إنشاء جديد
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                # إنشاء user جديد
+                user = User.objects.create(
+                    email=email,
+                    username=email,  # استخدام email كـ username
+                    first_name=first_name,
+                    last_name=last_name,
+                    is_active=True
+                )
+                # يمكنك إضافة role حسب احتياجك
+                user.set_unusable_password()  # لأن التسجيل عبر Google
+                user.save()
+            
+            # إنشاء JWT tokens
+            refresh = RefreshToken.for_user(user)
+            access = refresh.access_token
+            
+            return Response({
+                'refresh': str(refresh),
+                'access': str(access),
+                'user_id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'role': getattr(user, 'role', None),
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+            }, status=status.HTTP_200_OK)
+            
+        except ValueError:
+            return Response({'error': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
