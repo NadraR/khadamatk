@@ -1,3 +1,4 @@
+
 # location/models.py
 from django.db import models
 from django.conf import settings
@@ -6,6 +7,7 @@ from django.contrib.gis.geos import Point
 from django.contrib.gis.db.models.functions import Distance
 from django.core.cache import cache
 from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
 import logging
 
 logger = logging.getLogger(__name__)
@@ -71,6 +73,7 @@ class UserLocation(models.Model):
         choices=LOCATION_TYPES,
         default='other',
         verbose_name=_("نوع الموقع")
+
     )
     
     location = gis_models.PointField(
@@ -313,3 +316,5 @@ class LocationShare(models.Model):
         """التحقق إذا انتهت صلاحية المشاركة"""
         from django.utils import timezone
         return self.expires_at and self.expires_at < timezone.now()
+   
+   
