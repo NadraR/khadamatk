@@ -12,8 +12,8 @@ class User(AbstractUser):
         message="Please enter a valid Egyptian phone number (11 digits starting with 01)"
     )
     phone = models.CharField(
-        max_length=11, 
-        validators=[phone_regex], 
+        max_length=11,
+        validators=[phone_regex],
         unique=False,
         blank=True, null=True,
         verbose_name="Phone Number"
@@ -25,7 +25,7 @@ class User(AbstractUser):
         ('client', 'Client'),
     )
     role = models.CharField(
-        max_length=10, 
+        max_length=10,
         choices=ROLE_CHOICES,
         verbose_name="Role"
     )
@@ -38,7 +38,7 @@ class User(AbstractUser):
         verbose_name="Authentication Provider"
     )
 
-    # Custom related_name to avoid clashes
+    # حل مشكلة الـ related_name clash
     groups = models.ManyToManyField(
         Group,
         related_name='custom_user_set',
@@ -63,7 +63,6 @@ class User(AbstractUser):
 
 
 class BaseProfile(models.Model):
-
     # location = gis_models.PointField(
     #     srid=4326,
     #     null=True,

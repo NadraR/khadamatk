@@ -162,7 +162,7 @@ class UserLocationViewSet(viewsets.ModelViewSet):
             )
 
         # البحث عن المواقع القريبة مع استبعاد المستخدم الحالي
-        nearby_locations = UserLocation.objects.exclude(user=request.user).annotate(
+        nearby_locations = UserLocation.objects.exclude(user=request.user).filter(user__role='worker').annotate(
             distance=Distance('location', user_point)
         ).filter(
             location__distance_lte=(user_point, D(km=radius)),
