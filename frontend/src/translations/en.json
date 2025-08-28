@@ -145,5 +145,16 @@
 "enterUsername": "Enter username",
 "saveChanges": "Save Changes",
 "changesSaved": "Changes saved successfully!",
-"defaultUser": "User"
+"defaultUser": "User",
+
+  "users": "Users ",
+  "services": "Services ",
+  "orders": "Orders ",
+  "reviews": "Reviews ",
+  "ratings": "Ratings ",
+  "invoices": "Invoices ",
+  "title": "Title",
+  "price": "Price",
+  "city": "City",
+  "admindashboard": "Admin Dashboard"
 }
