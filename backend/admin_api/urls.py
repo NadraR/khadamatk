@@ -27,4 +27,8 @@ urlpatterns = [
     # Invoices
     path('invoices/', admin_invoices, name='admin-invoices-list'),
     path('invoices/<int:pk>/', admin_invoice_detail, name='admin-invoice-detail'),
+
+    path("me/",AdminMeView.as_view(), name="admin-me"),
+    path("logs/", admin_logs_view),
+
 ]

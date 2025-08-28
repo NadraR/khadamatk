@@ -67,8 +67,8 @@ const Navbar = () => {
           </div>
         </div>
       </div>
-
-      <div className="nav-center">
+      
+      {/* <div className="nav-center">
         <input 
           type="text"
           placeholder="بحث عن خدمة..."
@@ -83,7 +83,7 @@ const Navbar = () => {
         <FaBell className="icon" />
         <span className="user">{username || "ضيف"}</span>
         <span className="role">عميل</span>
-      </div>
+      </div> */}
     </header>
   );
 };

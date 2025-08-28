@@ -29,18 +29,6 @@ class User(AbstractUser):
         choices=ROLE_CHOICES,
         verbose_name="Role"
     )
-    auth_provider = models.CharField(
-        max_length=50,
-        default='email'
-    )
-
-    auth_provider = models.CharField(
-        max_length=50,
-        default="email",   # أو "local"
-        null=False,
-        blank=False,
-        verbose_name="Authentication Provider"
-    )
 
     auth_provider = models.CharField(
         max_length=50,

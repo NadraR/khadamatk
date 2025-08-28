@@ -18,6 +18,9 @@ import Carpentry from './pages/Carpentry';
 import Electricity from './pages/Electricity';
 import Plumbing from './pages/Plumbing';
 import Invoices from './pages/Invoices';
+import UserDetails from './pages/UserDetails';
+import OrderDetails from './pages/OrderDetails';
+import Users from './pages/Users';
 
 function App() {
   return (
@@ -43,6 +46,15 @@ function App() {
       />
 
       <Route
+      path='/users'
+      element={
+          <Layout>
+            <Users />
+          </Layout>
+        }
+      />
+
+      <Route
         path="/adminDashboard"
         element={
           <Layout>
@@ -50,9 +62,17 @@ function App() {
           </Layout>
         }
       />
+      <Route
+        path="/orders/:id"
+        element={
+          <Layout>
+            <OrderDetails />
+          </Layout>
+        }
+      />
 
       <Route
-        path="/service/:id"
+        path="/admin/services/:id"
         element={
           <Layout>
             <ServiceDetails />
@@ -79,7 +99,7 @@ function App() {
       />
 
       <Route
-        path="/reviews/:serviceId"
+        path="/reviews"
         element={
           <Layout>
             <Reviews />
@@ -88,7 +108,7 @@ function App() {
       />
 
       <Route
-        path="/ratings/:serviceId"
+        path="/ratings"
         element={
           <Layout>
             <Ratings />
@@ -167,6 +187,8 @@ function App() {
           </Layout>
         }
       />
+
+      <Route path="/users/:id" element={<Layout> <UserDetails /> </Layout>} />
     </Routes>
   );
 }

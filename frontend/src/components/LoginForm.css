@@ -37,10 +37,8 @@
 .header {
   text-align: center;
   padding: 20px;
-  background: linear-gradient(135deg, #f5f5f5, #e0e0e0, #bdbdbd); /* التدرج اللي طلبتيه رصاصي/أبيض/أسود */
-  /* border-radius: 2px; */
+  background: linear-gradient(135deg, #f5f5f5, #e0e0e0, #bdbdbd); 
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  /* margin-bottom: 20px; */
 }
 .header-top {
   display: flex;
@@ -59,10 +57,28 @@
   gap: 10px;
 }
 
-/* .platform-title i {
-  color: #555;
-  font-size: 1.8rem; 
-} */
+.search-input {
+  width: 55%;
+  max-width: 420px;
+  padding: 10px 15px;
+  border-radius: 25px;
+  border: 1px solid #ccc;
+  outline: none;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.search-input:focus {
+  border-color: #007bff;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.25);
+}
+.nav-right {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+}
 
 .under-header {
   display: flex;
