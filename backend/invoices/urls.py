@@ -1,7 +1,6 @@
 from django.urls import path
-from .views import InvoiceViewSet, total_revenue
+from .views import InvoiceViewSet, total_revenue, download_invoice
 
-# نحدد الـ as_view لكل نوع
 invoice_list = InvoiceViewSet.as_view({
     'get': 'list',      # GET /invoices/
     'post': 'create',   # POST /invoices/
@@ -17,5 +16,6 @@ invoice_detail = InvoiceViewSet.as_view({
 urlpatterns = [
     path('', invoice_list, name='invoice-list'),
     path('<int:pk>/', invoice_detail, name='invoice-detail'),
-     path("total-revenue/", total_revenue, name="total-revenue"),
+    path("total-revenue/", total_revenue, name="total-revenue"),
+    path('<int:pk>/download/', download_invoice, name='invoice-download'),  # إضافة endpoint للتحميل
 ]

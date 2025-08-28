@@ -1,181 +1,165 @@
-// import React, { useState, useEffect } from 'react';
-// import { useTranslation } from 'react-i18next';
-// import { invoiceService } from '../services/invoiceService';
-// import './Invoices.css';
+import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { invoiceService } from '../services/invoiceService';
+import './Invoices.css';
 
-// const Invoices = () => {
-//   const { t } = useTranslation();
-//   const [invoices, setInvoices] = useState([]);
-//   const [loading, setLoading] = useState(true);
-//   const [error, setError] = useState('');
-
-//   useEffect(() => {
-//     fetchInvoices();
-//   }, []);
-
-//   const fetchInvoices = async () => {
-//     try {
-//       setLoading(true);
-//       const response = await invoiceService.getMyInvoices();
-//       setInvoices(response.data);
-//     } catch (err) {
-//       setError(t('invoices.fetchError'));
-//       console.error('Error fetching invoices:', err);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   const handleDownload = async (invoiceId) => {
-//     try {
-//       const response = await invoiceService.downloadInvoice(invoiceId);
-//       const blob = new Blob([response.data], { type: 'application/pdf' });
-//       const url = window.URL.createObjectURL(blob);
-//       const link = document.createElement('a');
-//       link.href = url;
-//       link.download = `invoice-${invoiceId}.pdf`;
-//       link.click();
-//       window.URL.revokeObjectURL(url);
-//     } catch (error) {
-//       console.error('Download error:', error);
-//       alert(t('invoices.downloadError'));
-//     }
-//   };
-
-//   if (loading) return <div className="loading">{t('common.loading')}</div>;
-//   if (error) return <div className="error">{error}</div>;
-
-//   return (
-//     <div className="invoices-page">
-//       <div className="page-header">
-//         <h1>{t('invoices.myInvoices')}</h1>
-//       </div>
-
-//       <div className="invoices-container">
-//         {invoices.length === 0 ? (
-//           <div className="no-data">
-//             <p>{t('invoices.noInvoices')}</p>
-//           </div>
-//         ) : (
-//           <div className="invoices-grid">
-//             {invoices.map(invoice => (
-//               <div key={invoice.id} className="invoice-card">
-//                 <div className="invoice-header">
-//                   <h3>{t('invoices.invoice')} #{invoice.id}</h3>
-//                   <span className={`status status-${invoice.status}`}>
-//                     {t(`invoices.status.${invoice.status}`)}
-//                   </span>
-//                 </div>
-
-//                 <div className="invoice-body">
-//                   <div className="invoice-detail">
-//                     <span className="label">{t('invoices.service')}:</span>
-//                     <span className="value">{invoice.service_name_ar || invoice.service_name_en}</span>
-//                   </div>
-                  
-//                   <div className="invoice-detail">
-//                     <span className="label">{t('invoices.amount')}:</span>
-//                     <span className="value amount">{invoice.amount} {t('currency')}</span>
-//                   </div>
-                  
-//                   <div className="invoice-detail">
-//                     <span className="label">{t('invoices.issuedAt')}:</span>
-//                     <span className="value">
-//                       {new Date(invoice.issued_at).toLocaleDateString()}
-//                     </span>
-//                   </div>
-
-//                   {invoice.paid_at && (
-//                     <div className="invoice-detail">
-//                       <span className="label">{t('invoices.paidAt')}:</span>
-//                       <span className="value">
-//                         {new Date(invoice.paid_at).toLocaleDateString()}
-//                       </span>
-//                     </div>
-//                   )}
-//                 </div>
-
-//                 <div className="invoice-actions">
-//                   <button 
-//                     className="btn-download"
-//                     onClick={() => handleDownload(invoice.id)}
-//                   >
-//                     📄 {t('invoices.download')}
-//                   </button>
-                  
-//                   {invoice.status === 'unpaid' && (
-//                     <button 
-//                       className="btn-pay"
-//                       onClick={() => window.open('/payment', '_blank')}
-//                     >
-//                       💳 {t('invoices.payNow')}
-//                     </button>
-//                   )}
-//                 </div>
-//               </div>
-//             ))}
-//           </div>
-//         )}
-//       </div>
-//     </div>
-//   );
-// };
-
-// export default Invoices;
-
-
-import React, { useEffect, useState } from "react";
-import axios from "axios";
-import "./Orders.css";
-
-const Orders = () => {
-  const [orders, setOrders] = useState([]);
+const Invoices = () => {
+  const { t } = useTranslation();
+  const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [viewType, setViewType] = useState('cards'); // 'cards' أو 'table'
 
   useEffect(() => {
-    axios
-      .get("http://127.0.0.1:8000/api/orders/")
-      .then((res) => {
-        setOrders(res.data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error("Error fetching orders:", err);
-        setLoading(false);
-      });
+    fetchInvoices();
   }, []);
 
-  if (loading) return <p>جاري تحميل الطلبات...</p>;
+  const fetchInvoices = async () => {
+    try {
+      setLoading(true);
+      const response = await invoiceService.getMyInvoices();
+      setInvoices(response.data);
+    } catch (err) {
+      setError(t('invoices.fetchError'));
+      console.error('Error fetching invoices:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownload = async (invoiceId) => {
+    try {
+      const response = await invoiceService.downloadInvoice(invoiceId);
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `invoice-${invoiceId}.pdf`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download error:', error);
+      alert(t('invoices.downloadError'));
+    }
+  };
+
+  if (loading) return <div className="loading">{t('common.loading')}</div>;
+  if (error) return <div className="error">{error}</div>;
 
   return (
-    <div className="orders-container">
-      <h1 className="orders-title">الطلبات</h1>
+    <div className="invoices-page">
+      <div className="page-header">
+        <h1>{t('invoices.myInvoices')}</h1>
+      </div>
 
-      <button className="add-order-btn">+ إضافة طلب</button>
+      <div className="invoices-container">
+        <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', marginBottom: '20px' }}>
+          <button
+            className="add-invoice-btn"
+            onClick={() => alert(t('invoices.addInvoice'))}
+          >
+            {t('invoices.addInvoice')}
+          </button>
 
-      <table className="orders-table">
-        <thead>
-          <tr>
-            <th>رقم</th>
-            <th>الخدمة</th>
-            <th>العميل</th>
-            <th>الحالة</th>
-          </tr>
-        </thead>
-        <tbody>
-          {orders.map((order) => (
-            <tr key={order.id}>
-              <td>{order.id}</td>
-              <td>{order.service}</td>
-              <td>{order.client}</td>
-              <td>{order.status}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+          <button
+            className="add-invoice-btn"
+            style={{ marginTop: '10px' }}
+            onClick={() =>
+              setViewType(viewType === 'table' ? 'cards' : 'table')
+            }
+          >
+            {t('invoices.switchView')}: {viewType === 'table' ? t('invoices.cards') : t('invoices.table')}
+          </button>
+        </div>
+
+        {invoices.length === 0 ? (
+          <div className="no-data">
+            <p>{t('invoices.noInvoices')}</p>
+          </div>
+        ) : viewType === 'table' ? (
+          <table className="invoices-table">
+            <thead>
+              <tr>
+                <th>{t('invoices.id')}</th>
+                <th>{t('invoices.customer')}</th>
+                <th>{t('invoices.amount')}</th>
+                <th>{t('invoices.issuedAt')}</th>
+                <th>{t('invoices.actions')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {invoices.map((inv) => (
+                <tr key={inv.id}>
+                  <td>{inv.id}</td>
+                  <td>{inv.service_name_ar || inv.service_name_en}</td>
+                  <td>{inv.amount} {t('currency')}</td>
+                  <td>{new Date(inv.issued_at).toLocaleDateString()}</td>
+                  <td>
+                    <button className="action-btn edit-btn" onClick={() => handleDownload(inv.id)}>
+                      📄 {t('invoices.download')}
+                    </button>
+                    {inv.status === 'unpaid' && (
+                      <button className="action-btn delete-btn" onClick={() => window.open('/payment', '_blank')}>
+                        💳 {t('invoices.payNow')}
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="invoices-cards-container">
+            {invoices.map((invoice) => (
+              <div key={invoice.id} className="invoice-card">
+                <div className="invoice-header">
+                  <h3>{t('invoices.invoice')} #{invoice.id}</h3>
+                  <span className={`status status-${invoice.status}`}>
+                    {t(`invoices.status.${invoice.status}`)}
+                  </span>
+                </div>
+
+                <div className="invoice-body">
+                  <div className="invoice-detail">
+                    <span className="label">{t('invoices.service')}:</span>
+                    <span className="value">{invoice.service_name_ar || invoice.service_name_en}</span>
+                  </div>
+
+                  <div className="invoice-detail">
+                    <span className="label">{t('invoices.amount')}:</span>
+                    <span className="value amount">{invoice.amount} {t('currency')}</span>
+                  </div>
+
+                  <div className="invoice-detail">
+                    <span className="label">{t('invoices.issuedAt')}:</span>
+                    <span className="value">{new Date(invoice.issued_at).toLocaleDateString()}</span>
+                  </div>
+
+                  {invoice.paid_at && (
+                    <div className="invoice-detail">
+                      <span className="label">{t('invoices.paidAt')}:</span>
+                      <span className="value">{new Date(invoice.paid_at).toLocaleDateString()}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="invoice-actions">
+                  <button className="action-btn edit-btn" onClick={() => handleDownload(invoice.id)}>
+                    📄 {t('invoices.download')}
+                  </button>
+                  {invoice.status === 'unpaid' && (
+                    <button className="action-btn delete-btn" onClick={() => window.open('/payment', '_blank')}>
+                      💳 {t('invoices.payNow')}
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
-export default Orders;
-
+export default Invoices;

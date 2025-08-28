@@ -1,11 +1,11 @@
 from rest_framework import viewsets, permissions
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 from django.utils.translation import gettext_lazy as _
+from django.http import HttpResponse, Http404
 from .models import Invoice
 from .serializers import InvoiceSerializer
 from django.db.models import Sum
-from rest_framework.decorators import api_view
 
 class IsOwnerOrAdmin(permissions.BasePermission):
     """
@@ -54,8 +54,23 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         
         serializer = self.get_serializer(invoices, many=True)
         return Response(serializer.data)
-    
+
 @api_view(['GET'])
 def total_revenue(request):
     revenue = Invoice.objects.filter(status="paid").aggregate(total=Sum("amount"))["total"] or 0
     return Response({"total_revenue": revenue})
+
+@api_view(['GET'])
+def download_invoice(request, pk):
+    """
+    تحميل فاتورة بصيغة PDF وهمي (يمكن تطويره لاحقًا لإصدار PDF حقيقي)
+    """
+    try:
+        invoice = Invoice.objects.get(pk=pk)
+        pdf_content = f"فاتورة #{invoice.id}\nالمبلغ: {invoice.amount}\nالحالة: {invoice.status}".encode('utf-8')
+        
+        response = HttpResponse(pdf_content, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="invoice-{invoice.id}.pdf"'
+        return response
+    except Invoice.DoesNotExist:
+        raise Http404("Invoice not found")
