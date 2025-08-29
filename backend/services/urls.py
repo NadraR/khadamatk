@@ -9,12 +9,12 @@ urlpatterns = [
     # Services
     path("", views.service_list, name="service_list"),
     path("<int:pk>/", views.service_detail, name="service_detail"),
-    path("search/", views.service_search, name="service_search"),
-
+    path("nearby/", views.service_search, name="services_nearby"),
     # Favorites
     path("favorites/", views.favorites_list, name="favorites_list"),
     path("favorites/add/", views.favorite_add, name="favorite_add"),
     path("favorites/remove/<int:service_id>/", views.favorite_remove, name="favorite_remove"),
+    path("types/", views.service_types, name="service_types"),
 ]
 
 
@@ -28,7 +28,7 @@ urlpatterns = [
 
 # DELETE /api/services/categories/1/ → حذف الكاتيجوري رقم 1
 
-# GET /api/services/ → عرض كل الخدمات (مع الفلاتر)
+# GET /api/services/types/ → عرض كل الخدمات (مع الفلاتر)
 
 # POST /api/services/ → إنشاء خدمة جديدة
 
@@ -37,3 +37,5 @@ urlpatterns = [
 # PUT /api/services/1/ → تعديل الخدمة رقم 1
 
 # DELETE /api/services/1/ → حذف الخدمة رقم 1
+
+# GET /api/services/nearby/ - البحث عن الخدمات القريبة حذف الخدمة رقم 1
