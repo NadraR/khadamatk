@@ -9,6 +9,13 @@ from django.contrib.gis.geos import Point
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.measure import D
 
+#worker profile import check
+try:
+    from accounts.models import WorkerProfile
+    WORKER_PROFILE_EXISTS = True
+except ImportError:
+    WORKER_PROFILE_EXISTS = False
+
 @api_view(["GET", "POST"])
 def service_categories(request):
     if request.method == "GET":
@@ -39,6 +46,12 @@ def service_category_detail(request, pk):
         category.save()
         return Response({"message": "Category soft deleted"}, status=status.HTTP_200_OK)
 
+@api_view(["GET"])
+def service_types(request):
+    categories = ServiceCategory.objects.filter(is_deleted=False)
+    serializer = ServiceCategorySerializer(categories, many=True)
+    return Response(serializer.data)
+
 @api_view(["GET", "POST"])
 @permission_classes([permissions.IsAuthenticatedOrReadOnly])
 def service_list(request):
@@ -48,13 +61,19 @@ def service_list(request):
             rating_count=Count("reviews")
         )
         category_id = request.query_params.get("category")
-        city = request.query_params.get("city")
         if category_id:
             services = services.filter(category_id=category_id)
+        city = request.query_params.get("city")
         if city:
             services = services.filter(city__icontains=city)
+        
+        q = request.query_params.get("q")
+        if q:
+            services = services.filter(Q(title__icontains=q) | Q(description__icontains=q))
+        
         serializer = ServiceDetailSerializer(services, many=True)
         return Response(serializer.data)
+    
     elif request.method == "POST":
         serializer = ServiceSerializer(data=request.data)
         if serializer.is_valid():
@@ -96,25 +115,61 @@ def service_search(request):
         lat = float(request.GET.get("lat"))
         lng = float(request.GET.get("lng"))
     except (TypeError, ValueError):
-        return Response({"error": "lat and lng are required floats"}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "lat and lng are required and must be valid numbers"}, status=status.HTTP_400_BAD_REQUEST)
+    
     radius_km = float(request.GET.get("radius_km", 10))
-    category_id = request.GET.get("category_id")
-    q = request.GET.get("q")
+    service_type = request.GET.get("service_type") 
+    q = request.GET.get("q", "")
     point = Point(lng, lat, srid=4326)
-    qs = Service.objects.filter(is_deleted=False, is_active=True, provider__workerprofile__location__isnull=False)
-    if category_id:
-        qs = qs.filter(category_id=category_id)
+    qs = Service.objects.filter(
+        is_deleted=False, 
+        is_active=True,
+        provider__isnull=False
+    ).annotate(
+        rating_avg=Avg("reviews__score"),
+        rating_count=Count("reviews")
+    )
+    
+    if service_type:
+        qs = qs.filter(category_id=service_type)
+    
     if q:
         qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
-    qs = qs.filter(provider__workerprofile__location__distance_lte=(point, D(km=radius_km))) \
-           .annotate(distance_km=Distance('provider__workerprofile__location', point)/1000.0) \
-           .order_by('distance_km')
+    
+    # التصفية حسب الموقع إذا كان موجوداً
+    location_field_exists = hasattr(Service, 'location') and Service.location.field
+    
+    if location_field_exists:
+        qs = qs.filter(location__isnull=False)
+        qs = qs.filter(location__distance_lte=(point, D(km=radius_km))) \
+               .annotate(distance_km=Distance('location', point) / 1000.0)
+    else:
+        # إذا لم يكن هناك حقل موقع، نستخدم موقع المزود إذا كان متاحاً
+        worker_profile_exists = WORKER_PROFILE_EXISTS and hasattr(Service.provider.field.related_model, 'workerprofile')
+        
+        if worker_profile_exists:
+            qs = qs.filter(provider__workerprofile__location__isnull=False)
+            qs = qs.filter(provider__workerprofile__location__distance_lte=(point, D(km=radius_km))) \
+                   .annotate(distance_km=Distance('provider__workerprofile__location', point) / 1000.0)
+        else:
+            # إذا لم يكن هناك أي حقل موقع، نرجع جميع النتائج بدون ترتيب حسب المسافة
+            qs = qs.annotate(distance_km=0.0)
+    
+    # الترتيب حسب المسافة إذا أمكن
+    if 'distance_km' in [f.name for f in qs.model._meta.get_fields()]:
+        qs = qs.order_by('distance_km')
+    else:
+        qs = qs.order_by('?')  # ترتيب عشوائي إذا لم يكن هناك موقع
+    
     serializer = ServiceSearchSerializer(qs, many=True, context={"request": request})
     return Response(serializer.data)
 
 @api_view(["GET"])
 @permission_classes([permissions.IsAuthenticated])
 def favorites_list(request):
+    """
+    الحصول على قائمة المفضلات للمستخدم الحالي
+    """
     favs = Favorite.objects.filter(user=request.user).select_related("service")
     serializer = FavoriteSerializer(favs, many=True)
     return Response(serializer.data)
@@ -122,15 +177,28 @@ def favorites_list(request):
 @api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
 def favorite_add(request):
+    """
+    إضافة خدمة إلى المفضلات
+    """
     service_id = request.data.get("service_id")
     if not service_id:
         return Response({"error": "service_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+    
     service = get_object_or_404(Service, pk=service_id, is_deleted=False)
     fav, created = Favorite.objects.get_or_create(user=request.user, service=service)
-    return Response({"status": "ok", "created": created})
+    
+    return Response({
+        "status": "added to favorites", 
+        "created": created,
+        "favorite_id": fav.id
+    })
 
 @api_view(["DELETE"])
 @permission_classes([permissions.IsAuthenticated])
 def favorite_remove(request, service_id):
-    Favorite.objects.filter(user=request.user, service_id=service_id).delete()
-    return Response({"status": "ok"})
+    deleted_count, _ = Favorite.objects.filter(user=request.user, service_id=service_id).delete()
+    
+    if deleted_count > 0:
+        return Response({"status": "removed from favorites"})
+    else:
+        return Response({"error": "Favorite not found"}, status=status.HTTP_404_NOT_FOUND)
