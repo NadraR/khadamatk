@@ -17,6 +17,7 @@ class ServiceSerializer(serializers.ModelSerializer):
         write_only=True
     )
     provider_username = serializers.ReadOnlyField(source="provider.username")
+    provider_location = serializers.SerializerMethodField()  
     rating_avg = serializers.FloatField(read_only=True)
     rating_count = serializers.IntegerField(read_only=True)
     currency = serializers.SerializerMethodField()
@@ -27,11 +28,25 @@ class ServiceSerializer(serializers.ModelSerializer):
         fields = [
             "id", "title", "description", "provider", "provider_username",
             "category", "category_id", "city", "price", "currency", "is_active",
-            "created_at", "rating_avg", "rating_count"
+            "created_at", "rating_avg", "rating_count", "provider_location"
         ]
 
     def get_currency(self, obj):
         return "EGP"
+    
+    def get_provider_location(self, obj):
+        """إرجاع موقع المزود إذا كان متاحاً"""
+        if hasattr(obj.provider, 'workerprofile') and obj.provider.workerprofile.location:
+            return {
+                "lat": obj.provider.workerprofile.location.y,
+                "lng": obj.provider.workerprofile.location.x
+            }
+        elif obj.location:  
+            return {
+                "lat": obj.location.y,
+                "lng": obj.location.x
+            }
+        return None
 
 class ServiceDetailSerializer(ServiceSerializer):
     reviews = ReviewSerializer(many=True, read_only=True)
@@ -49,6 +64,7 @@ class FavoriteSerializer(serializers.ModelSerializer):
 class ServiceSearchSerializer(ServiceSerializer):
     distance_km = serializers.FloatField(read_only=True)
     in_favorites = serializers.SerializerMethodField()
+    
     class Meta(ServiceSerializer.Meta):
         fields = ServiceSerializer.Meta.fields + ["distance_km", "in_favorites"]
 
