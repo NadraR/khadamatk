@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FaScrewdriver, FaBell } from 'react-icons/fa';
+import { FaScrewdriver, FaBell, FaMoon, FaSun } from 'react-icons/fa';
 import './Navbar.css';
 import { useTranslation } from "react-i18next";
 
@@ -16,10 +16,7 @@ const Navbar = () => {
     }
   }, []);
 
-  // Toggle Dark Mode
   const toggleDarkMode = () => setDarkMode(!darkMode);
-
-  // Toggle Language
 
   const toggleLanguage = () => {
     const newLang = i18n.language === "ar" ? "en" : "ar";
@@ -28,7 +25,6 @@ const Navbar = () => {
     document.documentElement.dir = newLang === "ar" ? "rtl" : "ltr";
   };
 
-  // تأثير الـ Dark Mode
   useEffect(() => {
     if (darkMode) {
       document.body.classList.add("dark-mode");
@@ -55,35 +51,16 @@ const Navbar = () => {
 
         <div className="lang-slogan">
           <div className="langmode">
-            {/* زرار تغيير اللغة */}
             <button onClick={toggleLanguage} className="darkmode-btn">
               {i18n.language === "ar" ? "English" : "العربية"}
             </button>
 
-            {/* زرار Dark/Light Mode */}
             <button onClick={toggleDarkMode} className="darkmode-btn">
-              {darkMode ? "☀️ Light" : "🌙 Dark"}
+              {darkMode ? <FaSun /> : <FaMoon />}
             </button>
           </div>
         </div>
       </div>
-      
-      {/* <div className="nav-center">
-        <input 
-          type="text"
-          placeholder="بحث عن خدمة..."
-          className="search-input"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={handleSearch}
-        />
-      </div>
-
-      <div className="nav-right">
-        <FaBell className="icon" />
-        <span className="user">{username || "ضيف"}</span>
-        <span className="role">عميل</span>
-      </div> */}
     </header>
   );
 };

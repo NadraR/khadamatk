@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import api from "../api";
 import { ACCESS_TOKEN } from "../constants";
+import { FaUser, FaEnvelope, FaCheckCircle, FaTimesCircle, FaIdBadge, FaShieldAlt } from "react-icons/fa";
 
 const UserDetails = () => {
   const { id } = useParams();
@@ -22,7 +23,10 @@ const UserDetails = () => {
     fetchUser();
   }, [id, token]);
 
-  if (!user) return <p style={{ textAlign: "center", marginTop: "50px" }}>Loading...</p>;
+  if (!user)
+    return (
+      <p style={{ textAlign: "center", marginTop: "50px" }}>Loading...</p>
+    );
 
   // --- استايلات CSS-in-JS ---
   const styles = {
@@ -41,12 +45,15 @@ const UserDetails = () => {
       marginBottom: "25px",
       textAlign: "center",
       color: "#333",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "10px",
     },
     stats: {
       display: "flex",
       flexDirection: "column",
       justifyContent: "center",
-      // alignItems: "center",
       gap: "15px",
     },
     card: {
@@ -58,6 +65,7 @@ const UserDetails = () => {
       display: "flex",
       justifyContent: "flex-start",
       alignItems: "center",
+      gap: "8px",
     },
     strong: {
       marginRight: "10px",
@@ -66,24 +74,39 @@ const UserDetails = () => {
 
   return (
     <div style={styles.container}>
-      <h1 style={styles.header}>👤 تفاصيل المستخدم</h1>
+      <h1 style={styles.header}>
+        <FaUser /> تفاصيل المستخدم
+      </h1>
 
       <div style={styles.stats}>
         <div style={styles.card}>
+          <FaIdBadge />
           <strong style={styles.strong}>ID:</strong> {user.id}
         </div>
         <div style={styles.card}>
-          <strong style={styles.strong}>👤 اسم المستخدم:</strong> {user.username}
+          <FaUser />
+          <strong style={styles.strong}>اسم المستخدم:</strong> {user.username}
         </div>
         <div style={styles.card}>
-          <strong style={styles.strong}>📧 البريد:</strong> {user.email}
+          <FaEnvelope />
+          <strong style={styles.strong}>البريد:</strong> {user.email}
         </div>
         <div style={styles.card}>
-          <strong style={styles.strong}>⚡ الحالة:</strong>{" "}
-          {user.is_active ? "✅ نشط" : "❌ غير نشط"}
+          <FaShieldAlt />
+          <strong style={styles.strong}>الحالة:</strong>{" "}
+          {user.is_active ? (
+            <>
+              <FaCheckCircle style={{ color: "green" }} /> نشط
+            </>
+          ) : (
+            <>
+              <FaTimesCircle style={{ color: "red" }} /> غير نشط
+            </>
+          )}
         </div>
         <div style={styles.card}>
-          <strong style={styles.strong}>🛡️ الدور:</strong> {user.role || "غير محدد"}
+          <FaShieldAlt />
+          <strong style={styles.strong}>الدور:</strong> {user.role || "غير محدد"}
         </div>
       </div>
     </div>

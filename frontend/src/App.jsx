@@ -13,14 +13,19 @@ import Search from './pages/Search';
 import Clients from './pages/Clients';
 import Settings from './pages/Settings';
 import Layout from './Layout';
-import Painting from './pages/Painting';
-import Carpentry from './pages/Carpentry';
-import Electricity from './pages/Electricity';
-import Plumbing from './pages/Plumbing';
+import Painters from './pages/Painting';
+import Carpenters from './pages/Carpentry';
+import Electricians from './pages/Electricity';
+import Plumbers from './pages/Plumbing';
+import Cleaning from './pages/Cleaning';
+import Gardening from './pages/Gardening';
 import Invoices from './pages/Invoices';
 import UserDetails from './pages/UserDetails';
 import OrderDetails from './pages/OrderDetails';
 import Users from './pages/Users';
+import Reports from './pages/Reports';
+import SystemManagement from './pages/SystemManagement';
+
 
 function App() {
   return (
@@ -67,6 +72,39 @@ function App() {
         element={
           <Layout>
             <OrderDetails />
+          </Layout>
+        }
+      />
+      <Route
+        path="/reports"
+        element={
+          <Layout>
+            <Reports />
+          </Layout>
+        }
+      />
+
+      <Route
+        path="/category/cleaning"
+        element={
+          <Layout>
+            <Cleaning />
+          </Layout>
+        }
+      />
+      <Route
+        path="/category/gardening"
+        element={
+          <Layout>
+            <Gardening />
+          </Layout>
+        }
+      />
+      <Route
+      path='/system-management'
+      element={
+          <Layout>
+            <SystemManagement />
           </Layout>
         }
       />
@@ -135,40 +173,41 @@ function App() {
       />
 
       <Route
-        path="/category/painting"
+        path="/category/painters"
         element={
           <Layout>
-            <Painting />
+            <Painters />
           </Layout>
         }
       />
 
       <Route
-        path="/category/carpentry"
+        path="/category/carpenters"
         element={
           <Layout>
-            <Carpentry />
+            <Carpenters />
           </Layout>
         }
       />
 
       <Route
-        path="/category/electricity"
+        path="/category/electricians"
         element={
           <Layout>
-            <Electricity />
+            <Electricians />
           </Layout>
         }
       />
 
       <Route
-        path="/category/plumbing"
+        path="/category/plumbers"
         element={
           <Layout>
-            <Plumbing />
+            <Plumbers />
           </Layout>
         }
       />
+
 
       <Route
         path="/search"

@@ -4,6 +4,7 @@ import plumbingImg from "../images/plumbing.jpg";
 import electricImg from "../images/electric.jpg";
 import paintingImg from "../images/painting.jpg";
 import { useTranslation } from "react-i18next";
+import { Link } from 'react-router-dom';
 
 const Slider = () => {
   const { t } = useTranslation();
@@ -50,7 +51,9 @@ const Slider = () => {
           <div className='slide-text'>
             <h2>{slides[current].title}</h2>
             <p>{slides[current].text}</p>
-            <button className="btn">{t("slider.bookNow")}</button>
+            <Link style={{textDecoration:"none"}} to="/orders" className="btn">
+              {t("slider.bookNow")}
+            </Link>
           </div>
         </div>
 

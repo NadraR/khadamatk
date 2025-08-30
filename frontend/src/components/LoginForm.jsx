@@ -40,16 +40,16 @@ const LoginForm = () => {
     if (mode === "login") {
       // إرسال البيانات للباك إند
       const response = await api.post("/auth/jwt/create/", {
+//       const response = await api.post("/token/", {
+// >>>>>>> d2f171c (Admin update)
         username,
         password,
       });
 
       const data = response.data;
-      // تخزين التوكنات في localStorage
       localStorage.setItem(ACCESS_TOKEN, data.access);
       localStorage.setItem(REFRESH_TOKEN, data.refresh);
 
-      // بعد التخزين روح على الصفحة المناسبة
       if (userType === "client") {
         navigate("/homeClient");
       } else if (userType === "provider") {
@@ -60,6 +60,8 @@ const LoginForm = () => {
     } else {
       // تسجيل مستخدم جديد (لو عندك API خاص بالتسجيل)
       const response = await api.post("/auth/users/", {
+//       const response = await api.post("/api/accounts/register/", {
+// >>>>>>> d2f171c (Admin update)
         username,
         email,
         phone,
