@@ -1,58 +1,95 @@
 .ratings-container {
-  max-width: 900px;
-  margin: 30px auto;
-  padding: 20px;
-  background: #fff;
-  border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  min-height: 100vh;
+  padding: 40px 20px;
+  background: linear-gradient(135deg, #f5f5f5 0%, #e0e0e0 100%);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  position: relative;
+  overflow: hidden;
 }
 
 .ratings-title {
   text-align: center;
-  font-size: 26px;
-  margin-bottom: 20px;
-  color: #333;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #222;
+  margin-bottom: 25px;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
 }
 
 .add-rating-btn {
-  display: inline-block;
-  margin-bottom: 15px;
-  padding: 10px 16px;
-  background-color: #ffc107;
+  display: block;
+  margin: 0 auto 30px auto;
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #555 0%, #222 100%);
   color: #fff;
   border: none;
-  border-radius: 6px;
-  font-size: 15px;
+  border-radius: 12px;
   cursor: pointer;
-  transition: 0.3s;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
 }
-
-.add-rating-btn:hover {
-  background-color: #e0a800;
+.add-rating-btn:hover{
+  background: linear-gradient(135deg, #666, #333, #111);
+  transform: scale(1.05);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.4);
 }
 
 .ratings-table {
   width: 100%;
+  max-width: 1000px;
+  margin: 0 auto;
   border-collapse: collapse;
-}
-
-.ratings-table th,
-.ratings-table td {
-  border: 1px solid #ddd;
-  padding: 12px 15px;
-  text-align: center;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
 }
 
 .ratings-table th {
-  background-color: #f5f5f5;
-  font-weight: bold;
-  color: #444;
+  background: #f0f0f0;
+  font-weight: 700;
+  color: #333;
+  padding: 10px;
 }
 
-.ratings-table tr:nth-child(even) {
-  background-color: #fafafa;
+.ratings-table td {
+  color: #555;
+  border-bottom: 1px solid #ddd;
+  padding: 10px;
+  text-align: center;
 }
 
-.ratings-table tr:hover {
-  background-color: #fff9e6;
+.dark-mode .ratings-container {
+  background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
 }
+
+.dark-mode .ratings-title {
+  color: #fff;
+}
+
+.dark-mode .ratings-table {
+  background: rgba(40, 40, 40, 0.95);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark-mode .ratings-table th {
+  background: #333;
+  color: #eee;
+}
+
+.dark-mode .ratings-table td {
+  color: #ccc;
+  border-color: #444;
+}
+
+.dark-mode .ratings-table tr:hover td {
+  background: #2a2a2a;
+}
+
+.dark-mode .add-rating-btn {
+  background: linear-gradient(135deg, #666 0%, #222 100%);
+}
+

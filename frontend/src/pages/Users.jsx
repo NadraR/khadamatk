@@ -1,9 +1,9 @@
-// src/components/Users.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import api from "../api";
 import { ACCESS_TOKEN } from "../constants";
+import { FaUsers, FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 
 const Users = () => {
   const { t } = useTranslation();
@@ -29,10 +29,13 @@ const Users = () => {
   }, [token]);
 
   if (loading) {
-    return <p style={{ textAlign: "center", marginTop: "50px" }}>{t("loading") || "جارٍ التحميل..."}</p>;
+    return (
+      <p style={{ textAlign: "center", marginTop: "50px" }}>
+        {t("loading") || "جارٍ التحميل..."}
+      </p>
+    );
   }
 
-  // --- استايل داخلي ---
   const styles = {
     container: {
       minHeight: "100vh",
@@ -56,6 +59,10 @@ const Users = () => {
       textAlign: "center",
       marginBottom: "25px",
       color: "#222",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: "10px",
     },
     slogan: {
       color: "#555",
@@ -84,7 +91,6 @@ const Users = () => {
     },
     rowHover: {
       transition: "background 0.2s",
-    //   cursor: "pointer",
     },
     button: {
       padding: "6px 14px",
@@ -107,9 +113,10 @@ const Users = () => {
     <div style={styles.container}>
       <div style={styles.box}>
         <div style={styles.header}>
-          <h1>👥 {t("users") || "المستخدمين"}</h1>
-          <p style={styles.slogan}>عرض وإدارة جميع المستخدمين</p>
+          <FaUsers style={{fontSize:"35px"}} />
+          <h1>{t("users") || "المستخدمين"}</h1>
         </div>
+        <p style={styles.slogan}>عرض وإدارة جميع المستخدمين</p>
 
         <div style={styles.tableWrapper}>
           <table style={styles.table}>
@@ -135,22 +142,35 @@ const Users = () => {
                 <tr
                   key={u.id}
                   style={styles.rowHover}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "#f9f9f9")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background = "#f9f9f9")
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background = "transparent")
+                  }
                 >
                   <td style={styles.td}>{u.id}</td>
                   <td style={styles.td}>{u.username || "—"}</td>
                   <td style={styles.td}>{u.email || "—"}</td>
-                  <td style={styles.td}>{u.is_active ? "✅ نشط" : "❌ غير نشط"}</td>
+                  <td style={styles.td}>
+                    {u.is_active ? (
+                      <>
+                        <FaCheckCircle style={{ color: "green" }} /> نشط
+                      </>
+                    ) : (
+                      <>
+                        <FaTimesCircle style={{ color: "red" }} /> غير نشط
+                      </>
+                    )}
+                  </td>
                   <td style={styles.td}>{u.role || "غير محدد"}</td>
                   <td style={styles.td}>
                     <button
-                    style={{ ...styles.button, ...styles.buttonHover }}
-                    onClick={() => navigate(`/users/${u.id}`)}
+                      style={{ ...styles.button, ...styles.buttonHover }}
+                      onClick={() => navigate(`/users/${u.id}`)}
                     >
-                    عرض
+                      عرض
                     </button>
-
                   </td>
                 </tr>
               ))}
