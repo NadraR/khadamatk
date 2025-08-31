@@ -33,7 +33,7 @@ SECRET_KEY =  os.environ.get("DJANGO_SECRET_KEY", "unsafe-secret-key")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config("DEBUG", cast=bool, default=False)
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv(), default="127.0.0.1,localhost")
-CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS", cast=Csv(), default="").split(",") if config("CSRF_TRUSTED_ORIGINS", default="") else []
+CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS", cast=Csv(), default=[])
 #CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", cast=Csv(), default="http://localhost:5173")
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
@@ -91,6 +91,17 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     
 ]
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = config("DEBUG", cast=bool, default=False)
+
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv(), default=["127.0.0.1", "localhost"])
+
+CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS", cast=Csv(), default=[])
+
+CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", cast=Csv(), default=["http://localhost:5173"])
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 ROOT_URLCONF = 'core.urls'
 CORS_ALLOWED_ORIGINS = [

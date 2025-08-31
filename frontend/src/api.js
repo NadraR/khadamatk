@@ -1,7 +1,7 @@
 import { ACCESS_TOKEN, REFRESH_TOKEN } from "./constants";
 import axios from "axios";
-export const ACCESS_TOKEN = "access_token";
-export const REFRESH_TOKEN = "refresh_token";
+// export const ACCESS_TOKEN = "access_token";
+// export const REFRESH_TOKEN = "refresh_token";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -30,7 +30,6 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // لو التوكن خلص (401) و لسه ماحاولناش نعمل refresh
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
