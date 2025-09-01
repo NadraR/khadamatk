@@ -9,9 +9,18 @@ from .serializers import MyTokenObtainPairSerializer
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework_simplejwt.tokens import RefreshToken, TokenError
 from rest_framework.views import APIView
+from django.conf import settings
+from google.oauth2 import id_token
+from google.auth.transport import requests
+from allauth.socialaccount.models import SocialAccount
 from django.contrib.auth import get_user_model
-User = get_user_model()
+from google.oauth2 import id_token
+import requests as http
+from google.auth.transport import requests as google_requests
+import logging
 
+User = get_user_model()
+logger = logging.getLogger(__name__)
 class MyTokenObtainPairView(TokenObtainPairView):
     serializer_class = MyTokenObtainPairSerializer
 
@@ -27,6 +36,16 @@ class UserRegisterView(generics.CreateAPIView):
         # Automatically create the profile based on the role
         response_data = serializer.data
         response_data['message'] = 'User registered successfully'
+        
+        # Automatically log in the user and return tokens
+        refresh = RefreshToken.for_user(user)
+        access = refresh.access_token
+        
+        response_data.update({
+            'refresh': str(refresh),
+            'access': str(access),
+            'user_id': user.id,
+        })
         
         return Response(response_data, status=status.HTTP_201_CREATED)
 
@@ -135,3 +154,89 @@ class LogoutView(APIView):
 
         return Response({"success": "Logged out successfully."},
                         status=status.HTTP_205_RESET_CONTENT)
+    
+class GoogleLoginView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        logger.info(f"[GoogleLogin DEBUG] Incoming request data: {request.data}")
+
+        token = request.data.get("token")
+        role = request.data.get("role")
+
+        if not token:
+            logger.error("[GoogleLogin DEBUG] Missing Google ID token in request")
+            return Response({'error': 'Missing Google ID token'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # ✅ Step 1: Verify the ID Token
+            logger.info("[GoogleLogin DEBUG] Verifying ID token...")
+            idinfo = id_token.verify_oauth2_token(
+                token,
+                google_requests.Request(),
+                settings.GOOGLE_CLIENT_ID
+            )
+            logger.info(f"[GoogleLogin DEBUG] Verified idinfo: {idinfo}")
+
+            email = idinfo.get("email")
+            first_name = idinfo.get("given_name", "")
+            last_name = idinfo.get("family_name", "")
+
+            if not email:
+                logger.error("[GoogleLogin DEBUG] No email found in ID Token")
+                return Response({"error": "Invalid ID token: missing email"}, status=status.HTTP_400_BAD_REQUEST)
+
+            # ✅ Step 2: Get or create the user
+            logger.info(f"[GoogleLogin DEBUG] Looking up user by email: {email}")
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={
+                    "username": email,
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "is_active": True,
+                }
+            )
+
+            if created:
+                logger.info(f"[GoogleLogin DEBUG] New user created: {email}")
+                user.set_unusable_password()
+                user.save()
+
+            # ✅ Step 3: Check and set role
+            logger.info(f"[GoogleLogin DEBUG] Checking role for user {email}: role param={role}")
+            if created or not getattr(user, "role", None):
+                if role in ["client", "worker"]:
+                    user.role = role
+                    user.save()
+                    logger.info(f"[GoogleLogin DEBUG] Role set for {email}: {role}")
+                else:
+                    logger.warning(f"[GoogleLogin DEBUG] Role missing or invalid for {email}")
+                    return Response({
+                        "needs_role": True,
+                        "message": "Select your role to complete registration",
+                        "email": email,
+                        "is_new_user": created,
+                    }, status=status.HTTP_200_OK)
+
+            # ✅ Step 4: Generate JWT tokens
+            logger.info(f"[GoogleLogin DEBUG] Generating JWT for {email}")
+            refresh = RefreshToken.for_user(user)
+            access = refresh.access_token
+
+            logger.info(f"[GoogleLogin DEBUG] Login successful for {email}")
+            return Response({
+                "refresh": str(refresh),
+                "access": str(access),
+                "user_id": user.id,
+                "username": user.username,
+                "email": user.email,
+                "role": getattr(user, "role", None),
+                "first_name": user.first_name,
+                "last_name": user.last_name,
+                "is_new_user": created,
+            }, status=status.HTTP_200_OK)
+
+        except Exception as e:
+            logger.exception("[GoogleLogin DEBUG] Unexpected error during Google login")
+            return Response({"error": f"Authentication failed: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
