@@ -66,13 +66,14 @@ INSTALLED_APPS = [
     
     # Local apps
     'accounts',
-    'invoices',
-    'orders',
-    'ratings', 
+    'invoices.apps.InvoicesConfig',
+    'orders.apps.OrdersConfig',
+    'ratings.apps.RatingsConfig', 
     'reviews',
-    'services',
+    'services.apps.ServicesConfig',
     'admin_api',
     'location',
+    'notifications.apps.NotificationsConfig',
     ]
    
 

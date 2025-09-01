@@ -3,20 +3,38 @@ from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status, permissions
-from .models import Service, ServiceCategory, Favorite
-from .serializers import ServiceSerializer, ServiceDetailSerializer, ServiceCategorySerializer, ServiceSearchSerializer, FavoriteSerializer
 from django.contrib.gis.geos import Point
 from django.contrib.gis.db.models.functions import Distance
 from django.contrib.gis.measure import D
+from accounts.models import WorkerProfile
+from .models import Service, ServiceCategory, Favorite
+from .serializers import (
+    ServiceSerializer, 
+    ServiceDetailSerializer, 
+    ServiceCategorySerializer, 
+    ServiceSearchSerializer, 
+    FavoriteSerializer,
+)
+from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 #worker profile import check
 try:
-    from accounts.models import WorkerProfile
     WORKER_PROFILE_EXISTS = True
 except ImportError:
     WORKER_PROFILE_EXISTS = False
 
+
+class IsWorkerOrReadOnly(BasePermission):
+    """Allow full access only to authenticated workers; read-only otherwise."""
+
+    def has_permission(self, request, view):
+        if request.method in SAFE_METHODS:
+            return True
+        return request.user.is_authenticated and request.user.role == "worker"
+
+
 @api_view(["GET", "POST"])
+@permission_classes([IsWorkerOrReadOnly])
 def service_categories(request):
     if request.method == "GET":
         categories = ServiceCategory.objects.filter(is_deleted=False)
@@ -29,7 +47,9 @@ def service_categories(request):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 @api_view(["GET", "PUT", "DELETE"])
+@permission_classes([IsWorkerOrReadOnly])
 def service_category_detail(request, pk):
     category = get_object_or_404(ServiceCategory, pk=pk, is_deleted=False)
     if request.method == "GET":
@@ -46,14 +66,16 @@ def service_category_detail(request, pk):
         category.save()
         return Response({"message": "Category soft deleted"}, status=status.HTTP_200_OK)
 
+
 @api_view(["GET"])
 def service_types(request):
     categories = ServiceCategory.objects.filter(is_deleted=False)
     serializer = ServiceCategorySerializer(categories, many=True)
     return Response(serializer.data)
 
+
 @api_view(["GET", "POST"])
-@permission_classes([permissions.IsAuthenticatedOrReadOnly])
+@permission_classes([IsWorkerOrReadOnly])
 def service_list(request):
     if request.method == "GET":
         services = Service.objects.filter(is_deleted=False).annotate(
@@ -81,8 +103,9 @@ def service_list(request):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 @api_view(["GET", "PUT", "DELETE"])
-@permission_classes([permissions.IsAuthenticatedOrReadOnly])
+@permission_classes([IsWorkerOrReadOnly])
 def service_detail(request, pk):
     service = get_object_or_404(
         Service.objects.filter(is_deleted=False).annotate(
@@ -108,6 +131,7 @@ def service_detail(request, pk):
         service.is_deleted = True
         service.save()
         return Response({"message": "Service soft deleted"}, status=status.HTTP_200_OK)
+
 
 @api_view(["GET"])
 def service_search(request):
@@ -164,6 +188,7 @@ def service_search(request):
     serializer = ServiceSearchSerializer(qs, many=True, context={"request": request})
     return Response(serializer.data)
 
+
 @api_view(["GET"])
 @permission_classes([permissions.IsAuthenticated])
 def favorites_list(request):
@@ -173,6 +198,7 @@ def favorites_list(request):
     favs = Favorite.objects.filter(user=request.user).select_related("service")
     serializer = FavoriteSerializer(favs, many=True)
     return Response(serializer.data)
+
 
 @api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
