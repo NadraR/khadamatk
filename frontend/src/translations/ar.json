@@ -74,7 +74,14 @@
   "services": "الخدمات",
   "clients": "العملاء",
   "settings": "الإعدادات",
-  "logout": "تسجيل الخروج"
+  "logout": "تسجيل الخروج",
+  "chatbot": "المساعد الذكي"
+},
+"chatbot": {
+  "welcome": "مرحباً! كيف يمكنني مساعدتك اليوم؟",
+  "response": "شكراً لرسالتك! سأقوم بالرد عليك قريباً.",
+  "placeholder": "اكتب رسالتك هنا...",
+  "title": "المساعد الذكي"
 },
 "slider": {
   "plumbingTitle": "خدمات السباكة المتخصصة",
@@ -169,5 +176,17 @@
   "city": "المدينة",
   "price": "السعر",
   "search": "بحث...",
-  "admindashboard": "لوحة تحكم المشرف"
+  "admindashboard": "لوحة تحكم المشرف",
+  "Orders": "الطلبات",
+  "favorites": "المفضلة",
+  "favorite orders": "الطلبات المفضلة",
+  "history": "السجل",
+  "orders history": "سجل الطلبات",
+  "suggestions": "الاقتراحات",
+  "suggested services": "الخدمات المقترحة",
+  "searchTitle": "ابحث عن الخدمة التي تحتاجها",
+  "searchSubtitle": "اختر من بين آلاف الخدمات المتاحة",
+  "searchPlaceholder": "ابحث عن الخدمة...",
+  "servicesTitle": "خدماتنا المتاحة",
+  "servicesSubtitle": "اكتشف مجموعة واسعة من الخدمات المهنية"
 }

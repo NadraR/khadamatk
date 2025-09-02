@@ -5,6 +5,10 @@ import {
   BsSearch, BsPeople, BsCheckCircle, BsStarFill
 } from "react-icons/bs";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import Navbar from "../components/Navbar";
+import SearchBar from "../components/SearchBar";
+import ImageTicker from "../components/ImageTicker";
 import assemblyImg from "../images/assembly.jpg";
 import movingImg from "../images/moving.jpeg";
 import cleaningImg from "../images/cleaning.jpg";
@@ -14,7 +18,8 @@ import searchImage from "../images/search.jpg";
 
 const Home = () => {
   const injected = useRef(false);
-   const navigate = useNavigate();
+  const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
   const [activeService, setActiveService] = useState(() => services[0]);
 
   useEffect(() => {
@@ -76,15 +81,39 @@ const Home = () => {
 
   return (
     <div>
-      <nav className="navbar navbar-expand-lg bg-white shadow-sm sticky-top">
-        <div className="container">
-          <a className="navbar-brand fw-bold text-primary" href="#">Khadamatk</a>
-          <div>
-            <button className="btn btn-outline-primary me-2">تسجيل الدخول</button>
-            <button className="btn btn-primary">إنشاء حساب</button>
+      <Navbar />
+      
+      {/* Search Bar Section */}
+      <section className="container my-4">
+        <div className="row justify-content-center">
+          <div className="col-md-8 col-lg-6">
+            <div className="text-center mb-3">
+              <h2 className="fw-bold text-primary mb-2">
+                {t("searchTitle")}
+              </h2>
+              <p className="text-muted">
+                {t("searchSubtitle")}
+              </p>
+            </div>
+            <SearchBar />
           </div>
         </div>
-      </nav>
+      </section>
+
+      {/* Image Ticker Section */}
+      <section className="my-5">
+        <div className="container">
+          <div className="text-center mb-4">
+            <h3 className="fw-bold text-primary">
+              {t("servicesTitle")}
+            </h3>
+            <p className="text-muted">
+              {t("servicesSubtitle")}
+            </p>
+          </div>
+          <ImageTicker />
+        </div>
+      </section>
 
       <section className="container my-5">
         <ul className="nav nav-tabs justify-content-center">
