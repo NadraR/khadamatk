@@ -17,12 +17,15 @@ import Carpentry from './pages/Carpentry';
 import Electricity from './pages/Electricity';
 import Plumbing from './pages/Plumbing';
 import LocationPage from './pages/LocationPage';
+import Home from './pages/Home';
+import ChatBox from './components/ChatBox';
 
 function App() {
   return (
     <Routes>
-      {/* صفحة تسجيل الدخول / إنشاء حساب */}
-      <Route path="/" element={<AuthPage />} />
+      {/* صفحة تسجيل الدخول / إنشاء حساب */}      
+      <Route path="/" element={<Layout><Home /></Layout>} />
+      <Route path="/login" element={<AuthPage />} />
 
       {/* صفحات العملاء */}
       <Route path="/homeClient" element={<Layout><HomeClient /></Layout>} />
@@ -51,6 +54,9 @@ function App() {
       {/* Location pages without Layout wrapper - using custom LocationNavbar */}
       <Route path="/location" element={<LocationPage />} />
       <Route path="/location/my-location" element={<LocationPage />} />
+
+      {/* ChatBox accessible from any page */}
+      <Route path="/chat" element={<Layout><ChatBox /></Layout>} />
     </Routes>
   );
 }

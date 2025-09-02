@@ -64,14 +64,14 @@ const AuthPage = () => {
     if (!userData.hasLocation) {
       console.log("[DEBUG] AuthPage: User has no location, redirecting to location page");
       // Use window.location.href to avoid React Router issues during authentication
-      window.location.href = "/location";
+      window.location.href = "/";
     } else {
       console.log("[DEBUG] AuthPage: User has location, redirecting to role-based page");
       const roleRoutes = { client: "/homeClient", worker: "/homeProvider", admin: "/adminDashboard" };
       const targetRoute = roleRoutes[userData.role] || "/homeClient";
       console.log("[DEBUG] AuthPage: Redirecting to:", targetRoute);
       // Use window.location.href to avoid React Router issues during authentication
-      window.location.href = targetRoute;
+      window.location.href = "targetRoute";
     }
   };
 

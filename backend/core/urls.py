@@ -31,4 +31,7 @@ urlpatterns = [
     # Djoser Auth
     path('api/auth/', include('djoser.urls')),
     path('api/auth/', include('djoser.urls.jwt')),
+
+    # Chat
+    path('api/chat/', include('chat.urls')),
 ]

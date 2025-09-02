@@ -65,6 +65,7 @@ INSTALLED_APPS = [
     'services',
     'admin_api',
     'location',
+    'chat',
     ]
    
 

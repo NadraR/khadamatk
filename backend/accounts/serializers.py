@@ -90,7 +90,7 @@ class CustomUserCreateSerializer(BaseUserCreateSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'phone', 'role', 'first_name', 'last_name']
+        fields = ['id', 'username', 'email', 'phone', 'role', 'first_name', 'last_name','role']
         read_only_fields = ['email', 'role']
 
 
@@ -123,10 +123,10 @@ class ClientProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ["user", "created_at", "updated_at"]
 
 
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name')  # اختار اللي تحب تعرضه
+# class UserSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = User
+#         fields = ('id', 'username', 'email', 'first_name', 'last_name')  # اختار اللي تحب تعرضه
 
 
 User = get_user_model()

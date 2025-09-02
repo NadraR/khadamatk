@@ -16,6 +16,17 @@ const Home = () => {
   const injected = useRef(false);
    const navigate = useNavigate();
   const [activeService, setActiveService] = useState(() => services[0]);
+   const [clients, setClients] = useState([]);
+
+   useEffect(() => {
+  fetch("http://127.0.0.1:8000/api/accounts/users/")
+    .then((res) => res.json())
+    .then((data) => {
+      const clientUsers = data.filter((user) => user.role === "client");
+      setClients(clientUsers);
+    })
+    .catch((err) => console.error("Error fetching users:", err));
+}, []);
 
   useEffect(() => {
     if (injected.current) return;
@@ -313,6 +324,16 @@ const Home = () => {
           <div className="col-md-4"><Testimonial name="أحمد" quote="أفضل منصة حجز خدمات منزلية." /></div>
         </div>
       </section>
+
+       <div>
+      <h2>Clients</h2>
+      <ul>
+        {clients.map((client) => (
+          <li key={client.id}>{client.username}</li>
+        ))}
+      </ul>
+    </div>
+      
     </div>
   );
 };
