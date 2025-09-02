@@ -61,11 +61,15 @@ INSTALLED_APPS = [
     'invoices',
     'orders',
     'ratings',  
+    'invoices.apps.InvoicesConfig',
+    'orders.apps.OrdersConfig',
+    'ratings.apps.RatingsConfig', 
     'reviews',
-    'services',
+    'services.apps.ServicesConfig',
     'admin_api',
     'location',
     'chat',
+    'notifications.apps.NotificationsConfig',
     ]
    
 
