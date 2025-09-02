@@ -1,4 +1,4 @@
-/* .google-login-container {
+.google-login-container {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -151,4 +151,4 @@
   }
   .login-info h3 { font-size: 14px; }
   .login-info p { font-size: 11px; }
-} */ 
+} 
