@@ -13,10 +13,6 @@ from django.conf import settings
 from google.oauth2 import id_token
 from google.auth.transport import requests
 from allauth.socialaccount.models import SocialAccount
-from django.conf import settings
-from google.oauth2 import id_token
-from google.auth.transport import requests
-from allauth.socialaccount.models import SocialAccount
 from django.contrib.auth import get_user_model
 from google.oauth2 import id_token
 import requests as http
