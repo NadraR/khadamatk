@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import InvoiceViewSet
+from .views import InvoiceViewSet, total_revenue
 
 # نحدد الـ as_view لكل نوع
 invoice_list = InvoiceViewSet.as_view({
@@ -17,4 +17,5 @@ invoice_detail = InvoiceViewSet.as_view({
 urlpatterns = [
     path('', invoice_list, name='invoice-list'),
     path('<int:pk>/', invoice_detail, name='invoice-detail'),
+     path("total-revenue/", total_revenue, name="total-revenue"),
 ]

@@ -25,14 +25,14 @@ const Categories = () => {
   return (
     <div className="categories">
       {categories.map((cat) => (
-        <Link
-          to={`/services?category=${cat.id}`} // بنمرر ID الكاتيجوري في الكويري
-          key={cat.id}
-          className="category-card"
-        >
-          <span className="emoji">📌</span>
-          <p>{cat.name}</p>
-        </Link>
+       <Link 
+  to={`/category/${cat.name.toLowerCase().replace(/\s+/g, "-")}`} 
+  key={cat.id} 
+  className="category-card"
+>
+  <span className="emoji">📌</span>
+  <p>{cat.name}</p>
+</Link>
       ))}
     </div>
   );

@@ -20,6 +20,9 @@ SECRET_KEY =  os.environ.get("DJANGO_SECRET_KEY", "unsafe-secret-key")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config("DEBUG", cast=bool, default=False)
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv(), default="127.0.0.1,localhost")
+CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS", cast=Csv(), default=[])
+#CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", cast=Csv(), default="http://localhost:5173")
 
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv(), default=["127.0.0.1", "localhost"])
 
@@ -60,6 +63,7 @@ INSTALLED_APPS = [
     'accounts',
     'invoices',
     'orders',
+    'ratings', 
     'ratings',  
     'reviews',
     'services',
@@ -84,7 +88,23 @@ MIDDLEWARE = [
     
 ]
 
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = config("DEBUG", cast=bool, default=False)
+
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv(), default=["127.0.0.1", "localhost"])
+
+CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS", cast=Csv(), default=[])
+
+CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", cast=Csv(), default=["http://localhost:5173"])
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 ROOT_URLCONF = 'core.urls'
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+]
+
+CORS_ALLOW_ALL_ORIGINS = True # Allow all origins for development purposes
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -98,6 +118,8 @@ REST_FRAMEWORK = {
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,  
+    'BLACKLIST_AFTER_ROTATION': True,  
     'ROTATE_REFRESH_TOKENS': True,  
     'BLACKLIST_AFTER_ROTATION': True,  
     'AUTH_HEADER_TYPES': ('Bearer',),
@@ -245,6 +267,9 @@ DJOSER = {
     },
     "LOGIN_FIELD": "username",   # أو "email" لو عايزة تسجيل/تسجيل دخول بالإيميل
 }
+CORS_ALLOW_ALL_ORIGINS = True
+
+SOCIALACCOUNT_ADAPTER = 'accounts.adapters.CustomSocialAccountAdapter'
 
 # MAPS
 GDAL_LIBRARY_PATH = os.environ.get("GDAL_LIBRARY_PATH")

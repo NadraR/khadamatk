@@ -1,7 +1,7 @@
 .footer {
   width: 100%;
-  background: linear-gradient(135deg, #1e1e1e, #2a2a2a, #121212) ;
-  color: white;
+  background: #1a527a;
+  color: #ffffff;
   padding: 40px 20px;
   box-sizing: border-box;
   font-size: 13px;
@@ -12,21 +12,21 @@
   justify-content: space-around;
   text-align: center;
   flex-wrap: wrap;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  /* padding-bottom: 20px; */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
   margin-bottom: 20px;
   padding: 20px;
-  
 }
-.footer h3{
+
+.footer h3 {
   font-size: 20px;
   margin: 0;
-  /* color: #ff9800;  */
+  color: #e3f2fd; /* أزرق فاتح */
 }
-.footer h2{
+
+.footer h2 {
   font-size: 24px;
   margin: 0;
-  /* color: #ff9800;  */
+  color: #ffffff;
 }
 
 .footer-main {
@@ -43,27 +43,35 @@
 .footer-links li {
   margin: 5px 0;
   cursor: pointer;
+  color: #dbe9ff;
 }
 
 .footer-links li:hover {
   text-decoration: underline;
+  color: #ffffff;
 }
 
 .footer-newsletter input {
   width: 100%;
   padding: 8px;
   margin: 10px 0;
-  border: none;
+  border: 1px solid #007bff;
   border-radius: 4px;
+  outline: none;
 }
 
 .footer-newsletter button {
-  background-color: #ff9800;
+  background-color: #007bff;
   border: none;
   padding: 10px;
   color: white;
   cursor: pointer;
   border-radius: 4px;
+  transition: 0.3s ease;
+}
+
+.footer-newsletter button:hover {
+  background-color: #0056b3;
 }
 
 .footer-bottom {
@@ -72,8 +80,9 @@
   align-items: center;
   flex-wrap: wrap;
   margin-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
   padding-top: 15px;
+  color: #e3f2fd;
 }
 
 .apps {

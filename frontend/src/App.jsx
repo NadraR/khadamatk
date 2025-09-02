@@ -11,6 +11,8 @@ import Orders from './pages/Orders';
 import Reviews from './pages/Reviews';
 import Ratings from './pages/Ratings';
 import Clients from './pages/Clients';
+import Users from './pages/Users';
+import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import Painting from './pages/Painting';
 import Carpentry from './pages/Carpentry';

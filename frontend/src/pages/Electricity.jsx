@@ -1,40 +1,96 @@
 import React from "react";
-import "./Electricity.css";
-import { useTranslation } from "react-i18next";
 
-const Electricity = () => {
-  const { t } = useTranslation();
-
+const Electricians = () => {
   const services = [
-    { id: 1, name: t("electricityServices.repair"), price: "250 ج.م" },
-    { id: 2, name: t("electricityServices.installation"), price: "400 ج.م" },
-    { id: 3, name: t("electricityServices.lighting"), price: "150 ج.م" },
+    { id: 1, name: "تركيب لمبات", desc: "تركيب جميع أنواع اللمبات والكشافات", status: "متاح" },
+    { id: 2, name: "تركيب تكييفات", desc: "خدمة تركيب وصيانة التكييفات", status: "متاح" },
+    { id: 3, name: "صيانة كهرباء", desc: "إصلاح وصيانة اللوحات الكهربائية", status: "غير متاح" },
   ];
 
+  const styles = {
+    container: {
+      minHeight: "100vh",
+      padding: "30px 20px",
+      background: "#f5f5f5",
+      display: "flex",
+      justifyContent: "center",
+      alignItems: "flex-start",
+      direction: "rtl",
+    },
+    box: {
+      width: "100%",
+      maxWidth: "900px",
+      background: "#fff",
+      borderRadius: "16px",
+      boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+      padding: "30px",
+    },
+    header: { textAlign: "center", marginBottom: "25px", color: "#222" },
+    tableWrapper: { overflowX: "auto" },
+    table: { width: "100%", borderCollapse: "collapse", fontSize: "0.95rem" },
+    th: {
+      padding: "12px",
+      background: "#eee",
+      textAlign: "center",
+      fontWeight: "600",
+      borderBottom: "2px solid #ddd",
+    },
+    td: { padding: "12px", textAlign: "center", borderBottom: "1px solid #ddd" },
+    rowHover: { transition: "background 0.2s" },
+    button: {
+      padding: "6px 14px",
+      fontSize: "0.9rem",
+      backgroundColor: "#333",
+      color: "#fff",
+      border: "none",
+      borderRadius: "8px",
+      cursor: "pointer",
+      transition: "all 0.2s",
+    },
+  };
+
   return (
-    <div className="category-page">
-      <h1>{t("electricity.title")} ⚡</h1>
-      <p>{t("electricity.description")}</p>
-      <table>
-        <thead>
-          <tr>
-            <th>{t("tableHeaders.id")}</th>
-            <th>{t("tableHeaders.service")}</th>
-            <th>{t("tableHeaders.price")}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {services.map(service => (
-            <tr key={service.id}>
-              <td>{service.id}</td>
-              <td>{service.name}</td>
-              <td>{service.price}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div style={styles.container}>
+      <div style={styles.box}>
+        <div style={styles.header}>
+          <h1>⚡ خدمات الكهربائيين</h1>
+          <p>قائمة بالخدمات المتاحة</p>
+        </div>
+
+        <div style={styles.tableWrapper}>
+          <table style={styles.table}>
+            <thead>
+              <tr>
+                <th style={styles.th}>ID</th>
+                <th style={styles.th}>الخدمة</th>
+                <th style={styles.th}>الوصف</th>
+                <th style={styles.th}>الحالة</th>
+                <th style={styles.th}>إجراء</th>
+              </tr>
+            </thead>
+            <tbody>
+              {services.map((s) => (
+                <tr
+                  key={s.id}
+                  style={styles.rowHover}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#f9f9f9")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+                >
+                  <td style={styles.td}>{s.id}</td>
+                  <td style={styles.td}>{s.name}</td>
+                  <td style={styles.td}>{s.desc}</td>
+                  <td style={styles.td}>{s.status === "متاح" ? "✅" : "❌"}</td>
+                  <td style={styles.td}>
+                    <button style={styles.button}>طلب الخدمة</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 };
 
-export default Electricity;
+export default Electricians;

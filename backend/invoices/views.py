@@ -4,6 +4,8 @@ from rest_framework.response import Response
 from django.utils.translation import gettext_lazy as _
 from .models import Invoice
 from .serializers import InvoiceSerializer
+from django.db.models import Sum
+from rest_framework.decorators import api_view
 
 class IsOwnerOrAdmin(permissions.BasePermission):
     """
@@ -52,3 +54,8 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         
         serializer = self.get_serializer(invoices, many=True)
         return Response(serializer.data)
+    
+@api_view(['GET'])
+def total_revenue(request):
+    revenue = Invoice.objects.filter(status="paid").aggregate(total=Sum("amount"))["total"] or 0
+    return Response({"total_revenue": revenue})

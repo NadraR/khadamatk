@@ -4,16 +4,18 @@ from rest_framework import status
 from rest_framework.permissions import IsAdminUser
 from django.db.models import Count, Avg
 from django.contrib.auth import get_user_model
-
+from .serializers import AdminActionLogSerializer
 from services.models import Service
 from orders.models import Order
 from reviews.models import Review
 from ratings.models import Rating
 from invoices.models import Invoice
+from .models import AdminActionLog
+from rest_framework.views import APIView
 
 from .serializers import (
     AdminUserSerializer, AdminServiceSerializer, AdminOrderSerializer,
-    AdminReviewSerializer, AdminRatingSerializer, AdminInvoiceSerializer
+    AdminReviewSerializer, AdminRatingSerializer, AdminInvoiceSerializer, AdminActionLogSerializer
 )
 
 User = get_user_model()
@@ -23,7 +25,7 @@ User = get_user_model()
 @permission_classes([IsAdminUser])
 def admin_users(request):
     if request.method == 'GET':
-        users = User.objects.all().order_by('-id')
+        users = User.objects.all().order_by('id')
         serializer = AdminUserSerializer(users, many=True)
         return Response(serializer.data)
     elif request.method == 'POST':
@@ -59,7 +61,7 @@ def admin_user_detail(request, pk):
 @permission_classes([IsAdminUser])
 def admin_services(request):
     if request.method == 'GET':
-        services = Service.objects.all().order_by('-id')
+        services = Service.objects.all().order_by('id')
         serializer = AdminServiceSerializer(services, many=True)
         return Response(serializer.data)
     elif request.method == 'POST':
@@ -95,7 +97,7 @@ def admin_service_detail(request, pk):
 @permission_classes([IsAdminUser])
 def admin_orders(request):
     if request.method == 'GET':
-        orders = Order.objects.all().order_by('-id')
+        orders = Order.objects.all().order_by('id')
         serializer = AdminOrderSerializer(orders, many=True)
         return Response(serializer.data)
     elif request.method == 'POST':
@@ -131,7 +133,7 @@ def admin_order_detail(request, pk):
 @permission_classes([IsAdminUser])
 def admin_reviews(request):
     if request.method == 'GET':
-        reviews = Review.objects.all().order_by('-id')
+        reviews = Review.objects.all().order_by('id')
         serializer = AdminReviewSerializer(reviews, many=True)
         return Response(serializer.data)
     elif request.method == 'POST':
@@ -167,7 +169,7 @@ def admin_review_detail(request, pk):
 @permission_classes([IsAdminUser])
 def admin_ratings(request):
     if request.method == 'GET':
-        ratings = Rating.objects.all().order_by('-id')
+        ratings = Rating.objects.all().order_by('id')
         serializer = AdminRatingSerializer(ratings, many=True)
         return Response(serializer.data)
     elif request.method == 'POST':
@@ -203,7 +205,7 @@ def admin_rating_detail(request, pk):
 @permission_classes([IsAdminUser])
 def admin_invoices(request):
     if request.method == 'GET':
-        invoices = Invoice.objects.all().order_by('-id')
+        invoices = Invoice.objects.all().order_by('id')
         serializer = AdminInvoiceSerializer(invoices, many=True)
         return Response(serializer.data)
     elif request.method == 'POST':
@@ -238,20 +240,41 @@ def admin_invoice_detail(request, pk):
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def admin_stats(request):
-    users_count = User.objects.count()
-    services_count = Service.objects.count()
-    orders_total = Order.objects.count()
-    orders_pending = Order.objects.filter(status='pending').count()
-    orders_completed = Order.objects.filter(status='completed').count()
-    orders_cancelled = Order.objects.filter(status='cancelled').count()
-    avg_rating = Rating.objects.aggregate(avg=Avg('score'))['avg']
+    # users_count = User.objects.count()
+    # services_count = Service.objects.count()
+    # orders_total = Order.objects.count()
+    # orders_pending = Order.objects.filter(status='pending').count()
+    # orders_completed = Order.objects.filter(status='completed').count()
+    # orders_cancelled = Order.objects.filter(status='cancelled').count()
+    # avg_rating = Rating.objects.aggregate(avg=Avg('score'))['avg']
 
     return Response({
-        'users_count': users_count,
-        'services_count': services_count,
-        'orders_total': orders_total,
-        'orders_pending': orders_pending,
-        'orders_completed': orders_completed,
-        'orders_cancelled': orders_cancelled,
-        'avg_rating': avg_rating or 0,
+        "users_count": User.objects.count(),
+        "services_count": Service.objects.count(),
+        "orders_count": Order.objects.count(),
+        "reviews_count": Review.objects.count(),
+        "ratings_count": Rating.objects.count(),
+        "invoices_count": Invoice.objects.count(),
     })
+
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def admin_logs_view(request):
+    """عرض كل اللوجات الخاصة بالـ Admin"""
+    logs = AdminActionLog.objects.all().order_by("-timestamp")  # مرتب بالأحدث
+    serializer = AdminActionLogSerializer(logs, many=True)
+    return Response(serializer.data)
+
+
+
+class AdminMeView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        user = request.user
+        return Response({
+            "id": user.id,
+            "username": user.username,
+            "email": user.email,
+            "role": "superadmin" if user.is_superuser else "admin"
+        })

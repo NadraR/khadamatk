@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils import timezone
 from django.conf import settings
+from django.contrib.gis.db import models as gis_models
 
 class ServiceCategory(models.Model):
     name = models.CharField(max_length=120, unique=True)
@@ -32,6 +33,12 @@ class Service(models.Model):
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(default=timezone.now)
     is_deleted = models.BooleanField(default=False)
+    location = gis_models.PointField(
+        srid=4326,
+        null=True,
+        blank=True,
+        verbose_name="Service Location"
+    )
 
     def __str__(self):
         return f"{self.title} — {self.provider.username if self.provider else 'No Provider'}"
@@ -47,3 +54,4 @@ class Favorite(models.Model):
 
     def __str__(self):
         return f"{self.user.username} ♥ {self.service.title}"
+

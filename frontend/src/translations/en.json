@@ -75,7 +75,14 @@
   "services": "Services",
   "clients": "Clients",
   "settings": "Settings",
-  "logout": "Logout"
+  "logout": "Logout",
+  "chatbot": "Smart Assistant"
+},
+"chatbot": {
+  "welcome": "Hello! How can I help you today?",
+  "response": "Thank you for your message! I'll get back to you soon.",
+  "placeholder": "Type your message here...",
+  "title": "Smart Assistant"
 },
 "slider": {
   "plumbingTitle": "Specialized Plumbing Services",
@@ -145,5 +152,28 @@
 "enterUsername": "Enter username",
 "saveChanges": "Save Changes",
 "changesSaved": "Changes saved successfully!",
-"defaultUser": "User"
+"defaultUser": "User",
+
+  "users": "Users ",
+  "services": "Services ",
+  "orders": "Orders ",
+  "reviews": "Reviews ",
+  "ratings": "Ratings ",
+  "invoices": "Invoices ",
+  "title": "Title",
+  "price": "Price",
+  "city": "City",
+  "admindashboard": "Admin Dashboard",
+  "Orders": "Orders",
+  "favorites": "Favorites",
+  "favorite orders": "Favorite Orders",
+  "history": "History",
+  "orders history": "Orders History",
+  "suggestions": "Suggestions",
+  "suggested services": "Suggested Services",
+  "searchTitle": "Find the service you need",
+  "searchSubtitle": "Choose from thousands of available services",
+  "searchPlaceholder": "Search for service...",
+  "servicesTitle": "Our Available Services",
+  "servicesSubtitle": "Discover a wide range of professional services"
 }
