@@ -147,7 +147,7 @@ const RegisterForm = ({ onSuccess, onError, darkMode, language = "ar" }) => {
       
       if (onSuccess) onSuccess(result.data);
         navigate("/");
-    } catch (err) {
+   } catch (err) {
       const errorMsg = err.message || t.registerError;
       setErrors({ general: errorMsg });
       if (onError) onError(errorMsg);

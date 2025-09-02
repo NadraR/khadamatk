@@ -30,3 +30,9 @@ Thumbs.db
 .dockerignore
 
 .env
+.dockerignore.env
+backend/.env
+frontend/.env
+.env
+backend/.env
+frontend/.env

@@ -26,6 +26,8 @@ function App() {
       {/* صفحة تسجيل الدخول / إنشاء حساب */}      
       <Route path="/" element={<Layout><Home /></Layout>} />
       <Route path="/login" element={<AuthPage />} />
+      {/* صفحة تسجيل الدخول / إنشاء حساب */}
+      {/* <Route path="/" element={<AuthPage />} /> */}
 
       {/* صفحات العملاء */}
       <Route path="/homeClient" element={<Layout><HomeClient /></Layout>} />
