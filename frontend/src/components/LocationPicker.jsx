@@ -1,188 +1,375 @@
-import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { GoogleMap, useJsApiLoader, Marker, InfoWindow, Autocomplete } from '@react-google-maps/api';
-import { reverseGeocodeFunction } from '../utils/geocodeUtils'; 
+// LocationPicker.jsx
+import React, { useState, useRef, useEffect } from 'react';
+import { useJsApiLoader, GoogleMap } from '@react-google-maps/api';
+import { toast } from 'react-toastify';
+import { getTranslations } from '../utils/translations';
 
-const containerStyle = {
-    width: '100%',
-    height: '400px',
-    borderRadius: '8px',
-    border: '1px solid #ddd'
+// الموقع الافتراضي لو ما فيش موقع محفوظ
+const defaultCenter = { lat: 30.0444, lng: 31.2357 }; // القاهرة
+
+// Libraries ثابتة لتجنب تحذيرات
+const LIBRARIES = ['places'];
+
+// Helper function to validate coordinates
+const isValidCoordinates = (coords) => {
+  if (!coords || typeof coords !== 'object') return false;
+  const { lat, lng } = coords;
+  return (
+    typeof lat === 'number' && 
+    typeof lng === 'number' && 
+    !isNaN(lat) && 
+    !isNaN(lng) && 
+    lat >= -90 && lat <= 90 && 
+    lng >= -180 && lng <= 180
+  );
 };
 
-const defaultCenter = { lat: 30.0444, lng: 31.2357 };
+export default function LocationPicker({
+  onLocationSelect,
+  initialLocation = null,
+  height = 500,
+  showSearch = true,
+  showCurrentLocation = true,
+  showCoordinates = true,
+  language = 'ar',
+  className = ''
+}) {
+  // Use stable configuration to prevent loader conflicts
+  const { isLoaded, loadError } = useJsApiLoader({
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
+    libraries: LIBRARIES,
+    // Use stable language to prevent reloading
+    language: 'en', // Keep it stable
+    region: 'EG',
+  });
 
-const mapOptions = {
-    disableDefaultUI: false,
-    zoomControl: true,
-    streetViewControl: true,
-    mapTypeControl: true,
-    fullscreenControl: true,
-    styles: [{ featureType: "poi", stylers: [{ visibility: "on" }] }]
-};
+  const [map, setMap] = useState(null);
+  const [selectedLocation, setSelectedLocation] = useState(null);
+  const [isGettingCurrentLocation, setIsGettingCurrentLocation] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
 
-export default function LocationPicker({ onLocationSelect, initialLocation }) {
-    const { isLoaded, loadError } = useJsApiLoader({
-        googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-        libraries: ['places'],
-        language: 'ar'
-    });
+  const searchInputRef = useRef(null);
+  const searchResultsRef = useRef(null);
 
-    const [map, setMap] = useState(null);
-    const [mapLoading, setMapLoading] = useState(true);
-    const [selectedLocation, setSelectedLocation] = useState(initialLocation || defaultCenter);
-    const [markers, setMarkers] = useState(initialLocation ? [initialLocation] : []);
-    const [infoWindowOpen, setInfoWindowOpen] = useState(false);
-    const [isLoadingLocation, setIsLoadingLocation] = useState(false);
-    const [searchQuery, setSearchQuery] = useState('');
-    const autocompleteRef = useRef(null);
+  // Get translations
+  const t = getTranslations(language, 'locationPicker');
 
-    const markerIcon = isLoaded ? {
-        url: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-        scaledSize: new window.google.maps.Size(40, 40)
-    } : null;
+  // Initialize location
+  useEffect(() => {
+    if (initialLocation && isValidCoordinates(initialLocation)) {
+      setSelectedLocation(initialLocation);
+    } else {
+      setSelectedLocation(defaultCenter);
+    }
+  }, [initialLocation]);
 
-    useEffect(() => {
-        if (initialLocation && map) {
-            setSelectedLocation(initialLocation);
-            setMarkers([initialLocation]);
-            map.panTo(initialLocation);
-            map.setZoom(15);
-        }
-    }, [initialLocation, map]);
+  // Get current location from browser
+  const getCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error(t.geolocationNotSupported || 'المتصفح لا يدعم الحصول على الموقع الحالي');
+      return;
+    }
 
-    const onMapClick = useCallback((event) => {
-        const newLocation = {
-            lat: event.latLng.lat(),
-            lng: event.latLng.lng(),
-            address: ''
+    setIsGettingCurrentLocation(true);
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const location = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          address: t.currentLocation || 'موقعك الحالي',
         };
-        setSelectedLocation(newLocation);
-        setMarkers([newLocation]);
-        onLocationSelect?.(newLocation);
-        setInfoWindowOpen(true);
-
-        reverseGeocodeFunction(newLocation.lat, newLocation.lng, setSelectedLocation, onLocationSelect);
-    }, [onLocationSelect]);
-
-    const onPlaceChanged = () => {
-        if (autocompleteRef.current) {
-            const place = autocompleteRef.current.getPlace();
-            if (place.geometry) {
-                const newLocation = {
-                    lat: place.geometry.location.lat(),
-                    lng: place.geometry.location.lng(),
-                    address: place.formatted_address || ''
-                };
-                setSelectedLocation(newLocation);
-                setMarkers([newLocation]);
-                setSearchQuery(place.formatted_address || '');
-                onLocationSelect?.(newLocation);
-                if (map) {
-                    map.panTo(newLocation);
-                    map.setZoom(15);
-                }
-                setInfoWindowOpen(true);
-            }
-        }
-    };
-
-    const onAutocompleteLoad = (autocomplete) => {
-        autocompleteRef.current = autocomplete;
-    };
-
-    const handleUseCurrentLocation = () => {
-        if (navigator.geolocation) {
-            setIsLoadingLocation(true);
-            navigator.geolocation.getCurrentPosition(
-                async (position) => {
-                    const newLocation = {
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude,
-                        address: ''
-                    };
-                    setSelectedLocation(newLocation);
-                    setMarkers([newLocation]);
-                    onLocationSelect?.(newLocation);
-                    if (map) { map.panTo(newLocation); map.setZoom(15); }
-                    setInfoWindowOpen(true);
-
-                    await reverseGeocodeFunction(newLocation.lat, newLocation.lng, setSelectedLocation, onLocationSelect);
-                    setIsLoadingLocation(false);
-                },
-                (error) => {
-                    console.error('Error getting location:', error);
-                    alert('تعذر الحصول على موقعك الحالي. تأكد من تفعيل GPS.');
-                    setIsLoadingLocation(false);
-                },
-                { timeout: 10000, enableHighAccuracy: true, maximumAge: 300000 }
-            );
+        
+        if (isValidCoordinates(location)) {
+          setSelectedLocation(location);
+          onLocationSelect && onLocationSelect(location);
+          
+          if (map) {
+            map.panTo(location);
+            map.setZoom(15);
+          }
+          
+          toast.success(t.locationSuccess || 'تم تحديد موقعك الحالي بنجاح');
         } else {
-            alert('المتصفح لا يدعم تحديد الموقع الجغرافي.');
+          toast.error(t.invalidCoordinates || 'إحداثيات غير صالحة');
         }
+        
+        setIsGettingCurrentLocation(false);
+      },
+      (error) => {
+        let errorMessage = t.locationError || 'فشل في الحصول على الموقع الحالي';
+        
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage = t.locationPermissionDenied || 'تم رفض طلب الحصول على الموقع';
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage = t.locationUnavailable || 'معلومات الموقع غير متاحة';
+            break;
+          case error.TIMEOUT:
+            errorMessage = t.locationTimeout || 'انتهت مهلة طلب الموقع';
+            break;
+          default:
+            errorMessage = t.unexpectedError || 'حدث خطأ غير متوقع';
+        }
+        
+        toast.error(errorMessage);
+        setIsGettingCurrentLocation(false);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 60000
+      }
+    );
+  };
+
+  // Handle search input changes
+  const handleSearchInputChange = (e) => {
+    const query = e.target.value;
+    setSearchQuery(query);
+    
+    if (query.length > 2) {
+      performSearch(query);
+    } else {
+      setSearchResults([]);
+    }
+  };
+
+  // Perform place search
+  const performSearch = async (query) => {
+    if (!window.google || !window.google.maps || !window.google.maps.places) {
+      return;
+    }
+
+    setIsSearching(true);
+    
+    try {
+      const service = new window.google.maps.places.PlacesService(map || document.createElement('div'));
+      
+      const request = {
+        query: query,
+        fields: ['name', 'geometry', 'formatted_address']
+      };
+
+      service.textSearch(request, (results, status) => {
+        setIsSearching(false);
+        
+        if (status === window.google.maps.places.PlacesServiceStatus.OK && results) {
+          setSearchResults(results.slice(0, 5)); // Limit to 5 results
+        } else {
+          setSearchResults([]);
+        }
+      });
+    } catch (error) {
+      console.error('Search error:', error);
+      setIsSearching(false);
+      setSearchResults([]);
+    }
+  };
+
+  // Handle place selection from search results
+  const handlePlaceSelect = (place) => {
+    if (place && place.geometry && place.geometry.location) {
+      const location = {
+        lat: place.geometry.location.lat(),
+        lng: place.geometry.location.lng(),
+        address: place.formatted_address,
+      };
+
+      if (isValidCoordinates(location)) {
+        setSelectedLocation(location);
+        onLocationSelect && onLocationSelect(location);
+        
+        // Move map to new location
+        if (map) {
+          map.panTo(location);
+          map.setZoom(15);
+        }
+        
+        // Clear search
+        setSearchQuery('');
+        setSearchResults([]);
+        
+        toast.success(t.locationSelected || 'تم تحديد الموقع بنجاح');
+      } else {
+        toast.error(t.invalidCoordinates || 'إحداثيات غير صالحة');
+      }
+    }
+  };
+
+  const handleMapClick = (event) => {
+    if (event.latLng) {
+      const location = {
+        lat: event.latLng.lat(),
+        lng: event.latLng.lng(),
+      };
+      
+      if (isValidCoordinates(location)) {
+        setSelectedLocation(location);
+        onLocationSelect && onLocationSelect(location);
+      } else {
+        toast.error(t.invalidCoordinates || 'إحداثيات غير صالحة');
+      }
+    }
+  };
+
+    // Current location functionality is now handled by getCurrentLocation function above
+
+  // Close search results when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (searchResultsRef.current && !searchResultsRef.current.contains(event.target)) {
+        setSearchResults([]);
+      }
     };
 
-    const handleSearchChange = (e) => setSearchQuery(e.target.value);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
-    if (loadError) return <div style={{ padding: '20px', background: '#f8d7da', color: '#721c24', borderRadius: '5px', textAlign: 'center' }}>❌ خطأ في تحميل الخريطة. تأكد من صحة مفتاح API.</div>;
-    if (!isLoaded || mapLoading) return <div style={{ padding: '40px', textAlign: 'center', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #ddd' }}>⏳ جارٍ تحميل الخريطة...</div>;
-
+  if (loadError) {
     return (
-        <div style={{ marginBottom: '20px' }}>
-            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '15px', alignItems: 'center' }}>
-                <Autocomplete onLoad={onAutocompleteLoad} onPlaceChanged={onPlaceChanged} options={{ types: ['geocode'], componentRestrictions: { country: 'eg' } }}>
-                    <input
-                        type="text"
-                        placeholder="🔍 ابحث عن عنوان أو مكان..."
-                        value={searchQuery}
-                        onChange={handleSearchChange}
-                        style={{ flex: 1, minWidth: '250px', height: '45px', padding: '0 15px', borderRadius: '8px', border: '2px solid #ddd', fontSize: '16px' }}
-                    />
-                </Autocomplete>
-                <button
-                    onClick={handleUseCurrentLocation}
-                    disabled={isLoadingLocation}
-                    style={{ padding: '12px 20px', background: isLoadingLocation ? '#ccc' : '#28a745', color: '#fff', border: 'none', borderRadius: '8px', cursor: isLoadingLocation ? 'not-allowed' : 'pointer', fontSize: '14px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px' }}
-                >
-                    {isLoadingLocation ? <>⏳ جاري التحديد...</> : <>📍 استخدام موقعي الحالي</>}
-                </button>
-            </div>
-
-            <div style={{ position: 'relative' }}>
-                <GoogleMap
-                    mapContainerStyle={containerStyle}
-                    center={selectedLocation}
-                    zoom={12}
-                    onLoad={(mapInstance) => { setMap(mapInstance); setMapLoading(false); }}
-                    onClick={onMapClick}
-                    options={mapOptions}
-                >
-                    {markers.map((marker, index) => (
-                        <Marker key={index} position={marker} onClick={() => setInfoWindowOpen(true)} icon={markerIcon} />
-                    ))}
-
-                    {infoWindowOpen && selectedLocation && (
-                        <InfoWindow position={selectedLocation} onCloseClick={() => setInfoWindowOpen(false)}>
-                            <div style={{ padding: '10px' }}>
-                                <h4 style={{ margin: '0 0 10px 0', color: '#333' }}>📍 الموقع المحدد</h4>
-                                <p><strong>خط العرض:</strong> {selectedLocation.lat.toFixed(6)}</p>
-                                <p><strong>خط الطول:</strong> {selectedLocation.lng.toFixed(6)}</p>
-                                {selectedLocation.address && <p style={{ color: '#666' }}><strong>العنوان:</strong> {selectedLocation.address}</p>}
-                            </div>
-                        </InfoWindow>
-                    )}
-                </GoogleMap>
-                <div style={{ position: 'absolute', top: '10px', right: '10px', background: 'white', padding: '10px', borderRadius: '5px', boxShadow: '0 2px 6px rgba(0,0,0,0.3)', fontSize: '14px' }}>💡 انقر على الخريطة لتحديد موقع</div>
-            </div>
-
-            {selectedLocation && (
-                <div style={{ marginTop: '15px', padding: '15px', background: '#f8f9fa', borderRadius: '8px', border: '1px solid #e9ecef' }}>
-                    <h4>الإحداثيات المحددة:</h4>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                        <div><strong>خط العرض:</strong> {selectedLocation.lat.toFixed(6)}</div>
-                        <div><strong>خط الطول:</strong> {selectedLocation.lng.toFixed(6)}</div>
-                    </div>
-                </div>
-            )}
-        </div>
+      <div className="location-picker-error">
+        <div className="error-icon">!</div>
+        <h3>{t.mapError || 'خطأ في تحميل الخريطة'}</h3>
+        <p>{t.mapErrorDescription || 'حدث خطأ أثناء تحميل خريطة جوجل. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.'}</p>
+      </div>
     );
+  }
+  
+  if (!isLoaded) {
+    return (
+      <div className="location-picker-loading">
+        <div className="loading-spinner"></div>
+        <p>{t.loadingMap || 'جاري تحميل الخريطة...'}</p>
+      </div>
+    );
+  }
+
+  // Ensure we have valid coordinates before rendering the map
+  const mapCenter = selectedLocation && isValidCoordinates(selectedLocation) ? selectedLocation : defaultCenter;
+
+  return (
+    <div className={`location-picker ${className}`}>
+      {showSearch && (
+        <div className="search-container">
+          <div className="search-input-wrapper">
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={searchQuery}
+              onChange={handleSearchInputChange}
+              placeholder={t.searchPlaceholder || 'ابحث عن مكان...'}
+              className="location-search-input"
+            />
+            {isSearching && (
+              <div className="search-spinner">
+                <div className="spinner-small"></div>
+              </div>
+            )}
+          </div>
+          
+          {/* Search Results Dropdown */}
+          {searchResults.length > 0 && (
+            <div ref={searchResultsRef} className="search-results">
+              {searchResults.map((place, index) => (
+                <div
+                  key={index}
+                  className="search-result-item"
+                  onClick={() => handlePlaceSelect(place)}
+                >
+                  <div className="result-name">{place.name}</div>
+                  <div className="result-address">{place.formatted_address}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Current Location Button */}
+      <div className="current-location-button-container">
+        <button
+          onClick={getCurrentLocation}
+          disabled={isGettingCurrentLocation}
+          className="current-location-button"
+          title={t.currentLocation || 'الموقع الحالي'}
+        >
+          {isGettingCurrentLocation ? (
+            <>
+              <div className="spinner-small"></div>
+              <span>{t.gettingLocation || 'جاري تحديد الموقع...'}</span>
+            </>
+          ) : (
+            <>
+              <i className="fas fa-crosshairs"></i>
+              <span>{t.currentLocation || 'الموقع الحالي'}</span>
+            </>
+          )}
+        </button>
+      </div>
+
+      <div className="map-container">
+        <GoogleMap
+          center={mapCenter}
+          zoom={12}
+          mapContainerStyle={{ width: '100%', height: `${height}px` }}
+          onLoad={(mapInstance) => setMap(mapInstance)}
+          onClick={handleMapClick}
+          options={{
+            zoomControl: true,
+            streetViewControl: false,
+            mapTypeControl: true,
+            fullscreenControl: true,
+            styles: [
+              {
+                featureType: "poi",
+                elementType: "labels",
+                stylers: [{ visibility: "off" }]
+              }
+            ]
+          }}
+        >
+          {selectedLocation && isValidCoordinates(selectedLocation) && (
+            <div
+              className="custom-marker"
+              style={{
+                position: 'absolute',
+                left: '50%',
+                top: '50%',
+                transform: 'translate(-50%, -100%)',
+                width: '20px',
+                height: '20px',
+                backgroundColor: '#8B0000', // Maroon color
+                border: '2px solid white',
+                borderRadius: '50%',
+                boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                zIndex: 1000
+              }}
+            />
+          )}
+        </GoogleMap>
+      </div>
+
+      {/* Current location functionality is now handled above the map */}
+
+      {showCoordinates && selectedLocation && isValidCoordinates(selectedLocation) && (
+        <div className="coordinates-display">
+          <div className="coordinate-item">
+            <span className="coordinate-label">{t.latitude || 'خط العرض'}:</span>
+            <span className="coordinate-value">{selectedLocation.lat?.toFixed(6)}</span>
+          </div>
+          <div className="coordinate-item">
+            <span className="coordinate-label">{t.longitude || 'خط الطول'}:</span>
+            <span className="coordinate-value">{selectedLocation.lng?.toFixed(6)}</span>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }

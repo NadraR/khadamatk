@@ -51,7 +51,7 @@ function App() {
 
 
       {/* Homes */}      
-      <Route path="/login" element={<LoginForm />} />
+      <Route path="/auth" element={<LoginForm />} />
       <Route path="/homeClient" element={<Layout><HomeClient /></Layout>} />
       <Route path="/homeProvider" element={<Layout><HomeProvider /></Layout>} />
       <Route path="/adminDashboard" element={<Layout><AdminDashboard /></Layout>} />
