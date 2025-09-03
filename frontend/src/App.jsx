@@ -1,58 +1,77 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
+
+// Auth & Layout
 import AuthPage from './pages/AuthPage';
+import Layout from './Layout';
+import OAuthCallback from "./pages/OAuthCallback";
+
+// Home pages
+import Home from './pages/Home';
 import HomeClient from './pages/HomeClient';
 import HomeProvider from './pages/HomeProvider';
 import AdminDashboard from './pages/AdminDashboard';
-import Layout from './Layout';
+import About from './pages/About';
+
+// Service-related pages
 import ServiceDetails from './pages/ServiceDetails';
 import Services from './pages/Services';
 import Orders from './pages/Orders';
 import Reviews from './pages/Reviews';
 import Ratings from './pages/Ratings';
+
+// Admin-related pages
 import Clients from './pages/Clients';
-import Users from './pages/Users';
-import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+
+// Category pages
 import Painting from './pages/Painting';
 import Carpentry from './pages/Carpentry';
 import Electricity from './pages/Electricity';
 import Plumbing from './pages/Plumbing';
+
+// Location & Chat
 import LocationPage from './pages/LocationPage';
+import ErrorBoundary from './components/ErrorBoundary';
+// import ChatBox from './components/ChatBox';
 
 function App() {
   return (
     <Routes>
-      {/* صفحة تسجيل الدخول / إنشاء حساب */}
-      <Route path="/" element={<AuthPage />} />
+      {/* Auth */}
+      <Route path="/auth" element={<AuthPage />} />
 
-      {/* صفحات العملاء */}
+      {/* Home */}
+      <Route path="/" element={<Layout><Home /></Layout>} />
       <Route path="/homeClient" element={<Layout><HomeClient /></Layout>} />
       <Route path="/homeProvider" element={<Layout><HomeProvider /></Layout>} />
       <Route path="/adminDashboard" element={<Layout><AdminDashboard /></Layout>} />
+      <Route path="/about" element={<Layout><About /></Layout>} />
 
-      {/* صفحات الخدمات */}
+      {/* Services */}
       <Route path="/service/:id" element={<Layout><ServiceDetails /></Layout>} />
       <Route path="/services" element={<Layout><Services /></Layout>} />
       <Route path="/orders" element={<Layout><Orders /></Layout>} />
       <Route path="/reviews/:serviceId" element={<Layout><Reviews /></Layout>} />
       <Route path="/ratings/:serviceId" element={<Layout><Ratings /></Layout>} />
 
-      {/* صفحات الإدارة */}
+      {/* Admin */}
       <Route path="/clients" element={<Layout><Clients /></Layout>} />
       <Route path="/settings" element={<Layout><Settings /></Layout>} />
 
-      {/* صفحات الفئات */}
+      {/* Categories */}
       <Route path="/category/painting" element={<Layout><Painting /></Layout>} />
       <Route path="/category/carpentry" element={<Layout><Carpentry /></Layout>} />
       <Route path="/category/electricity" element={<Layout><Electricity /></Layout>} />
       <Route path="/category/plumbing" element={<Layout><Plumbing /></Layout>} />
+      <Route path="/oauth2callback" element={<OAuthCallback />} />
 
-      {/* صفحات إضافية */}
-      
-      {/* Location pages without Layout wrapper - using custom LocationNavbar */}
-      <Route path="/location" element={<LocationPage />} />
-      <Route path="/location/my-location" element={<LocationPage />} />
+      {/* Location (without Layout wrapper, uses custom navbar) */}
+      <Route path="/location" element={<ErrorBoundary><LocationPage /></ErrorBoundary>} />
+      <Route path="/location/my-location" element={<ErrorBoundary><LocationPage /></ErrorBoundary>} />
+
+      {/* Chat */}
+      {/* <Route path="/chat" element={<Layout><ChatBox /></Layout>} /> */}
     </Routes>
   );
 }

@@ -23,7 +23,13 @@ const SearchBar = () => {
     { id: 9, name: { ar: "نقل أثاث", en: "Moving" }, category: "home" },
     { id: 10, name: { ar: "حدادة", en: "Welding" }, category: "home" },
     { id: 11, name: { ar: "بلاط", en: "Tiling" }, category: "home" },
-    { id: 12, name: { ar: "جص", en: "Plastering" }, category: "home" }
+    { id: 12, name: { ar: "جص", en: "Plastering" }, category: "home" },
+    { id: 13, name: { ar: "تركيب ستائر", en: "Curtain Installation" }, category: "home" },
+    { id: 14, name: { ar: "تنظيف نوافذ", en: "Window Cleaning" }, category: "home" },
+    { id: 15, name: { ar: "صيانة مكيفات", en: "AC Maintenance" }, category: "home" },
+    { id: 16, name: { ar: "تركيب إضاءة", en: "Lighting Installation" }, category: "home" },
+    { id: 17, name: { ar: "صيانة سخانات", en: "Water Heater Repair" }, category: "home" },
+    { id: 18, name: { ar: "تركيب أبواب", en: "Door Installation" }, category: "home" }
   ];
 
   const handleSearch = (e) => {
@@ -31,6 +37,8 @@ const SearchBar = () => {
     if (searchTerm.trim()) {
       console.log('Searching for:', searchTerm);
       setShowSuggestions(false);
+      // Here you can add navigation to search results page
+      // navigate('/search', { state: { query: searchTerm } });
     }
   };
 
@@ -56,6 +64,8 @@ const SearchBar = () => {
     setSearchTerm(serviceName);
     setShowSuggestions(false);
     console.log('Selected service:', service);
+    // Here you can add navigation to the specific service page
+    // navigate('/services', { state: { service: service } });
   };
 
   const handleInputFocus = () => {

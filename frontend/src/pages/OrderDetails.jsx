@@ -1,21 +1,18 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import api from "../api";
-import { ACCESS_TOKEN } from "../constants";
+import { ApiService } from "../services/ApiService";
 
 const OrderDetails = () => {
   const { id } = useParams();
   const { t } = useTranslation();
   const [order, setOrder] = useState(null);
-  const token = localStorage.getItem(ACCESS_TOKEN);
+  const apiService = new ApiService();
 
   useEffect(() => {
     const fetchOrder = async () => {
       try {
-        const res = await api.get(`/orders/${id}/`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await apiService.get(`/orders/${id}/`);
         setOrder(res.data);
       } catch (err) {
         console.error("Error fetching order:", err);

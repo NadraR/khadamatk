@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { FaScrewdriver, FaBell, FaSun, FaMoon, FaGlobe, FaHeart, FaComments, FaStar, FaBars, FaSignInAlt, FaSignOutAlt } from 'react-icons/fa';
 import './Navbar.css';
 import Sidebar from './Sidebar';
@@ -9,11 +10,11 @@ const Navbar = () => {
   const [userRole, setUserRole] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
-  const [activeTab, setActiveTab] = useState('home');
   const [notificationCount, setNotificationCount] = useState(9); // تغيير إلى رقم أكبر للاختبار
   const [scrolled, setScrolled] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { t, i18n } = useTranslation();
+  const location = useLocation();
 
   useEffect(() => {
     // Check if user is logged in with proper validation
@@ -222,51 +223,34 @@ const Navbar = () => {
           {/* Center Section - Navigation Tabs */}
           <div className="navbar-center">
             <div className="navbar-nav">
-              <a 
-                className={`navbar-nav-link ${activeTab === 'home' ? 'active' : ''}`} 
-                aria-current={activeTab === 'home' ? 'page' : undefined}
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setActiveTab('home');
-                }}
+              <Link 
+                className={`navbar-nav-link ${location.pathname === '/' ? 'active' : ''}`} 
+                to="/"
               >
                 <FaHeart className="nav-icon" />
                 {i18n.language === "ar" ? "الرئيسية" : "Home"}
-              </a>
-              <a 
-                className={`navbar-nav-link ${activeTab === 'services' ? 'active' : ''}`} 
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setActiveTab('services');
-                }}
+              </Link>
+              <Link 
+                className={`navbar-nav-link ${location.pathname === '/services' ? 'active' : ''}`} 
+                to="/services"
               >
                 <FaScrewdriver className="nav-icon" />
                 {i18n.language === "ar" ? "الخدمات" : "Services"}
-              </a>
-              <a 
-                className={`navbar-nav-link ${activeTab === 'about' ? 'active' : ''}`} 
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setActiveTab('about');
-                }}
+              </Link>
+              <Link 
+                className={`navbar-nav-link ${location.pathname === '/about' ? 'active' : ''}`} 
+                to="/about"
               >
                 <FaStar className="nav-icon" />
                 {i18n.language === "ar" ? "حول" : "About"}
-              </a>
-              <a 
-                className={`navbar-nav-link ${activeTab === 'contact' ? 'active' : ''}`} 
-                href="#"
-                onClick={(e) => {
-                  e.preventDefault();
-                  setActiveTab('contact');
-                }}
+              </Link>
+              <Link 
+                className={`navbar-nav-link ${location.pathname === '/contact' ? 'active' : ''}`} 
+                to="/contact"
               >
                 <FaComments className="nav-icon" />
                 {i18n.language === "ar" ? "اتصل بنا" : "Contact"}
-              </a>
+              </Link>
             </div>
           </div>
 

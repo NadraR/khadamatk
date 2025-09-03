@@ -175,5 +175,68 @@
   "searchSubtitle": "Choose from thousands of available services",
   "searchPlaceholder": "Search for service...",
   "servicesTitle": "Our Available Services",
-  "servicesSubtitle": "Discover a wide range of professional services"
+  "servicesSubtitle": "Discover a wide range of professional services",
+  "buttons": {
+    "lightMode": "Light Mode",
+    "darkMode": "Dark Mode"
+  },
+  "about": {
+  "bios": {
+    "mohamed": "Full-stack web developer specialized in Python and Django with experience in building scalable web applications.",
+    "sara": "Full-stack web developer passionate about creating interactive user interfaces using React and modern web technologies.",
+    "reem": "Full-stack web developer specialized in database solutions and API design using Django REST Framework.",
+    "rowan": "Full-stack web developer focused on user experience and designing engaging, user-friendly interfaces.",
+    "nadra": "Full-stack web developer specialized in developing responsive web applications and enhanced user experiences.",
+    "samer": "Full-stack web developer specialized in backend engineering and databases using Python and PostgreSQL."
+  },
+  "team": {
+    "title": "Our Distinguished Team",
+    "subtitle": "Meet the talented individuals who make Khadamatak possible",
+    "ourTeam": "Our Team",
+    "graduates": "ITI Graduates 2025",
+    "teamPhoto": "Graduation Team Photo"
+  },
+  "values": {
+    "title": "Our Core Values",
+    "subtitle": "The principles that guide our work and relationships"
+  },
+  "tech": {
+    "python": "Power and scalability with Python and Django for robust web applications.",
+    "react": "Interactive and dynamic user interfaces with React library.",
+    "postgresql": "Advanced and reliable relational database management system.",
+    "javascript": "Versatile programming language for both client-side and server-side web development.",
+    "html": "Structuring and organizing web content with HTML5.",
+    "css": "Styling and formatting websites attractively with CSS3."
+  }
+},
+"Welcome to": "Welcome to",
+"We are a team of web developers dedicated to providing the best digital services for our clients.": "We are a team of web developers dedicated to providing the best digital services for our clients.",
+"Developers": "Developers",
+"graduates": "graduates",
+"batch": "batch",
+"Our Story": "Our Story",
+"We started our journey in 2025 as a team of ITI graduates, aiming to provide top-notch digital solutions.": "We started our journey in 2025 as a team of ITI graduates, aiming to provide top-notch digital solutions.",
+"All of us are Full-Stack developers focused on quality, innovation, and client satisfaction.": "All of us are Full-Stack developers focused on quality, innovation, and client satisfaction.",
+"When we started, we noticed a big challenge: clients had difficulty finding reliable service providers who offered fair prices, were nearby, and had trustworthy ratings. Our goal with this website is to bridge that gap—connecting clients with the best providers based on location, reviews, and quality, making the process simple, transparent, and efficient.": "When we started, we noticed a big challenge: clients had difficulty finding reliable service providers who offered fair prices, were nearby, and had trustworthy ratings. Our goal with this website is to bridge that gap—connecting clients with the best providers based on location, reviews, and quality, making the process simple, transparent, and efficient.",
+"Founded": "Founded",
+"Information Technology Institute": "Information Technology Institute",
+"Team Members": "Team Members",
+"Our Achievements in Numbers": "Our Achievements in Numbers",
+"Real impact, real growth — thanks to our clients and partners.": "Real impact, real growth — thanks to our clients and partners.",
+"Satisfied Clients": "Satisfied Clients",
+"Service Providers": "Service Providers",
+"Available Services": "Available Services",
+"Positive Ratings": "Positive Ratings",
+"Our Technologies": "Our Technologies",
+"We leverage modern technologies to build high-quality, scalable, and user-friendly applications. Our stack includes Python and Django for powerful backend solutions, React for interactive frontends, and PostgreSQL for reliable data management. By combining these tools with best practices, we ensure our platform is fast, secure, and adaptable to your needs.": "We leverage modern technologies to build high-quality, scalable, and user-friendly applications. Our stack includes Python and Django for powerful backend solutions, React for interactive frontends, and PostgreSQL for reliable data management. By combining these tools with best practices, we ensure our platform is fast, secure, and adaptable to your needs.",
+"Customer Satisfaction": "Customer Satisfaction",
+"We aim to achieve the highest level of client satisfaction through exceptional services.": "We aim to achieve the highest level of client satisfaction through exceptional services.",
+"Innovation": "Innovation",
+"We develop creative solutions to make our clients’ daily lives easier.": "We develop creative solutions to make our clients’ daily lives easier.",
+"Quality": "Quality",
+"We commit to the highest quality standards in everything we deliver.": "We commit to the highest quality standards in everything we deliver.",
+"Join Our Community!": "Join Our Community!",
+"Sign Up Now! and be part of our family": "Sign Up Now! and be part of our family",
+"join As Provider": "Join As Provider",
+"explore Services": "Explore Services"
 }

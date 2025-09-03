@@ -6,6 +6,7 @@ import axios from "axios";
 const GoogleLoginButton = ({ onSuccess, language = "ar", onError }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [hasAttemptedLogin, setHasAttemptedLogin] = useState(false);
+  const [loginInProgress, setLoginInProgress] = useState(false);
 
   const handleLoginResponse = async (idToken) => {
     console.log("[DEBUG] GoogleLoginButton: handleLoginResponse called with token:", idToken ? "Present" : "Missing");
@@ -19,12 +20,14 @@ const GoogleLoginButton = ({ onSuccess, language = "ar", onError }) => {
       return;
     }
 
-    if (hasAttemptedLogin) {
-      console.warn("[DEBUG] GoogleLoginButton: Login already attempted, ignoring duplicate request");
+    // منع المحاولات المتعددة
+    if (hasAttemptedLogin || loginInProgress) {
+      console.warn("[DEBUG] GoogleLoginButton: Login already attempted or in progress, ignoring duplicate request");
       return;
     }
 
     setHasAttemptedLogin(true);
+    setLoginInProgress(true);
     setIsLoading(true);
     try {
       console.log("[DEBUG] GoogleLoginButton: Starting Google login process");
@@ -81,6 +84,11 @@ const GoogleLoginButton = ({ onSuccess, language = "ar", onError }) => {
       // Don't show toast here - let parent component handle it
     } finally {
       setIsLoading(false);
+      setLoginInProgress(false);
+      // إعادة تعيين hasAttemptedLogin بعد 5 ثواني للسماح بمحاولة جديدة
+      setTimeout(() => {
+        setHasAttemptedLogin(false);
+      }, 5000);
     }
   };
 

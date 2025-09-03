@@ -17,17 +17,25 @@ class UserLocationViewSet(viewsets.ModelViewSet):
     """
     queryset = UserLocation.objects.all()
     serializer_class = UserLocationSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]  # السماح بالوصول بدون تسجيل دخول
 
     def get_queryset(self):
         user = self.request.user
         if user.is_staff:
             return UserLocation.objects.select_related('user').all()
-        return UserLocation.objects.filter(user=user).order_by('-created_at')
+        elif user.is_authenticated:
+            return UserLocation.objects.filter(user=user).order_by('-created_at')
+        else:
+            # للمستخدمين غير المسجلين، إرجاع المواقع العامة أو فارغ
+            return UserLocation.objects.filter(user__isnull=True).order_by('-created_at')
 
     def perform_create(self, serializer):
-        """ربط الموقع بالمستخدم الحالي تلقائياً"""
-        serializer.save(user=self.request.user)
+        """ربط الموقع بالمستخدم الحالي تلقائياً (إذا كان مسجل دخول)"""
+        if self.request.user.is_authenticated:
+            serializer.save(user=self.request.user)
+        else:
+            # حفظ الموقع بدون ربطه بمستخدم (للمستخدمين غير المسجلين)
+            serializer.save(user=None)
 
     @action(detail=False, methods=['get'], url_path='my-locations')
     def my_locations(self, request):
@@ -134,7 +142,7 @@ class UserLocationViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-    @action(detail=False, methods=['get'], url_path='nearby')
+    @action(detail=False, methods=['get'], url_path='nearby', permission_classes=[])
     def nearby(self, request):
         """
         البحث عن مواقع قريبة من lat/lng ضمن نصف قطر محدد (km).
@@ -161,8 +169,8 @@ class UserLocationViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        # البحث عن المواقع القريبة مع استبعاد المستخدم الحالي
-        nearby_locations = UserLocation.objects.exclude(user=request.user).filter(user__role='worker').annotate(
+        # البحث عن المواقع القريبة - فقط العمال (workers)
+        nearby_locations = UserLocation.objects.filter(user__role='worker').annotate(
             distance=Distance('location', user_point)
         ).filter(
             location__distance_lte=(user_point, D(km=radius)),
@@ -180,7 +188,9 @@ class UserLocationViewSet(viewsets.ModelViewSet):
                     'first_name': location.user.first_name,
                     'last_name': location.user.last_name,
                     'role': location.user.role,
-                    'email': location.user.email
+                    'email': location.user.email,
+                    'rating': getattr(location.user, 'average_rating', 0),  # إضافة التقييم
+                    'price': getattr(location.user, 'hourly_rate', 0)  # إضافة السعر
                 },
                 'lat': location.location.y,
                 'lng': location.location.x,

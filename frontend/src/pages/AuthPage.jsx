@@ -66,12 +66,9 @@ const AuthPage = () => {
       // Use window.location.href to avoid React Router issues during authentication
       window.location.href = "/location";
     } else {
-      console.log("[DEBUG] AuthPage: User has location, redirecting to role-based page");
-      const roleRoutes = { client: "/homeClient", worker: "/homeProvider", admin: "/adminDashboard" };
-      const targetRoute = roleRoutes[userData.role] || "/homeClient";
-      console.log("[DEBUG] AuthPage: Redirecting to:", targetRoute);
-      // Use window.location.href to avoid React Router issues during authentication
-      window.location.href = targetRoute;
+      console.log("[DEBUG] AuthPage: User has location, redirecting to Home page");
+      // Always redirect to Home page after successful login
+      window.location.href = "/";
     }
   };
 
@@ -92,9 +89,9 @@ const AuthPage = () => {
     if (googleData.access && googleData.user_id) {
       console.log("[DEBUG] AuthPage: User has role, proceeding with login");
       
-      // Store the tokens in localStorage
-      localStorage.setItem('access_token', googleData.access);
-      localStorage.setItem('refresh_token', googleData.refresh);
+      // Store the tokens in localStorage (using consistent keys)
+      localStorage.setItem('access', googleData.access);
+      localStorage.setItem('refresh', googleData.refresh);
       localStorage.setItem('user_id', googleData.user_id);
       localStorage.setItem('user_role', googleData.role);
       
@@ -149,12 +146,12 @@ const AuthPage = () => {
           };
           localStorage.setItem('user', JSON.stringify(userData));
           
-          // Store tokens if available
+          // Store tokens if available (using consistent keys)
           if (result.data.access) {
-            localStorage.setItem('access_token', result.data.access);
+            localStorage.setItem('access', result.data.access);
           }
           if (result.data.refresh) {
-            localStorage.setItem('refresh_token', result.data.refresh);
+            localStorage.setItem('refresh', result.data.refresh);
           }
         }
         
