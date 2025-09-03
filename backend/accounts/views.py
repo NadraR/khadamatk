@@ -171,6 +171,14 @@ class GoogleLoginView(APIView):
         try:
             # ✅ Step 1: Verify the ID Token
             logger.info("[GoogleLogin DEBUG] Verifying ID token...")
+            
+            # Check if GOOGLE_CLIENT_ID is configured
+            if not settings.GOOGLE_CLIENT_ID:
+                logger.error("[GoogleLogin DEBUG] GOOGLE_CLIENT_ID not configured")
+                return Response({
+                    "error": "Google OAuth not configured. Please contact administrator."
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
             idinfo = id_token.verify_oauth2_token(
                 token,
                 google_requests.Request(),

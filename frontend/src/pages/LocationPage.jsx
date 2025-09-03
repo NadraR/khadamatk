@@ -482,7 +482,7 @@ export default function LocationPage() {
       </Container>
 
       {/* Custom Styles */}
-      <style jsx>{`
+      <style jsx="true">{`
         .step-indicator {
           display: flex;
           gap: 8px;
