@@ -67,22 +67,44 @@ class LocationService {
     }
   }
 
-  async searchNearbyLocations(lat, lng, radius = 10, maxResults = 20) {
+  async searchNearbyLocations(lat, lng, radius = 10, serviceType = null) {
     try {
-      const response = await apiService.get(
-        `${this.baseEndpoint}nearby/?lat=${lat}&lng=${lng}&radius=${radius}&max_results=${maxResults}`
-      );
+      // Use the service nearby API for better filtering
+      let url = `/api/services/nearby/?lat=${lat}&lng=${lng}&radius_km=${radius}`;
+      
+      if (serviceType) {
+        url += `&service_type=${serviceType}`;
+      }
+      
+      console.log('Calling API:', url);
+      const response = await apiService.get(url);
       return {
         success: true,
         data: response,
         message: 'تم البحث بنجاح'
       };
     } catch (error) {
-      return {
-        success: false,
-        error: error.message || 'فشل في البحث عن مواقع قريبة',
-        status: error.status
-      };
+      console.error('Service API Error:', error);
+      
+      // Fallback to location API if service API fails
+      try {
+        console.log('Falling back to location API...');
+        const fallbackUrl = `${this.baseEndpoint}nearby/?lat=${lat}&lng=${lng}&radius=${radius}&max_results=20`;
+        const fallbackResponse = await apiService.get(fallbackUrl);
+        
+        return {
+          success: true,
+          data: fallbackResponse,
+          message: 'تم البحث بنجاح (استخدام API بديل)'
+        };
+      } catch (fallbackError) {
+        console.error('Fallback API Error:', fallbackError);
+        return {
+          success: false,
+          error: error.message || 'فشل في البحث عن خدمات قريبة',
+          status: error.status
+        };
+      }
     }
   }
 

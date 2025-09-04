@@ -1,5 +1,10 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
+import { loadGoogleFonts } from './utils/fontLoader';
+import FontProvider from './components/FontProvider';
+
+// Load Google Fonts globally
+loadGoogleFonts();
 
 // Auth & Layout
 import AuthPage from './pages/AuthPage';
@@ -34,10 +39,13 @@ import Plumbing from './pages/Plumbing';
 import LocationPage from './pages/LocationPage';
 import ErrorBoundary from './components/ErrorBoundary';
 // import ChatBox from './components/ChatBox';
+import MessagesPage from "./pages/MessagesPage";
+import FontTest from "./components/FontTest";
 
 function App() {
   return (
-    <Routes>
+    <FontProvider>
+      <Routes>
       {/* Auth */}
       <Route path="/auth" element={<AuthPage />} />
 
@@ -70,9 +78,16 @@ function App() {
       <Route path="/location" element={<ErrorBoundary><LocationPage /></ErrorBoundary>} />
       <Route path="/location/my-location" element={<ErrorBoundary><LocationPage /></ErrorBoundary>} />
 
+      {/* Messages */}
+      <Route path="/messages" element={<Layout><MessagesPage /></Layout>} />
+
+      {/* Font Test (Development) */}
+      <Route path="/font-test" element={<Layout><FontTest /></Layout>} />
+
       {/* Chat */}
       {/* <Route path="/chat" element={<Layout><ChatBox /></Layout>} /> */}
-    </Routes>
+      </Routes>
+    </FontProvider>
   );
 }
 

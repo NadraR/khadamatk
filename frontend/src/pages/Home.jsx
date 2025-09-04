@@ -135,9 +135,22 @@ const Home = () => {
             <p className="text-muted">{activeService.desc}</p>
             <button
               className="btn btn-cta mt-3"
-              onClick={() => navigate("/location", { 
-                state: { selectedService: activeService } 
-              })}
+              onClick={() => {
+                // Save service to localStorage
+                const serviceData = {
+                  id: activeService.key,
+                  name: { ar: activeService.title, en: activeService.title },
+                  category: "home",
+                  searchTerm: activeService.title,
+                  selectedAt: new Date().toISOString()
+                };
+                localStorage.setItem('selectedService', JSON.stringify(serviceData));
+                console.log('Service saved to localStorage:', serviceData);
+                
+                navigate("/location", { 
+                  state: { selectedService: serviceData } 
+                });
+              }}
             >
               ابحث عن مزودي هذه الخدمة
             </button>
@@ -157,15 +170,23 @@ const Home = () => {
                   <p className="text-primary fw-bold">{p.price}</p>
                    <button
     className="btn btn-sm btn-cta w-100"
-    onClick={() => navigate("/location", { 
-      state: { 
-        selectedService: { 
-          key: p.title.toLowerCase().replace(/\s+/g, '_'), 
-          title: p.title, 
-          price: p.price 
-        } 
-      } 
-    })}
+    onClick={() => {
+      // Save service to localStorage
+      const serviceData = {
+        id: p.title.toLowerCase().replace(/\s+/g, '_'),
+        name: { ar: p.title, en: p.title },
+        category: "home",
+        searchTerm: p.title,
+        price: p.price,
+        selectedAt: new Date().toISOString()
+      };
+      localStorage.setItem('selectedService', JSON.stringify(serviceData));
+      console.log('Service saved to localStorage:', serviceData);
+      
+      navigate("/location", { 
+        state: { selectedService: serviceData } 
+      });
+    }}
   >
     ابحث عن مزودي هذه الخدمة
   </button>
