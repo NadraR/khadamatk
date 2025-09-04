@@ -1,18 +1,14 @@
 from rest_framework import viewsets, permissions
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view
 from rest_framework.response import Response
 from django.utils.translation import gettext_lazy as _
+from django.db.models import Sum
 from .models import Invoice
 from .serializers import InvoiceSerializer
-from django.db.models import Sum
-from rest_framework.decorators import api_view
 
 class IsOwnerOrAdmin(permissions.BasePermission):
-    """
-    صلاحية للتحقق إذا كان المستخدم هو صاحب الفاتورة أو مدير
-    """
     def has_object_permission(self, request, view, obj):
-        return obj.booking.customer == request.user or request.user.is_staff
+        return obj.booking.user == request.user or request.user.is_staff
 
 class InvoiceViewSet(viewsets.ModelViewSet):
     queryset = Invoice.objects.all()
@@ -23,13 +19,6 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         if self.request.user.is_staff:
             return Invoice.objects.all()
         return Invoice.objects.filter(booking__user=self.request.user)
-    
-    def destroy(self, request, *args, **kwargs):
-        instance = self.get_object()
-        self.perform_destroy(instance)
-        return Response({
-            "status": _("تم حذف الفاتورة بنجاح")
-        })
     
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
     def mark_paid(self, request, pk=None):
@@ -43,15 +32,11 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     
     @action(detail=False, methods=['get'])
     def my_invoices(self, request):
-        """
-        الحصول على فواتير المستخدم الحالي فقط
-        """
         invoices = Invoice.objects.filter(booking__user=request.user)
         page = self.paginate_queryset(invoices)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
-        
         serializer = self.get_serializer(invoices, many=True)
         return Response(serializer.data)
     

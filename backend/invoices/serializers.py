@@ -1,10 +1,6 @@
 from rest_framework import serializers
-from django.utils.translation import gettext_lazy as _
 from .models import Invoice
 from orders.models import Order
-
-class InvoiceSerializer(serializers.ModelSerializer):
-    booking = serializers.PrimaryKeyRelatedField(queryset=Order.objects.all(), write_only=True)
 
 class InvoiceSerializer(serializers.ModelSerializer):
     booking_id = serializers.IntegerField(source='booking.id', read_only=True)
@@ -25,4 +21,3 @@ class InvoiceSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         validated_data.pop("booking", None)  # امنع تغييره
         return super().update(instance, validated_data)
-

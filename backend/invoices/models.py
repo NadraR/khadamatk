@@ -1,6 +1,7 @@
 from django.db import models
 from django.core.validators import MinValueValidator
 from django.utils import timezone
+from orders.models import Order
 
 class Invoice(models.Model):
     STATUS_PAID = 'paid'
@@ -11,8 +12,7 @@ class Invoice(models.Model):
     ]
     
     booking = models.OneToOneField(
-        'orders.Order', 
-
+        Order,
         on_delete=models.CASCADE,
         related_name='invoice',
         verbose_name='الحجز'
@@ -32,16 +32,8 @@ class Invoice(models.Model):
         verbose_name='حالة الفاتورة'
     )
     
-    issued_at = models.DateTimeField(
-        auto_now_add=True,
-        verbose_name='تاريخ الإصدار'
-    )
-    
-    paid_at = models.DateTimeField(
-        null=True, 
-        blank=True,
-        verbose_name='تاريخ الدفع'
-    )
+    issued_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإصدار')
+    paid_at = models.DateTimeField(null=True, blank=True, verbose_name='تاريخ الدفع')
     
     class Meta:
         verbose_name = 'فاتورة'
