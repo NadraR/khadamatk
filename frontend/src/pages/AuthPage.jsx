@@ -61,15 +61,9 @@ const AuthPage = () => {
   const redirectAfterLogin = (userData) => {
     console.log("[DEBUG] AuthPage: redirectAfterLogin called with:", userData);
     
-    if (!userData.hasLocation) {
-      console.log("[DEBUG] AuthPage: User has no location, redirecting to location page");
-      // Use window.location.href to avoid React Router issues during authentication
-      window.location.href = "/location";
-    } else {
-      console.log("[DEBUG] AuthPage: User has location, redirecting to Home page");
-      // Always redirect to Home page after successful login
-      window.location.href = "/";
-    }
+    // Always redirect to Home page after successful login
+    console.log("[DEBUG] AuthPage: Redirecting to Home page");
+    window.location.href = "/";
   };
 
   // Google Login handlers

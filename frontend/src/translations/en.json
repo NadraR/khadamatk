@@ -76,6 +76,8 @@
   "clients": "Clients",
   "settings": "Settings",
   "logout": "Logout",
+  "logoutSuccess": "Logged out successfully",
+  "logoutError": "An error occurred during logout",
   "chatbot": "Smart Assistant"
 },
 "chatbot": {

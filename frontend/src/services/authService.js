@@ -45,17 +45,24 @@ class AuthService {
       
       // حفظ بيانات المستخدم
       const userData = {
-        id: responseData.id || responseData.user?.id,
+        id: responseData.user_id || responseData.id || responseData.user?.id,
         email: responseData.email || responseData.user?.email,
         role: responseData.role || responseData.user?.role || 'client',
         auth_provider: responseData.auth_provider || 'email',
         hasLocation: responseData.has_location || responseData.hasLocation || false,
-        name: responseData.name || responseData.user?.name || '',
+        name: responseData.name || responseData.user?.name || responseData.username || 'User',
+        first_name: responseData.first_name || responseData.user?.first_name || '',
+        last_name: responseData.last_name || responseData.user?.last_name || '',
+        username: responseData.username || responseData.user?.username || '',
         profile_completed: responseData.profile_completed || false
       };
       
       console.log('[DEBUG] handleLoginSuccess: Created user data:', userData);
       this.saveUserToStorage(userData);
+      
+      // Dispatch custom event to notify navbar of login
+      window.dispatchEvent(new CustomEvent('userLogin', { detail: userData }));
+      
       return userData;
     }
     
@@ -254,6 +261,28 @@ class AuthService {
     localStorage.removeItem('user_id');
     localStorage.removeItem('user_role');
     this.user = null;
+  }
+
+  // Debug function to test login with sample data
+  async testLogin() {
+    console.log('[DEBUG] AuthService: Testing login with sample data');
+    try {
+      const testData = {
+        access: 'test-access-token',
+        refresh: 'test-refresh-token',
+        user_id: 1,
+        username: 'testuser',
+        email: 'test@example.com',
+        role: 'client'
+      };
+      
+      const userData = this.handleLoginSuccess(testData);
+      console.log('[DEBUG] AuthService: Test login successful:', userData);
+      return userData;
+    } catch (error) {
+      console.error('[DEBUG] AuthService: Test login failed:', error);
+      throw error;
+    }
   }
 
   // محاولة تجديد التوكن تلقائيًا
@@ -488,5 +517,11 @@ class AuthService {
 }
 
 // تصدير instance واحدة لاستخدامها في التطبيق
-export const authService = new AuthService();
+const authService = new AuthService();
+
+// Make test functions available globally for debugging
+window.testLogin = () => authService.testLogin();
+window.clearAuth = () => authService.clearAuth();
+
+export { authService };
 export default authService;

@@ -75,6 +75,8 @@
   "clients": "العملاء",
   "settings": "الإعدادات",
   "logout": "تسجيل الخروج",
+  "logoutSuccess": "تم تسجيل الخروج بنجاح",
+  "logoutError": "حدث خطأ أثناء تسجيل الخروج",
   "chatbot": "المساعد الذكي"
 },
 "chatbot": {

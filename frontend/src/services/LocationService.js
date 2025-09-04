@@ -2,7 +2,7 @@ import apiService from './ApiService';
 
 class LocationService {
   constructor() {
-    this.baseEndpoint = '/location/locations/';
+    this.baseEndpoint = '/api/location/locations/';
   }
 
   async saveLocation(locationData) {
