@@ -19,7 +19,7 @@ import searchImage from "../images/search.jpg";
 const Home = () => {
   const injected = useRef(false);
   const navigate = useNavigate();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [activeService, setActiveService] = useState(() => services[0]);
 
   useEffect(() => {
@@ -133,6 +133,14 @@ const Home = () => {
             <img src={activeService.img} alt={activeService.title} />          <div>
             <h4 className="fw-bold text-primary">{activeService.title}</h4>
             <p className="text-muted">{activeService.desc}</p>
+            <button
+              className="btn btn-cta mt-3"
+              onClick={() => navigate("/location", { 
+                state: { selectedService: activeService } 
+              })}
+            >
+              ابحث عن مزودي هذه الخدمة
+            </button>
           </div>
         </div>
       </section>
@@ -149,9 +157,17 @@ const Home = () => {
                   <p className="text-primary fw-bold">{p.price}</p>
                    <button
     className="btn btn-sm btn-cta w-100"
-    onClick={() => navigate("/orderpage", { state: { service: p } })}
+    onClick={() => navigate("/location", { 
+      state: { 
+        selectedService: { 
+          key: p.title.toLowerCase().replace(/\s+/g, '_'), 
+          title: p.title, 
+          price: p.price 
+        } 
+      } 
+    })}
   >
-    احجز الآن
+    ابحث عن مزودي هذه الخدمة
   </button>
                 </div>
               </div>

@@ -2,12 +2,12 @@ import apiService from './ApiService';
 
 class LocationService {
   constructor() {
-    this.baseEndpoint = '/location/locations/';
+    this.baseEndpoint = '/api/location/locations/';
   }
 
   async saveLocation(locationData) {
     try {
-      const response = await apiService.post(`${this.baseEndpoint}save-location/`, locationData);
+      const response = await apiService.post(this.baseEndpoint, locationData);
       return {
         success: true,
         data: response,
@@ -41,6 +41,16 @@ class LocationService {
 
   async getLatestLocation() {
     try {
+      // التحقق من وجود token قبل إجراء الطلب
+      const token = localStorage.getItem('access');
+      if (!token) {
+        return {
+          success: false,
+          error: 'User not authenticated',
+          status: 401
+        };
+      }
+
       const response = await apiService.get(`${this.baseEndpoint}latest-location/`);
       return {
         success: true,
@@ -48,9 +58,10 @@ class LocationService {
         message: 'تم جلب آخر موقع بنجاح'
       };
     } catch (error) {
+      // إرجاع خطأ صامت بدلاً من إظهار رسالة خطأ
       return {
         success: false,
-        error: error.message || 'فشل في جلب الموقع',
+        error: null, // لا نعرض رسالة خطأ
         status: error.status
       };
     }

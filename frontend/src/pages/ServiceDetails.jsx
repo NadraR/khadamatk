@@ -1,20 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import api from "../api";
-import { ACCESS_TOKEN } from "../constants";
+import { ApiService } from "../services/ApiService";
 import "./AdminDashboard.css"; 
 
 const ServiceDetails = () => {
   const { id } = useParams();
   const [service, setService] = useState(null);
-  const token = localStorage.getItem(ACCESS_TOKEN);
+  const apiService = new ApiService();
 
   useEffect(() => {
     const fetchService = async () => {
       try {
-        const res = await api.get(`/admin/services/${id}/`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await apiService.get(`/admin/services/${id}/`);
         setService(res.data);
       } catch (err) {
         console.error("Error fetching service:", err);

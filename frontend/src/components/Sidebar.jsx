@@ -15,6 +15,9 @@ import {
   FaBars
 } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { authService } from "../services/authService";
 import "./Sidebar.css";
 
 const Sidebar = ({ isOpen, onClose }) => {
@@ -63,6 +66,73 @@ const Sidebar = ({ isOpen, onClose }) => {
     setChatbotOpen(!chatbotOpen);
     closeMenu();
   };
+
+  const handleLogout = async () => {
+    try {
+      console.log('[DEBUG] Sidebar: Starting logout process');
+      
+      // Clear all user data from localStorage
+      authService.clearAuth();
+      
+      // Dispatch logout event to notify navbar
+      window.dispatchEvent(new CustomEvent('userLogout'));
+      
+      // Close the sidebar first
+      closeMenu();
+      
+      // Show success toast with a slight delay to ensure it displays
+      setTimeout(() => {
+        console.log('[DEBUG] Sidebar: Showing logout success toast');
+        toast.success(t('sidebar.logoutSuccess') || 'تم تسجيل الخروج بنجاح', {
+          position: "top-right",
+          autoClose: 2000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          theme: "light",
+          rtl: t('language') === 'ar'
+        });
+      }, 100);
+      
+      // Redirect to home page after giving time for toast to show
+      setTimeout(() => {
+        console.log('[DEBUG] Sidebar: Redirecting to home page');
+        window.location.href = '/';
+      }, 1500);
+      
+    } catch (error) {
+      console.error('[DEBUG] Sidebar: Logout error:', error);
+      toast.error(t('sidebar.logoutError') || 'حدث خطأ أثناء تسجيل الخروج', {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        theme: "light",
+        rtl: t('language') === 'ar'
+      });
+    }
+  };
+
+  // Test function to verify toast is working
+  const testToast = () => {
+    console.log('[DEBUG] Sidebar: Testing toast');
+    toast.success('Test toast message', {
+      position: "top-right",
+      autoClose: 2000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      theme: "light",
+      rtl: t('language') === 'ar'
+    });
+  };
+
+  // Make test function available globally for debugging
+  window.testSidebarToast = testToast;
 
   return (
     <>
@@ -145,10 +215,10 @@ const Sidebar = ({ isOpen, onClose }) => {
 
           {/* تسجيل الخروج */}
           <div className="burger-footer">
-            <Link to="/" className="burger-logout-btn" onClick={closeMenu}>
+            <button className="burger-logout-btn" onClick={handleLogout}>
               <FaSignOutAlt className="burger-logout-icon" />
               <span>{t("sidebar.logout")}</span>
-            </Link>
+            </button>
           </div>
         </div>
       </div>
@@ -189,6 +259,20 @@ const Sidebar = ({ isOpen, onClose }) => {
           </button>
         </form>
       </div>
+
+      {/* Toast Container for logout notifications */}
+      <ToastContainer
+        position="top-right"
+        autoClose={2000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={t('language') === 'ar'}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
     </>
   );
 };

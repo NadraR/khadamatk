@@ -1,14 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import api from "../api";
-import { ACCESS_TOKEN } from "../constants";
+import { ApiService } from "../services/ApiService";
 
 const OrderPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
   const { service } = location.state || {};
-  const token = localStorage.getItem(ACCESS_TOKEN);
+  const apiService = new ApiService();
 
   const [formData, setFormData] = useState({
     customer_name: "",
@@ -38,9 +37,7 @@ const OrderPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await api.post(`${import.meta.env.VITE_API_URL}/orders/`, formData, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      await apiService.post(`/orders/`, formData);
       alert("تم تأكيد الطلب بنجاح ✅");
       navigate("/"); 
     } catch (err) {
