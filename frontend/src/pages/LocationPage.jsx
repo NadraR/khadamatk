@@ -1,5 +1,5 @@
 // src/pages/LocationPage.jsx
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { 
   Box, Typography, CircularProgress, Chip, Button, List, ListItem, Paper,
   FormControl, InputLabel, Select, MenuItem, Container, IconButton, Card, CardContent
@@ -24,6 +24,12 @@ export default function LocationPage() {
   // نوع الخدمة المختار وقائمة الخدمات
   const [selectedService, setSelectedService] = useState("");
   const [servicesList, setServicesList] = useState([]);
+  const [serviceData, setServiceData] = useState(null);
+  const [customService, setCustomService] = useState(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const hasSearchedRef = useRef(false);
+  const searchTimeoutRef = useRef(null);
 
   // فلاتر إضافية
   const [filters, setFilters] = useState({
@@ -36,23 +42,202 @@ export default function LocationPage() {
   useEffect(() => {
     const fetchServiceTypes = async () => {
       try {
+        console.log('Fetching service types...');
         const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8000";
         const response = await fetch(`${baseURL}/api/services/types/`);
         if (response.ok) {
           const data = await response.json();
           setServicesList(data);
+          console.log('Service types loaded:', data.length, 'services');
+        } else {
+          console.error('Failed to fetch service types:', response.status);
+          setError('فشل في تحميل أنواع الخدمات');
         }
       } catch (err) {
         console.error("فشل في تحميل أنواع الخدمات", err);
+        setError('خطأ في الاتصال بالخادم');
       }
     };
     fetchServiceTypes();
   }, []);
 
+  // تحميل الخدمة المختارة من localStorage
+  useEffect(() => {
+    const savedService = localStorage.getItem('selectedService');
+    if (savedService && servicesList.length > 0) {
+      try {
+        const serviceData = JSON.parse(savedService);
+        console.log('Loaded service from localStorage:', serviceData);
+        
+        // Find matching service in servicesList by name or searchTerm
+        const searchTerm = serviceData.searchTerm || serviceData.name?.ar || serviceData.name?.en || '';
+        console.log('Searching for service:', searchTerm);
+        console.log('Available services:', servicesList);
+        
+        // First try to find by exact ID match (if serviceData.id is numeric)
+        let matchingService = null;
+        if (typeof serviceData.id === 'number' || !isNaN(Number(serviceData.id))) {
+          matchingService = servicesList.find(service => 
+            service.id === Number(serviceData.id)
+          );
+        }
+        
+        // If no ID match, try to find by exact name match
+        if (!matchingService) {
+          matchingService = servicesList.find(service => 
+            service.name === searchTerm || 
+            service.name?.toLowerCase() === searchTerm.toLowerCase()
+          );
+        }
+        
+        // If no exact match, try partial matching
+        if (!matchingService) {
+          matchingService = servicesList.find(service => 
+            service.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            searchTerm.toLowerCase().includes(service.name?.toLowerCase())
+          );
+        }
+        
+        // If still no match, try to match by common service names
+        if (!matchingService) {
+          const serviceNameMap = {
+            'cleaning': 'تنظيف',
+            'assembly': 'تركيب',
+            'moving': 'نقل',
+            'painting': 'دهان',
+            'repairs': 'إصلاح',
+            'plumbing': 'سباكة',
+            'electrical': 'كهرباء',
+            'carpentry': 'نجارة'
+          };
+          
+          // Handle both string and numeric IDs
+          const serviceId = typeof serviceData.id === 'string' ? serviceData.id : serviceData.id?.toString();
+          const mappedName = serviceNameMap[serviceId?.toLowerCase()];
+          if (mappedName) {
+            matchingService = servicesList.find(service => 
+              service.name?.toLowerCase().includes(mappedName.toLowerCase()) ||
+              mappedName.toLowerCase().includes(service.name?.toLowerCase())
+            );
+          }
+        }
+        
+        // If still no match, try to find by the original service ID from localStorage
+        if (!matchingService && serviceData.id) {
+          // Try to find a service that might match the original ID
+          const serviceId = typeof serviceData.id === 'string' ? serviceData.id : serviceData.id.toString();
+          matchingService = servicesList.find(service => 
+            service.id.toString() === serviceId ||
+            service.name?.toLowerCase().includes(serviceId.toLowerCase())
+          );
+        }
+        
+        if (matchingService) {
+          // Set the selected service ID for the Select component
+          setSelectedService(matchingService.id.toString());
+          console.log('Matched service:', matchingService);
+      } else {
+          // If no exact match, create a custom service option
+          setSelectedService('custom');
+          setCustomService({
+            id: 'custom',
+            name: searchTerm,
+            originalData: serviceData
+          });
+          console.log('Created custom service for:', searchTerm);
+        }
+        
+        // Store the full service data for later use
+        setServiceData(serviceData);
+        
+      } catch (error) {
+        console.error('Error parsing saved service:', error);
+        setSelectedService(''); // Reset to avoid MUI error
+        setError('خطأ في تحميل الخدمة المحفوظة');
+      }
+    }
+  }, [servicesList]); // Only depend on servicesList
+
+  // استدعاء البحث عن الخدمات القريبة
+  const fetchNearbyServices = useCallback(async (location, serviceTerm = null) => {
+    if (!location || isSearching) {
+      console.log('Skipping search - no location or already searching');
+      return;
+    }
+
+    // Clear any existing timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // Debounce the search by 300ms
+    searchTimeoutRef.current = setTimeout(async () => {
+      // Use serviceTerm if provided, otherwise use selectedService
+      let searchTerm = serviceTerm || selectedService;
+      
+      // If selectedService is 'custom', use the custom service name
+      if (selectedService === 'custom' && customService) {
+        searchTerm = customService.name;
+      }
+      
+      if (!searchTerm) {
+        console.log('Skipping search - no search term');
+        return;
+      }
+      
+      try {
+        setIsSearching(true);
+        setLoading(true);
+        setError(null);
+        
+        console.log('Starting search for:', searchTerm, 'at location:', location);
+        
+        // Get the service type ID for the API
+        let serviceTypeId = null;
+        if (selectedService && selectedService !== 'custom') {
+          serviceTypeId = selectedService;
+        } else if (customService && customService.originalData?.id) {
+          serviceTypeId = customService.originalData.id;
+        }
+        
+        console.log('Searching with service type ID:', serviceTypeId);
+        
+        const result = await locationService.searchNearbyLocations(
+          location.lat,
+          location.lng,
+          10,
+          serviceTypeId
+        );
+
+        if (result.success) {
+          setResults(result.data || []);
+          setError(null);
+          console.log('Search successful, found', result.data?.length || 0, 'results');
+          
+          if (result.data?.length === 0) {
+            setError('لم يتم العثور على مزودي خدمات في هذه المنطقة. جرب البحث في منطقة أخرى أو غير نوع الخدمة.');
+          } else {
+            setError(null); // Clear any previous errors
+          }
+        } else {
+          setError(result.error || "فشل في تحميل الخدمات القريبة");
+          console.error('Search failed:', result.error);
+        }
+      } catch (err) {
+        setError("فشل في تحميل الخدمات القريبة");
+        console.error('Search error:', err);
+      } finally {
+        setLoading(false);
+        setIsSearching(false);
+      }
+    }, 300);
+  }, [selectedService, customService, isSearching]);
+
   // جلب آخر موقع محفوظ
   useEffect(() => {
     const fetchUserLocation = async () => {
       try {
+        console.log('Fetching user location...');
         const result = await locationService.getLatestLocation();
         if (result.success && result.data) {
           const locationData = result.data;
@@ -62,54 +247,55 @@ export default function LocationPage() {
               lng: locationData.lng,
               address: locationData.address
             });
+            console.log('User location loaded:', locationData.address);
           }
+        } else {
+          console.log('No saved location found');
         }
       } catch (err) {
-        console.error(err);
+        console.error('Error fetching user location:', err);
+        // Don't set error for location fetch as it's optional
+      } finally {
+        setIsInitialized(true);
       }
     };
     fetchUserLocation();
   }, []);
 
-  // استدعاء البحث عن الخدمات القريبة
-  const fetchNearbyServices = useCallback(async (location) => {
-    if (!location || !selectedService) return;
-    try {
-      setLoading(true);
-      const result = await locationService.searchNearbyLocations(
-        location.lat,
-        location.lng,
-        10,
-        20
-      );
-      if (result.success) {
-        setResults(result.data || []);
-        setError(null);
-      } else {
-        setError(result.error || "فشل في تحميل الخدمات القريبة");
-      }
-    } catch (err) {
-      setError("فشل في تحميل الخدمات القريبة");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [selectedService]);
-
-  // تحديث البحث عند تغيير الموقع أو الخدمة
+  // Auto-search when both location and service are available (only once)
   useEffect(() => {
-    if (selectedLocation && selectedService) {
-      fetchNearbyServices(selectedLocation);
+    if (selectedLocation && selectedService && serviceData && !isSearching && isInitialized && !hasSearchedRef.current) {
+      const searchTerm = serviceData.searchTerm || serviceData.name?.ar || serviceData.name?.en || '';
+      if (searchTerm) {
+        console.log('Auto-triggering search with:', searchTerm);
+        hasSearchedRef.current = true; // Mark as searched to prevent re-triggering
+        fetchNearbyServices(selectedLocation, searchTerm);
+      }
     }
-  }, [selectedLocation, selectedService, fetchNearbyServices]);
+  }, [selectedLocation, selectedService, serviceData, isSearching, isInitialized]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleRefresh = () => {
-    if (selectedLocation) fetchNearbyServices(selectedLocation);
+    if (selectedLocation && !isSearching) {
+      console.log('Manual refresh triggered');
+      hasSearchedRef.current = false; // Reset search flag for manual refresh
+      fetchNearbyServices(selectedLocation);
+    } else {
+      console.log('Refresh skipped - no location or already searching');
+    }
   };
 
   const getDirectionsUrl = (service) => {
-    const lat = service.lat || service.location_lat;
-    const lng = service.lng || service.location_lng;
+    const lat = service.lat || service.location_lat || service.location?.lat;
+    const lng = service.lng || service.location_lng || service.location?.lng;
     return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
   };
 
@@ -129,7 +315,7 @@ export default function LocationPage() {
               }
             }));
             setSearchSuggestions(suggestions);
-          } else {
+      } else {
             setSearchSuggestions([]);
           }
         });
@@ -160,6 +346,45 @@ export default function LocationPage() {
              price <= filters.maxPrice;
     });
   };
+
+  // Show loading state during initialization
+  if (!isInitialized) {
+    return (
+      <div style={{ background: '#f9fbff', minHeight: '100vh' }}>
+        <Navbar />
+        <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '50vh' }}>
+          <div className="text-center">
+            <CircularProgress size={60} />
+            <div className="mt-3">جارٍ تحميل الصفحة...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error fallback
+  if (error && !selectedLocation && !selectedService) {
+    return (
+      <div style={{ background: '#f9fbff', minHeight: '100vh' }}>
+        <Navbar />
+        <div className="container py-5">
+          <div className="text-center">
+            <div className="alert alert-danger" role="alert">
+              <h4 className="alert-heading">حدث خطأ!</h4>
+              <p>{error}</p>
+              <hr />
+              <button 
+                className="btn btn-primary" 
+                onClick={() => window.location.reload()}
+              >
+                إعادة تحميل الصفحة
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ background: '#f9fbff', minHeight: '100vh' }}>
@@ -234,7 +459,7 @@ export default function LocationPage() {
                   )}
                 </div>
 
-                {selectedLocation && (
+      {selectedLocation && (
                   <div className="mt-3 p-3 bg-light rounded-3">
                     <div className="d-flex align-items-center">
                       <div className="bg-success rounded-circle p-2 me-3">
@@ -272,6 +497,11 @@ export default function LocationPage() {
                     {servicesList.map(service => (
                       <MenuItem key={service.id} value={service.id}>{service.name}</MenuItem>
                     ))}
+                    {customService && (
+                      <MenuItem value="custom" style={{ backgroundColor: '#e3f2fd' }}>
+                        <em>{customService.name} (خدمة مخصصة)</em>
+                      </MenuItem>
+                    )}
                   </Select>
                 </FormControl>
 
@@ -284,12 +514,30 @@ export default function LocationPage() {
                       <div>
                         <div className="fw-bold text-success">تم اختيار الخدمة!</div>
                         <div className="text-muted small">
-                          {servicesList.find(s => s.id === selectedService)?.name}
+                          {selectedService === 'custom' && customService ? (
+                            <>
+                              <div>{customService.name} (خدمة مخصصة)</div>
+                              {customService.originalData?.price && <div className="text-primary fw-bold">{customService.originalData.price}</div>}
+                              <div className="text-muted" style={{ fontSize: '0.75rem' }}>
+                                تم الاختيار من: {customService.originalData?.fromSearch ? 'البحث' : 'الصفحة الرئيسية'}
+                              </div>
+                            </>
+                          ) : serviceData ? (
+                            <>
+                              <div>{serviceData.searchTerm || serviceData.name?.ar || serviceData.name?.en}</div>
+                              {serviceData.price && <div className="text-primary fw-bold">{serviceData.price}</div>}
+                              <div className="text-muted" style={{ fontSize: '0.75rem' }}>
+                                تم الاختيار من: {serviceData.fromSearch ? 'البحث' : 'الصفحة الرئيسية'}
+                              </div>
+                            </>
+                          ) : (
+                            servicesList.find(s => s.id.toString() === selectedService)?.name
+                          )}
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
+        </div>
+      )}
               </CardContent>
             </Card>
 
@@ -340,9 +588,9 @@ export default function LocationPage() {
               variant="contained"
               size="large"
               fullWidth
-              disabled={!selectedLocation || !selectedService || loading}
+              disabled={!selectedLocation || !selectedService || loading || isSearching}
               onClick={handleRefresh}
-              style={{
+          style={{
                 borderRadius: '12px',
                 padding: '12px',
                 fontSize: '1.1rem',
@@ -351,10 +599,10 @@ export default function LocationPage() {
                 border: 'none'
               }}
             >
-              {loading ? (
+              {loading || isSearching ? (
                 <>
                   <CircularProgress size={20} className="me-2" />
-                  جاري البحث...
+                  {isSearching ? 'جاري البحث...' : 'جاري التحميل...'}
                 </>
               ) : (
                 <>
@@ -382,12 +630,6 @@ export default function LocationPage() {
             </div>
 
             {/* Results List */}
-            {error && (
-              <div className="alert alert-danger" role="alert">
-                {error}
-              </div>
-            )}
-
             {loading ? (
               <div className="text-center py-5">
                 <CircularProgress size={40} />
@@ -402,10 +644,24 @@ export default function LocationPage() {
                         <div className="row align-items-center">
                           <div className="col-md-8">
                             <h6 className="fw-bold mb-2 text-primary">
-                              {service.user?.first_name && service.user?.last_name 
-                                ? `${service.user.first_name} ${service.user.last_name}`
-                                : service.user?.username || 'مزود خدمة'}
+                              {service.provider?.first_name && service.provider?.last_name 
+                                ? `${service.provider.first_name} ${service.provider.last_name}`
+                                : service.provider?.username || service.title || 'مزود خدمة'}
                             </h6>
+                            
+                            {service.title && (
+                              <p className="text-muted mb-1 small">
+                                <strong>الخدمة:</strong> {service.title}
+                              </p>
+                            )}
+                            
+                            {service.description && (
+                              <p className="text-muted mb-1 small">
+                                {service.description.length > 100 
+                                  ? `${service.description.substring(0, 100)}...` 
+                                  : service.description}
+                              </p>
+                            )}
                             
                             <div className="d-flex flex-wrap gap-2 mb-2">
                               {service.distance_km != null && (
@@ -423,13 +679,13 @@ export default function LocationPage() {
                                   variant="outlined" 
                                   color="secondary"
                                 />
-                              )}
-                            </div>
-                            
-                            {service.address && (
+        )}
+      </div>
+
+                            {(service.address || service.location_address) && (
                               <div className="d-flex align-items-center text-muted">
                                 <LocationIcon className="me-1" style={{ fontSize: '16px' }} />
-                                <small>{service.address}</small>
+                                <small>{service.address || service.location_address}</small>
                               </div>
                             )}
                           </div>
@@ -446,7 +702,7 @@ export default function LocationPage() {
                               عرض الاتجاهات
                             </Button>
                           </div>
-                        </div>
+                </div>
                       </CardContent>
                     </Card>
                   </div>
@@ -456,8 +712,12 @@ export default function LocationPage() {
               <div className="text-center py-5">
                 <div className="text-muted">
                   <SearchIcon style={{ fontSize: '48px', opacity: 0.3 }} />
-                  <div className="mt-3">لا توجد خدمات قريبة ضمن النطاق المحدد</div>
-                  <small>جرب تغيير الفلاتر أو البحث في منطقة أخرى</small>
+                  <div className="mt-3">
+                    {error ? error : 'لا توجد خدمات قريبة ضمن النطاق المحدد'}
+                  </div>
+                  <small>
+                    {error ? 'جرب تغيير نوع الخدمة أو البحث في منطقة أخرى' : 'جرب تغيير الفلاتر أو البحث في منطقة أخرى'}
+                  </small>
                 </div>
               </div>
             )}
