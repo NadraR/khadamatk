@@ -250,10 +250,10 @@ class AuthService {
   getRedirectPath() {
     if (!this.user) return '/';
     
-    // إذا لم يكن لديه موقع، يوجه إلى صفحة الموقع
-    if (!this.user.hasLocation) {
-      return '/location';
-    }
+    // TODO: مؤقتاً معطل - إذا لم يكن لديه موقع، يوجه إلى صفحة الموقع
+    // if (!this.user.hasLocation) {
+    //   return '/location';
+    // }
     
     // جميع المستخدمين يوجهون إلى الصفحة الرئيسية بعد تسجيل الدخول
     return '/';
