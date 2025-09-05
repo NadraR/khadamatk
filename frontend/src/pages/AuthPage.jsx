@@ -61,9 +61,14 @@ const AuthPage = () => {
   const redirectAfterLogin = (userData) => {
     console.log("[DEBUG] AuthPage: redirectAfterLogin called with:", userData);
     
-    // Always redirect to Home page after successful login
-    console.log("[DEBUG] AuthPage: Redirecting to Home page");
-    window.location.href = "/";
+    // Redirect based on user role
+    if (userData.role === 'worker') {
+      console.log("[DEBUG] AuthPage: Redirecting worker to profile completion page");
+      window.location.href = "/worker?";
+    } else {
+      console.log("[DEBUG] AuthPage: Redirecting to Home page");
+      window.location.href = "/";
+    }
   };
 
   // Google Login handlers
@@ -228,7 +233,7 @@ const AuthPage = () => {
               <div className="brand-title-container">
                 <h1 className="brand-title">Khadamatk</h1>
                 <div className="brand-icon-small">
-                  <i className="fas fa-tools"></i>
+                  <i className="fas fa-wrench"></i>
                 </div>
               </div>
             </div>

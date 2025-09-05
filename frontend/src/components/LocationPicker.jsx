@@ -24,9 +24,15 @@ export default function LocationPicker({ onLocationSelect, height = 500 }) {
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [markerPosition, setMarkerPosition] = useState(null);
   const [isGettingCurrentLocation, setIsGettingCurrentLocation] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
+  const [isManualSelection, setIsManualSelection] = useState(false);
 
-  // تحميل الموقع الحالي عند التحميل
+  // تحميل الموقع الحالي عند التحميل الأول فقط
   useEffect(() => {
+    if (hasInitialized || isManualSelection) return; // Prevent re-running or overriding manual selection
+    
+    setHasInitialized(true);
+    
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -48,7 +54,7 @@ export default function LocationPicker({ onLocationSelect, height = 500 }) {
       setSelectedLocation(defaultCenter);
       setMarkerPosition(defaultCenter);
     }
-  }, [onLocationSelect]);
+  }, [hasInitialized, isManualSelection]); // Include isManualSelection in dependencies
 
   const getCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -56,6 +62,7 @@ export default function LocationPicker({ onLocationSelect, height = 500 }) {
       return;
     }
     setIsGettingCurrentLocation(true);
+    setIsManualSelection(false); // Reset manual selection flag
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const location = {
@@ -83,21 +90,39 @@ export default function LocationPicker({ onLocationSelect, height = 500 }) {
   };
 
   const handleMapClick = (event) => {
+    if (!event.latLng) return;
+    
     const location = {
       lat: event.latLng.lat(),
       lng: event.latLng.lng(),
     };
-    const geocoder = new window.google.maps.Geocoder();
-    geocoder.geocode({ location }, (results, status) => {
-      if (status === 'OK' && results[0]) {
-        location.address = results[0].formatted_address;
-      } else {
-        location.address = `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`;
-      }
+    
+    // Mark as manual selection to prevent auto-location override
+    setIsManualSelection(true);
+    
+    // Update marker immediately for better UX
+    setMarkerPosition(location);
+    
+    // Then geocode to get address
+    if (window.google && window.google.maps && window.google.maps.Geocoder) {
+      const geocoder = new window.google.maps.Geocoder();
+      geocoder.geocode({ location }, (results, status) => {
+        if (status === 'OK' && results[0]) {
+          location.address = results[0].formatted_address;
+        } else {
+          location.address = `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`;
+        }
+        setSelectedLocation(location);
+        onLocationSelect && onLocationSelect(location);
+        toast.success('تم تحديد الموقع بنجاح');
+      });
+    } else {
+      // Fallback if geocoder is not available
+      location.address = `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`;
       setSelectedLocation(location);
-      setMarkerPosition(location);
       onLocationSelect && onLocationSelect(location);
-    });
+      toast.success('تم تحديد الموقع بنجاح');
+    }
   };
 
   const handleSaveLocation = async () => {
@@ -118,8 +143,25 @@ export default function LocationPicker({ onLocationSelect, height = 500 }) {
     }
   };
 
-  if (loadError) return <div className="location-picker-error">خطأ في تحميل الخريطة</div>;
-  if (!isLoaded) return <div className="location-picker-loading">جاري تحميل الخريطة...</div>;
+  if (loadError) {
+    return (
+      <div className="location-picker-error">
+        <div className="error-icon">🗺️</div>
+        <h4>خطأ في تحميل الخريطة</h4>
+        <p>تأكد من اتصالك بالإنترنت أو جرب تحديث الصفحة</p>
+      </div>
+    );
+  }
+  
+  if (!isLoaded) {
+    return (
+      <div className="location-picker-loading">
+        <div className="loading-spinner"></div>
+        <h4>جاري تحميل الخريطة...</h4>
+        <p>يرجى الانتظار قليلاً</p>
+      </div>
+    );
+  }
 
   return (
     <div className="location-picker">
@@ -143,6 +185,16 @@ export default function LocationPicker({ onLocationSelect, height = 500 }) {
         </button>
       </div>
 
+      {selectedLocation && (
+        <div className="location-info">
+          <MapPin size={16} />
+          <span>
+            {isManualSelection ? '📍 موقع محدد يدوياً: ' : '📍 موقعك الحالي: '}
+            {selectedLocation.address || 'موقع محدد'}
+          </span>
+        </div>
+      )}
+
       
 
       <div className="map-container">
@@ -157,6 +209,9 @@ export default function LocationPicker({ onLocationSelect, height = 500 }) {
             mapTypeControl: false,
             fullscreenControl: true,
             zoomControl: true,
+            clickableIcons: false,
+            disableDoubleClickZoom: false,
+            gestureHandling: 'greedy',
           }}
         >
           {markerPosition && <Marker position={markerPosition} />}

@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FaScrewdriver, FaBell, FaSun, FaMoon, FaGlobe, FaHeart, FaComments, FaStar, FaBars, FaSignInAlt, FaSignOutAlt } from 'react-icons/fa';
 import './Navbar.css';
 import Sidebar from './Sidebar';
+import NotificationDropdown from './NotificationDropdown';
 import { useTranslation } from "react-i18next";
 
 const Navbar = () => {
@@ -10,12 +11,12 @@ const Navbar = () => {
   const [userRole, setUserRole] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
-  const [notificationCount, setNotificationCount] = useState(9); // تغيير إلى رقم أكبر للاختبار
   const [messageCount, setMessageCount] = useState(0); // عدد الرسائل الجديدة
   const [scrolled, setScrolled] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { t, i18n } = useTranslation();
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Check if user is logged in with proper validation
@@ -156,15 +157,11 @@ const Navbar = () => {
     }
   }, [darkMode]);
 
-  const handleNotificationsClick = () => {
-    alert(i18n.language === "ar" ? "الإشعارات مفتوحة" : "Notifications opened");
-    setNotificationCount(0);
-  };
 
   const handleMessagesClick = () => {
     // Reset message count when clicked
     setMessageCount(0);
-    window.location.href = "/messages";
+    navigate("/messages");
   };
 
   // دالة لتنسيق رقم الإشعارات إذا كان كبيراً
@@ -175,7 +172,7 @@ const Navbar = () => {
 
   // Handle login redirect
   const handleLoginClick = () => {
-    window.location.href = '/auth';
+    navigate('/auth');
   };
 
   // Debug function to clear user data (can be called from browser console)
@@ -249,7 +246,7 @@ const Navbar = () => {
     setIsLoggedIn(false);
     
     // Redirect to home page
-    window.location.href = '/';
+    navigate('/');
   };
 
   // Generate avatar initials
@@ -271,20 +268,19 @@ const Navbar = () => {
     <>
       <nav className={`navbar ${scrolled ? 'scrolled' : ''} ${sidebarOpen ? 'sidebar-open' : ''}`}>
         <div className="navbar-container">
-                  {/* Left Section - Logo and Title */}
-        <div className="navbar-left">
-          {/* Burger Menu Button */}
-          <button className="burger-menu-button" onClick={toggleSidebar}>
-            <FaBars />
-          </button>
-          <div className="logo-section">
-            <FaScrewdriver className="logo-icon" />
-            <div className="title-group">
-              <h1 className="platform-title">Khadamatk</h1>
-              <p className="platform-slogan">{t("platformSlogan")}</p>
+          {/* Left Section - Burger Menu + Logo */}
+          <div className="navbar-left">
+            <button className="burger-menu-button" onClick={toggleSidebar}>
+              <FaBars />
+            </button>
+            <div className="logo-section">
+              <FaScrewdriver className="logo-icon" />
+              <div className="title-group">
+                <h1 className="platform-title">Khadamatk</h1>
+                <p className="platform-slogan">{t("platformSlogan")}</p>
+              </div>
             </div>
           </div>
-        </div>
 
           {/* Center Section - Navigation Tabs */}
           <div className="navbar-center">
@@ -349,19 +345,8 @@ const Navbar = () => {
                 )}
               </button>
 
-              {/* Notifications with improved badge */}
-              <button 
-                className="control-button notification-button" 
-                title="Notifications"
-                onClick={handleNotificationsClick}
-              >
-                <FaBell className="control-icon" />
-                {notificationCount > 0 && (
-                  <span className="notification-badge">
-                    {formatNotificationCount(notificationCount)}
-                  </span>
-                )}
-              </button>
+              {/* Notifications Dropdown */}
+              <NotificationDropdown isLoggedIn={isLoggedIn} />
             </div>
 
             {/* User Info or Login Button */}

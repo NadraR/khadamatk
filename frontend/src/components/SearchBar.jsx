@@ -91,7 +91,7 @@ const SearchBar = () => {
     const value = e.target.value;
     setSearchTerm(value);
     
-    if (value.length > 0) {
+    if (value.trim().length > 0) {
       const filtered = services.filter(service => {
         const serviceName = i18n.language === "ar" ? service.name.ar : service.name.en;
         return serviceName.toLowerCase().includes(value.toLowerCase());
@@ -133,7 +133,19 @@ const SearchBar = () => {
   };
 
   const handleInputFocus = () => {
-    if (searchTerm.length > 0 && filteredServices.length > 0) {
+    if (searchTerm.trim().length > 0) {
+      // Re-filter services when focusing with existing text
+      const filtered = services.filter(service => {
+        const serviceName = i18n.language === "ar" ? service.name.ar : service.name.en;
+        return serviceName.toLowerCase().includes(searchTerm.toLowerCase());
+      });
+      setFilteredServices(filtered);
+      if (filtered.length > 0) {
+        setShowSuggestions(true);
+      }
+    } else {
+      // Show all services when focusing on empty input
+      setFilteredServices(services);
       setShowSuggestions(true);
     }
   };
@@ -187,7 +199,10 @@ const SearchBar = () => {
           <div className="suggestions-dropdown" ref={suggestionsRef}>
             <div className="suggestions-header">
               <span className="suggestions-title">
-                {i18n.language === "ar" ? "اقتراحات الخدمات" : "Service Suggestions"}
+                {searchTerm.trim().length > 0 
+                  ? (i18n.language === "ar" ? "اقتراحات الخدمات" : "Service Suggestions")
+                  : (i18n.language === "ar" ? "جميع الخدمات المتاحة" : "All Available Services")
+                }
               </span>
             </div>
             <div className="suggestions-list">

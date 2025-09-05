@@ -146,7 +146,8 @@ export default function GoogleLoginWrapper({ onSuccess, language = "ar", onError
   const [configError, setConfigError] = useState(null);
 
   useEffect(() => {
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    // Use environment variable or fallback to hardcoded client ID
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "449603582190-a5spd13dsq4kjm6mmn910lvsoi84r975.apps.googleusercontent.com";
     console.log("[DEBUG] GoogleLoginWrapper: Client ID from env:", clientId ? "Found" : "Missing");
 
     if (clientId && clientId !== "YOUR_GOOGLE_CLIENT_ID") {
@@ -156,7 +157,8 @@ export default function GoogleLoginWrapper({ onSuccess, language = "ar", onError
       const currentOrigin = window.location.origin;
       console.log("[DEBUG] GoogleLoginWrapper: Current origin:", currentOrigin);
       
-      if (currentOrigin.includes('localhost') && !clientId.includes('localhost')) {
+      // Add warning for localhost development
+      if (currentOrigin.includes('localhost')) {
         const warningMsg = language === "ar"
           ? "تحذير: تأكد من إضافة http://localhost:5173 إلى Authorized JavaScript origins في Google Console"
           : "Warning: Make sure to add http://localhost:5173 to Authorized JavaScript origins in Google Console";

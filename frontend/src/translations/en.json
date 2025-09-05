@@ -178,6 +178,8 @@
   "searchPlaceholder": "Search for service...",
   "servicesTitle": "Our Available Services",
   "servicesSubtitle": "Discover a wide range of professional services",
+  "joinBannerText": "Join our service providers network!",
+  "joinNowButton": "Join Now",
   "buttons": {
     "lightMode": "Light Mode",
     "darkMode": "Dark Mode"
@@ -240,5 +242,40 @@
 "Join Our Community!": "Join Our Community!",
 "Sign Up Now! and be part of our family": "Sign Up Now! and be part of our family",
 "join As Provider": "Join As Provider",
-"explore Services": "Explore Services"
+"explore Services": "Explore Services",
+"orderPage": {
+  "bannerTitle": "Confirm Service Booking",
+  "bannerSubtitle": "Complete your details to confirm the service request",
+  "loginRequired": "Login Required",
+  "loginDescription": "You must log in first to complete the service request",
+  "backToSearch": "Back to Search",
+  "login": "Login",
+  "selectedService": "Selected Service",
+  "provider": "Provider",
+  "serviceProvider": "Service Provider",
+  "suggestedPrice": "Suggested Price",
+  "currency": "EGP",
+  "distance": "Distance",
+  "km": "km",
+  "address": "Address",
+  "customerInfo": "Customer Information",
+  "name": "Name",
+  "email": "Email",
+  "orderDetails": "Order Details",
+  "orderDescription": "Order Description",
+  "descriptionPlaceholder": "Write a detailed description of what you need...",
+  "offeredPrice": "Offered Price",
+  "serviceDate": "Service Date",
+  "printOrder": "Print Order",
+  "sending": "Sending...",
+  "confirmOrder": "Confirm Order",
+  "successMessage": "Order confirmed successfully! We will contact you soon.",
+  "noServiceSelected": "No service selected.",
+  "errors": {
+    "descriptionRequired": "Please enter a description for the order",
+    "priceRequired": "Please enter a valid price",
+    "dateRequired": "Please select a service date",
+    "submitError": "An error occurred while confirming the order"
+  }
+}
 }

@@ -514,6 +514,32 @@ class AuthService {
       throw new Error('فشل في إعادة تعيين كلمة المرور');
     }
   }
+
+  // إكمال الملف الشخصي للعامل
+  async completeWorkerProfile(profileData) {
+    try {
+      if (!this.user) throw new Error('لا يوجد مستخدم مسجل');
+      
+      const response = await apiService.post('/api/accounts/complete-worker-profile/', profileData);
+      
+      // تحديث بيانات المستخدم المحلية
+      if (this.user) {
+        this.user.profile_completed = true;
+        this.saveUserToStorage(this.user);
+      }
+      
+      return {
+        success: true,
+        data: response
+      };
+    } catch (error) {
+      console.error('خطأ في إكمال الملف الشخصي:', error);
+      return {
+        success: false,
+        message: error.response?.data?.detail || error.message || 'فشل في إكمال الملف الشخصي'
+      };
+    }
+  }
 }
 
 // تصدير instance واحدة لاستخدامها في التطبيق
