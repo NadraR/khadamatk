@@ -1,6 +1,5 @@
 // src/pages/LocationPage.jsx
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { useNavigate } from "react-router-dom";
 import { 
   Box, Typography, CircularProgress, Chip, Button, List, ListItem, Paper,
   FormControl, InputLabel, Select, MenuItem, Container, IconButton, Card, CardContent
@@ -16,10 +15,8 @@ import { locationService } from '../services/LocationService';
 import LocationPicker from '../components/LocationPicker';
 import Navbar from '../components/Navbar';
 import "bootstrap/dist/css/bootstrap.min.css";
-import "./LocationPage.css";
 
 export default function LocationPage() {
-  const navigate = useNavigate();
   
   // الموقع المختار
   const [selectedLocation, setSelectedLocation] = useState(null);
@@ -97,10 +94,10 @@ export default function LocationPage() {
     fetchServiceTypes();
   }, []);
 
-  // تحميل الخدمة المختارة من localStorage (فقط عند التحميل الأول)
+  // تحميل الخدمة المختارة من localStorage
   useEffect(() => {
     const savedService = localStorage.getItem('selectedService');
-    if (savedService && servicesList.length > 0 && !selectedService) {
+    if (savedService && servicesList.length > 0) {
       try {
         const serviceData = JSON.parse(savedService);
         console.log('Loaded service from localStorage:', serviceData);
@@ -172,7 +169,7 @@ export default function LocationPage() {
           // Set the selected service ID for the Select component
           setSelectedService(matchingService.id.toString());
           console.log('Matched service:', matchingService);
-        } else {
+      } else {
           // If no exact match, create a custom service option
           setSelectedService('custom');
           setCustomService({
@@ -192,7 +189,7 @@ export default function LocationPage() {
         setError('خطأ في تحميل الخدمة المحفوظة');
       }
     }
-  }, [servicesList, selectedService]); // Added selectedService to dependencies
+  }, [servicesList]); // Only depend on servicesList
 
   // استدعاء البحث عن الخدمات القريبة
   const fetchNearbyServices = useCallback(async (location, serviceTerm = null) => {
@@ -308,7 +305,7 @@ export default function LocationPage() {
         fetchNearbyServices(selectedLocation, searchTerm);
       }
     }
-  }, [selectedLocation, selectedService, serviceData, isSearching, isInitialized, fetchNearbyServices]);
+  }, [selectedLocation, selectedService, serviceData, isSearching, isInitialized]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -362,41 +359,6 @@ export default function LocationPage() {
     setCitySearch(suggestion.address);
     setSelectedLocation(suggestion.location);
     setSearchSuggestions([]);
-  };
-
-  // دالة لتغيير الخدمة المختارة
-  const handleServiceChange = (newServiceId) => {
-    setSelectedService(newServiceId);
-    
-    // مسح الخدمة المحفوظة من localStorage عند تغيير الخدمة
-    if (newServiceId !== 'custom') {
-      localStorage.removeItem('selectedService');
-      setServiceData(null);
-      setCustomService(null);
-    }
-    
-    // إعادة تعيين حالة البحث
-    hasSearchedRef.current = false;
-  };
-
-  // دالة للتنقل إلى صفحة الطلب
-  const handleNavigateToOrder = () => {
-    // التحقق من وجود الموقع والخدمة المختارة
-    if (!selectedLocation || !selectedService) {
-      setError('يرجى اختيار الموقع ونوع الخدمة أولاً');
-      return;
-    }
-    
-    // حفظ بيانات الموقع في localStorage للصفحة التالية
-    localStorage.setItem('selectedLocation', JSON.stringify(selectedLocation));
-    
-    // التنقل إلى صفحة الطلب
-    navigate('/order');
-  };
-
-  // دالة للتنقل إلى صفحة المصادقة
-  const handleNavigateToAuth = () => {
-    navigate('/auth');
   };
 
   // تطبيق الفلاتر
@@ -456,55 +418,28 @@ export default function LocationPage() {
       <Navbar />
       
       {/* Header Section */}
-      <div className="container-fluid location-banner">
+      <div className="container-fluid py-4" style={{ background: 'linear-gradient(135deg, #0077ff, #4da6ff)' }}>
         <div className="container">
           <div className="row align-items-center">
             <div className="col-md-8">
-              <h1 className="banner-title">اختر موقعك</h1>
-              <p className="banner-subtitle">حدد موقعك واختر نوع الخدمة المطلوبة</p>
+              <h1 className="text-white mb-2" style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>
+                ابحث عن مزودي الخدمة
+              </h1>
+              <p className="text-white-50 mb-0" style={{ fontSize: '1.1rem' }}>
+                اختر موقعك وابحث عن أفضل مزودي الخدمة في منطقتك
+              </p>
             </div>
             <div className="col-md-4 text-end">
               <div className="d-flex align-items-center justify-content-end">
-                <nav aria-label="Order steps">
-                  <ul className="pagination pagination-sm mb-0">
-                    <li className="page-item disabled">
-                      <span className="page-link">Previous</span>
-                    </li>
-                    <li className="page-item active">
-                      <span className="page-link" aria-current="page">1</span>
-                    </li>
-                    <li className="page-item">
-                      <button 
-                        className="page-link" 
-                        onClick={handleNavigateToOrder}
-                        disabled={!selectedLocation || !selectedService}
-                        style={{ 
-                          background: 'none', 
-                          border: 'none', 
-                          cursor: selectedLocation && selectedService ? 'pointer' : 'not-allowed',
-                          opacity: selectedLocation && selectedService ? 1 : 0.5
-                        }}
-                      >
-                        2
-                      </button>
-                    </li>
-                    <li className="page-item">
-                      <button 
-                        className="page-link" 
-                        onClick={handleNavigateToOrder}
-                        disabled={!selectedLocation || !selectedService}
-                        style={{ 
-                          background: 'none', 
-                          border: 'none', 
-                          cursor: selectedLocation && selectedService ? 'pointer' : 'not-allowed',
-                          opacity: selectedLocation && selectedService ? 1 : 0.5
-                        }}
-                      >
-                        Next
-                      </button>
-                    </li>
-                  </ul>
-                </nav>
+                <div className="me-3">
+                  <div className="text-white fw-bold">الخطوة 1 من 3</div>
+                  <div className="text-white-50 small">اختيار الموقع والخدمة</div>
+                </div>
+                <div className="step-indicator">
+                  <div className="step active">1</div>
+                  <div className="step">2</div>
+                  <div className="step">3</div>
+                </div>
               </div>
             </div>
           </div>
@@ -518,7 +453,7 @@ export default function LocationPage() {
           <div className="col-lg-4">
             
             {/* City Search Card */}
-            <Card className="mb-4 location-card">
+            <Card className="mb-4" style={{ borderRadius: '16px', boxShadow: '0 6px 18px rgba(0,0,0,0.05)' }}>
               <CardContent className="p-4">
                 <div className="d-flex align-items-center mb-3">
                   <LocationIcon className="text-primary me-2" />
@@ -532,6 +467,7 @@ export default function LocationPage() {
                     placeholder="ابحث عن مدينتك أو عنوانك..."
                     value={citySearch}
                     onChange={(e) => handleCitySearch(e.target.value)}
+                    style={{ borderRadius: '12px', border: '2px solid #e5e7eb' }}
                   />
                   
                   {searchSuggestions.length > 0 && (
@@ -567,7 +503,7 @@ export default function LocationPage() {
             </Card>
 
             {/* Service Selection Card */}
-            <Card className="mb-4 location-card">
+            <Card className="mb-4" style={{ borderRadius: '16px', boxShadow: '0 6px 18px rgba(0,0,0,0.05)' }}>
               <CardContent className="p-4">
                 <div className="d-flex align-items-center mb-3">
                   <SearchIcon className="text-primary me-2" />
@@ -578,7 +514,7 @@ export default function LocationPage() {
                   <InputLabel>اختر نوع الخدمة</InputLabel>
                   <Select
                     value={selectedService}
-                    onChange={(e) => handleServiceChange(e.target.value)}
+                    onChange={(e) => setSelectedService(e.target.value)}
                     label="اختر نوع الخدمة"
                     style={{ borderRadius: '12px' }}
                   >
@@ -598,51 +534,42 @@ export default function LocationPage() {
 
                 {selectedService && (
                   <div className="mt-3 p-3 bg-light rounded-3">
-                    <div className="d-flex align-items-center justify-content-between">
-                      <div className="d-flex align-items-center">
-                        <div className="bg-success rounded-circle p-2 me-3">
-                          <i className="bi bi-check text-white"></i>
-                        </div>
-                        <div>
-                          <div className="fw-bold text-success">تم اختيار الخدمة!</div>
-                          <div className="text-muted small">
-                            {selectedService === 'custom' && customService ? (
-                              <>
-                                <div>{customService.name} (خدمة مخصصة)</div>
-                                {customService.originalData?.price && <div className="text-primary fw-bold">{customService.originalData.price}</div>}
-                                <div className="text-muted" style={{ fontSize: '0.75rem' }}>
-                                  تم الاختيار من: {customService.originalData?.fromSearch ? 'البحث' : 'الصفحة الرئيسية'}
-                                </div>
-                              </>
-                            ) : serviceData ? (
-                              <>
-                                <div>{serviceData.searchTerm || serviceData.name?.ar || serviceData.name?.en}</div>
-                                {serviceData.price && <div className="text-primary fw-bold">{serviceData.price}</div>}
-                                <div className="text-muted" style={{ fontSize: '0.75rem' }}>
-                                  تم الاختيار من: {serviceData.fromSearch ? 'البحث' : 'الصفحة الرئيسية'}
-                                </div>
-                              </>
-                            ) : (
-                              servicesList.find(s => s.id.toString() === selectedService)?.name
-                            )}
-                          </div>
+                    <div className="d-flex align-items-center">
+                      <div className="bg-success rounded-circle p-2 me-3">
+                        <i className="bi bi-check text-white"></i>
+                      </div>
+                      <div>
+                        <div className="fw-bold text-success">تم اختيار الخدمة!</div>
+                        <div className="text-muted small">
+                          {selectedService === 'custom' && customService ? (
+                            <>
+                              <div>{customService.name} (خدمة مخصصة)</div>
+                              {customService.originalData?.price && <div className="text-primary fw-bold">{customService.originalData.price}</div>}
+                              <div className="text-muted" style={{ fontSize: '0.75rem' }}>
+                                تم الاختيار من: {customService.originalData?.fromSearch ? 'البحث' : 'الصفحة الرئيسية'}
+                              </div>
+                            </>
+                          ) : serviceData ? (
+                            <>
+                              <div>{serviceData.searchTerm || serviceData.name?.ar || serviceData.name?.en}</div>
+                              {serviceData.price && <div className="text-primary fw-bold">{serviceData.price}</div>}
+                              <div className="text-muted" style={{ fontSize: '0.75rem' }}>
+                                تم الاختيار من: {serviceData.fromSearch ? 'البحث' : 'الصفحة الرئيسية'}
+                              </div>
+                            </>
+                          ) : (
+                            servicesList.find(s => s.id.toString() === selectedService)?.name
+                          )}
                         </div>
                       </div>
-                      <button 
-                        className="btn btn-sm btn-outline-secondary"
-                        onClick={() => handleServiceChange('')}
-                        title="تغيير الخدمة"
-                      >
-                        <i className="bi bi-x"></i>
-                      </button>
                     </div>
-                  </div>
-                )}
+        </div>
+      )}
               </CardContent>
             </Card>
 
             {/* Filters Card */}
-            <Card className="mb-4 location-card">
+            <Card className="mb-4" style={{ borderRadius: '16px', boxShadow: '0 6px 18px rgba(0,0,0,0.05)' }}>
               <CardContent className="p-4">
                 <h5 className="fw-bold mb-3">تصفية البحث</h5>
                 
@@ -690,7 +617,14 @@ export default function LocationPage() {
               fullWidth
               disabled={!selectedLocation || !selectedService || loading || isSearching}
               onClick={handleRefresh}
-              className="search-button"
+          style={{
+                borderRadius: '12px',
+                padding: '12px',
+                fontSize: '1.1rem',
+                fontWeight: 'bold',
+                background: 'linear-gradient(135deg, #0077ff, #4da6ff)',
+                border: 'none'
+              }}
             >
               {loading || isSearching ? (
                 <>
@@ -732,7 +666,7 @@ export default function LocationPage() {
               <div className="row g-3">
                 {applyFilters(results).map(service => (
                   <div key={service.id} className="col-12">
-                    <Card className="results-card">
+                    <Card style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
                       <CardContent className="p-4">
                         <div className="row align-items-center">
                           <div className="col-md-8">
@@ -836,7 +770,7 @@ export default function LocationPage() {
 
             {/* Map Section */}
             <div className="mt-4">
-              <Card className="map-card">
+              <Card style={{ borderRadius: '16px', boxShadow: '0 6px 18px rgba(0,0,0,0.05)' }}>
                 <CardContent className="p-0">
                   <div className="p-3 border-bottom">
                     <h6 className="fw-bold mb-0">الخريطة التفاعلية</h6>
@@ -853,6 +787,55 @@ export default function LocationPage() {
         </div>
       </Container>
 
+      {/* Custom Styles */}
+      <style jsx="true">{`
+        .step-indicator {
+          display: flex;
+          gap: 8px;
+        }
+        .step {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: bold;
+          font-size: 14px;
+          background: rgba(255,255,255,0.3);
+          color: white;
+        }
+        .step.active {
+          background: white;
+          color: #0077ff;
+        }
+        .suggestions-dropdown {
+          position: absolute;
+          top: 100%;
+          left: 0;
+          right: 0;
+          background: white;
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+          z-index: 1000;
+          max-height: 200px;
+          overflow-y: auto;
+        }
+        .suggestion-item {
+          padding: 12px 16px;
+          cursor: pointer;
+          border-bottom: 1px solid #f3f4f6;
+          display: flex;
+          align-items: center;
+        }
+        .suggestion-item:hover {
+          background: #f9fafb;
+        }
+        .suggestion-item:last-child {
+          border-bottom: none;
+        }
+      `}</style>
     </div>
   );
 }

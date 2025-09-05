@@ -6,9 +6,6 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import authenticate
 from django import forms
 from django.contrib.auth import get_user_model
-import logging
-
-logger = logging.getLogger(__name__)
 
 
 
@@ -107,30 +104,6 @@ class WorkerProfileSerializer(serializers.ModelSerializer):
             "created_at", "updated_at"
         ]
         read_only_fields = ["user", "created_at", "updated_at"]
-    
-    def validate(self, data):
-        logger.info(f"[WorkerProfileSerializer] Validating data: {data}")
-        return data
-    
-    def create(self, validated_data):
-        logger.info(f"[WorkerProfileSerializer] Create method called with validated_data: {validated_data}")
-        try:
-            instance = super().create(validated_data)
-            logger.info(f"[WorkerProfileSerializer] Profile created successfully: {instance}")
-            return instance
-        except Exception as e:
-            logger.error(f"[WorkerProfileSerializer] Error creating profile: {str(e)}")
-            raise
-    
-    def update(self, instance, validated_data):
-        logger.info(f"[WorkerProfileSerializer] Update method called with instance: {instance}, validated_data: {validated_data}")
-        try:
-            instance = super().update(instance, validated_data)
-            logger.info(f"[WorkerProfileSerializer] Profile updated successfully: {instance}")
-            return instance
-        except Exception as e:
-            logger.error(f"[WorkerProfileSerializer] Error updating profile: {str(e)}")
-            raise
 
 
 # 🔹 Client Profile Serializer

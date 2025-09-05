@@ -130,9 +130,23 @@ const NotificationsPage = () => {
     });
     
     if (result.success) {
-      const newNotifications = result.data.results || result.data || [];
+      // Handle both paginated and non-paginated responses
+      let newNotifications = [];
+      if (result.data.results) {
+        // Paginated response
+        newNotifications = result.data.results;
+        setHasMore(!!result.data.next); // Check if there's a next page
+      } else if (Array.isArray(result.data)) {
+        // Direct array response
+        newNotifications = result.data;
+        setHasMore(newNotifications.length === 20);
+      } else {
+        // Single notification or other structure
+        newNotifications = [result.data];
+        setHasMore(false);
+      }
+      
       setNotifications(prev => append ? [...prev, ...newNotifications] : newNotifications);
-      setHasMore(newNotifications.length === 20); // Assume more if we got a full page
       setPage(pageNum);
     } else {
       setError(result.error);
@@ -191,10 +205,10 @@ const NotificationsPage = () => {
     }
 
     // Navigate to notification URL if available
-    if (notification.url) {
-      navigate(notification.url);
-    } else if (notification.target_url) {
+    if (notification.target_url) {
       navigate(notification.target_url);
+    } else if (notification.url) {
+      navigate(notification.url);
     }
   };
 
@@ -405,7 +419,7 @@ const NotificationsPage = () => {
                           <BsCircleFill size={6} className="text-primary" />
                         )}
                         <div className="fw-bold">
-                          {notification.verb || 'إشعار جديد'}
+                          {notificationService.getNotificationDisplayText(notification.verb)}
                         </div>
                         <div className="badge bg-light text-dark">
                           {notification.level_display || notification.level}

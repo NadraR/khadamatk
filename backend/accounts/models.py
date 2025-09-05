@@ -107,15 +107,15 @@ class WorkerProfile(BaseProfile):
     services_provided = models.TextField(
         blank=True,
         verbose_name="Services Provided",
-        help_text="List of services the worker provides"
+        help_text="List of services this worker can provide"
     )
     estimated_price = models.DecimalField(
-        max_digits=7,
+        max_digits=10,
         decimal_places=2,
         validators=[MinValueValidator(0)],
-        verbose_name="Estimated Service Price",
+        verbose_name="Estimated Price",
         blank=True, null=True,
-        help_text="Estimated price for one service"
+        help_text="Estimated price for services"
     )
 
     class Meta:

@@ -385,24 +385,5 @@
   }
 }
 
-/* Form Hint Styles */
-.form-hint {
-  display: block;
-  margin-top: 0.5rem;
-  font-size: 0.875rem;
-  color: #666;
-  font-style: italic;
-  line-height: 1.4;
-}
-
-/* Enhanced form group spacing */
-.form-group {
-  margin-bottom: 1.5rem;
-}
-
-.form-group:last-child {
-  margin-bottom: 0;
-}
-
 
 

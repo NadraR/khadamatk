@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { FaPaperPlane, FaSpinner } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import { toast } from "react-toastify";
-import ChatService from "../services/ChatService";
+import chatService from "../services/chatService";
 import "./MessagesPage.css";
 
 const MessagesPage = () => {
@@ -21,7 +21,7 @@ const MessagesPage = () => {
     try {
       setLoading(true);
       setError(null);
-      const orders = await ChatService.getUserOrders();
+      const orders = await chatService.getUserOrders();
       
       // Transform orders into conversation format
       const conversationsData = orders.map(order => ({
@@ -54,7 +54,7 @@ const MessagesPage = () => {
   const loadMessages = useCallback(async (orderId) => {
     try {
       setError(null);
-      const conversation = await ChatService.getConversation(orderId);
+      const conversation = await chatService.getConversation(orderId);
       const messagesData = conversation.messages || [];
       
       // Transform messages to frontend format
@@ -80,7 +80,7 @@ const MessagesPage = () => {
   }, [i18n.language]);
 
   const connectWebSocket = useCallback((orderId) => {
-    wsRef.current = ChatService.connectWebSocket(
+    wsRef.current = chatService.connectWebSocket(
       orderId,
       (data) => {
         // Handle incoming message
@@ -163,11 +163,11 @@ const MessagesPage = () => {
 
     try {
       // Try WebSocket first
-      const wsSent = ChatService.sendWebSocketMessage(activeConversation.orderId, messageText);
+      const wsSent = chatService.sendWebSocketMessage(activeConversation.orderId, messageText);
       
       if (!wsSent) {
         // Fallback to API
-        await ChatService.sendMessage(activeConversation.orderId, messageText);
+        await chatService.sendMessage(activeConversation.orderId, messageText);
         
         // Add message to local state
         const newMsg = {

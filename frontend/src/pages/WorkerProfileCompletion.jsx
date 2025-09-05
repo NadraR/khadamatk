@@ -7,7 +7,7 @@ import { authService } from '../services/authService';
 import './WorkerProfileCompletion.css';
 
 const WorkerProfileCompletion = () => {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState(null);
@@ -15,8 +15,6 @@ const WorkerProfileCompletion = () => {
     experience_years: '',
     hourly_rate: '',
     description: '',
-    services_provided: '',
-    estimated_price: '',
     specializations: [],
     availability_hours: {
       start: '09:00',
@@ -26,22 +24,45 @@ const WorkerProfileCompletion = () => {
 
   // Check if user is logged in and is a worker
   useEffect(() => {
-    const userData = localStorage.getItem('user');
-    if (!userData) {
-      navigate('/auth');
-      return;
-    }
-    
-    try {
-      const user = JSON.parse(userData);
-      if (user.role !== 'worker') {
-        navigate('/');
-        return;
+    const checkUserAndRedirect = async () => {
+      try {
+        // تحقق من المصادقة أولاً
+        const isAuthenticated = await authService.isAuthenticated();
+        if (!isAuthenticated) {
+          navigate('/auth');
+          return;
+        }
+        
+        // احصل على بيانات المستخدم
+        const userData = authService.getCurrentUser();
+        if (!userData) {
+          const storedUser = localStorage.getItem('user');
+          if (storedUser) {
+            authService.saveUserToStorage(JSON.parse(storedUser));
+          } else {
+            navigate('/auth');
+            return;
+          }
+        }
+        
+        const finalUserData = authService.getCurrentUser();
+        
+        // تحقق إذا كان المستخدم worker ولم يكمل ملفه
+        if (finalUserData.role === 'worker' && !finalUserData.profile_completed) {
+          // ابقى في هذه الصفحة ليكمال الملف
+          return;
+        }
+        
+        // إذا كان ليس worker أو أكمل الملف، وجهه للصفحة المناسبة
+        navigate(finalUserData.role === 'worker' ? '/homeProvider' : '/');
+        
+      } catch (error) {
+        console.error('Error checking user:', error);
+        navigate('/auth');
       }
-    } catch (error) {
-      console.error('Error parsing user data:', error);
-      navigate('/auth');
-    }
+    };
+    
+    checkUserAndRedirect();
   }, [navigate]);
 
   const handleInputChange = (e) => {
@@ -87,7 +108,7 @@ const WorkerProfileCompletion = () => {
       return;
     }
 
-    if (!formData.experience_years || !formData.hourly_rate || !formData.description || !formData.services_provided || !formData.estimated_price) {
+    if (!formData.experience_years || !formData.hourly_rate || !formData.description) {
       toast.error(i18n.language === 'ar' ? 'يرجى ملء جميع الحقول المطلوبة' : 'Please fill all required fields');
       return;
     }
@@ -98,53 +119,41 @@ const WorkerProfileCompletion = () => {
         ...formData,
         location: selectedLocation,
         experience_years: parseInt(formData.experience_years),
-        hourly_rate: parseFloat(formData.hourly_rate),
-        estimated_price: parseFloat(formData.estimated_price)
+        hourly_rate: parseFloat(formData.hourly_rate)
       };
 
       const result = await authService.completeWorkerProfile(profileData);
       
-      console.log('Profile completion result:', result);
-      
       if (result.success) {
-        toast.success(i18n.language === 'ar' ? 'تم إكمال الملف الشخصي بنجاح!' : 'Profile completed successfully!');
+        toast.success(i18n.language === 'ar' ? 
+          'تم إكمال الملف الشخصي بنجاح!' : 
+          'Profile completed successfully!');
         
-        // Update user data in localStorage
-        const userData = JSON.parse(localStorage.getItem('user'));
-        userData.profile_completed = true;
-        localStorage.setItem('user', JSON.stringify(userData));
+        // تحديث بيانات المستخدم
+        const userData = authService.getCurrentUser();
+        if (userData) {
+          userData.profile_completed = true;
+          authService.saveUserToStorage(userData);
+          localStorage.setItem('user', JSON.stringify(userData));
+        }
         
-        // Navigate to provider dashboard after a short delay
+        // الانتقال للصفحة المناسبة بعد ثانيتين
         setTimeout(() => {
           navigate('/homeProvider');
-        }, 1000);
+        }, 2000);
+        
       } else {
-        toast.error(result.message || (i18n.language === 'ar' ? 'فشل في إكمال الملف الشخصي' : 'Failed to complete profile'));
+        toast.error(result.message || (i18n.language === 'ar' ? 
+          'فشل في إكمال الملف الشخصي' : 
+          'Failed to complete profile'));
       }
     } catch (error) {
       console.error('Profile completion error:', error);
-      
-      // Handle different types of errors
-      let errorMessage = i18n.language === 'ar' ? 'حدث خطأ أثناء إكمال الملف الشخصي' : 'Error completing profile';
-      
-      if (error.message === 'Network Error') {
-        errorMessage = i18n.language === 'ar' 
-          ? 'لا يمكن الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت أو المحاولة مرة أخرى.' 
-          : 'Cannot connect to server. Please check your internet connection or try again.';
-      } else if (error.response?.status === 500) {
-        errorMessage = i18n.language === 'ar' 
-          ? 'خطأ في الخادم. يرجى المحاولة مرة أخرى.' 
-          : 'Server error. Please try again.';
-      } else if (error.response?.status === 401) {
-        errorMessage = i18n.language === 'ar' 
-          ? 'انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى.' 
-          : 'Session expired. Please log in again.';
-        // Redirect to login
-        setTimeout(() => {
-          navigate('/auth');
-        }, 2000);
-      }
-      
+      const errorMessage = error.response?.data?.detail || 
+                          error.message || 
+                          (i18n.language === 'ar' ? 
+                           'حدث خطأ أثناء إكمال الملف الشخصي' : 
+                           'Error completing profile');
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -234,47 +243,6 @@ const WorkerProfileCompletion = () => {
                   }
                   required
                 />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">
-                  {i18n.language === 'ar' ? 'الخدمات المقدمة *' : 'Services Provided *'}
-                </label>
-                <textarea
-                  name="services_provided"
-                  value={formData.services_provided}
-                  onChange={handleInputChange}
-                  className="form-textarea"
-                  rows="3"
-                  placeholder={i18n.language === 'ar' 
-                    ? 'اكتب قائمة بالخدمات التي تقدمها (مثال: إصلاح الحنفيات، تركيب الأجهزة، صيانة السباكة...)' 
-                    : 'List the services you provide (e.g., faucet repair, appliance installation, plumbing maintenance...)'
-                  }
-                  required
-                />
-              </div>
-
-              <div className="form-group">
-                <label className="form-label">
-                  {i18n.language === 'ar' ? 'السعر المقدر للخدمة (جنيه) *' : 'Estimated Service Price (EGP) *'}
-                </label>
-                <input
-                  type="number"
-                  name="estimated_price"
-                  value={formData.estimated_price}
-                  onChange={handleInputChange}
-                  className="form-input"
-                  min="0"
-                  step="0.01"
-                  placeholder={i18n.language === 'ar' ? 'مثال: 150' : 'e.g., 150'}
-                  required
-                />
-                <small className="form-hint">
-                  {i18n.language === 'ar' 
-                    ? 'السعر التقريبي للخدمة الواحدة (يمكن تعديله لاحقاً)' 
-                    : 'Approximate price for one service (can be modified later)'
-                  }
-                </small>
               </div>
             </div>
 
@@ -371,6 +339,3 @@ const WorkerProfileCompletion = () => {
 };
 
 export default WorkerProfileCompletion;
-
-
-

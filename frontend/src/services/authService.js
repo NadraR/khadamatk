@@ -518,12 +518,9 @@ class AuthService {
   // إكمال الملف الشخصي للعامل
   async completeWorkerProfile(profileData) {
     try {
-      console.log('[DEBUG] completeWorkerProfile called with:', profileData);
       if (!this.user) throw new Error('لا يوجد مستخدم مسجل');
       
-      console.log('[DEBUG] Making API call to:', '/api/accounts/worker/profile/');
       const response = await apiService.post('/api/accounts/worker/profile/', profileData);
-      console.log('[DEBUG] API response:', response);
       
       // تحديث بيانات المستخدم المحلية
       if (this.user) {
@@ -537,17 +534,33 @@ class AuthService {
       };
     } catch (error) {
       console.error('خطأ في إكمال الملف الشخصي:', error);
-      console.error('Error details:', {
-        message: error.message,
-        code: error.code,
-        status: error.response?.status,
-        data: error.response?.data
-      });
-      
       return {
         success: false,
         message: error.response?.data?.detail || error.message || 'فشل في إكمال الملف الشخصي'
       };
+    }
+  }
+
+  // التحقق من اكتمال الملف الشخصي
+  async checkProfileCompletion() {
+    try {
+      const user = this.getCurrentUser();
+      if (!user) return false;
+      
+      if (user.role === 'worker') {
+        // محاولة جلب بيانات الملف الشخصي من الخادم
+        try {
+          const response = await apiService.get(`/api/accounts/user/${user.id}/profile/`);
+          return response.profile_completed || false;
+        } catch (error) {
+          console.log('Using local profile completion status');
+          return user.profile_completed || false;
+        }
+      }
+      return true; // العملاء لا يحتاجون ملف شخصي
+    } catch (error) {
+      console.error('Error checking profile completion:', error);
+      return this.user?.profile_completed || false;
     }
   }
 }

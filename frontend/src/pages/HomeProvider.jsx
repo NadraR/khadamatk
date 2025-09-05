@@ -1,12 +1,10 @@
 import React, { useState, useEffect, useRef } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { BsEnvelope, BsTelephone, BsGeoAlt, BsStarFill } from "react-icons/bs";
-import Navbar from "../components/Navbar";
 
 const ProviderProfile = () => {
   const injected = useRef(false);
   const [activeTab, setActiveTab] = useState("orders");
-  const [userData, setUserData] = useState(null);
 
   const provider = {
     name: "Ahmed Ali",
@@ -41,14 +39,6 @@ const ProviderProfile = () => {
   };
 
   useEffect(() => {
-    // Load user data from localStorage
-    const user = localStorage.getItem('user');
-    if (user) {
-      setUserData(JSON.parse(user));
-    }
-  }, []);
-
-  useEffect(() => {
     if (injected.current) return;
     const css = `
       :root {
@@ -72,18 +62,15 @@ const ProviderProfile = () => {
 
   return (
     <div className="pb-5">
-      <Navbar />
       {/* Cover */}
       <div className="profile-cover">
-        <div className="profile-avatar">
-          {userData ? (userData.name ? userData.name[0] : 'U') : 'U'}
-        </div>
+        <div className="profile-avatar">{provider.name[0]}</div>
       </div>
 
       {/* Info */}
       <div className="container mt-5">
-        <h3 className="fw-bold">{userData ? userData.name : 'User'}</h3>
-        <p className="text-muted">@{userData ? userData.email : 'user@example.com'}</p>
+        <h3 className="fw-bold">{provider.name}</h3>
+        <p className="text-muted">@{provider.username}</p>
         <p>{provider.bio}</p>
         <small className="text-muted">Joined {provider.joined}</small>
 
