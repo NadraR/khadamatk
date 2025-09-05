@@ -16,9 +16,9 @@
     max-width: 1400px;
     margin: 0 auto;
     padding: 16px 24px;
-    display: grid;
-    grid-template-columns: auto 1fr auto;
+    display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 24px;
     transition: all 0.3s ease;
     transform: translateX(0);
@@ -26,11 +26,13 @@
   
   /* Left Section - Logo and Title - ثابتة على اليسار */
   .navbar-left {
-    grid-column: 1;
+    flex-shrink: 0;
+    position: relative;
+    left: 0;
+    margin-right: auto;
     display: flex;
     align-items: center;
     gap: 15px;
-    justify-self: start;
   }
   
   /* Burger Menu Button */
@@ -104,10 +106,10 @@
   
   /* Center Section - Navigation Tabs */
   .navbar-center {
-    grid-column: 2;
+    flex: 1;
     display: flex;
     justify-content: center;
-    justify-self: center;
+    margin: 0 24px;
   }
   
   .navbar-nav {
@@ -190,11 +192,11 @@
   
   /* Right Section - Controls and User */
   .navbar-right {
-    grid-column: 3;
     display: flex;
     align-items: center;
     gap: 16px;
-    justify-self: end;
+    flex-shrink: 0;
+    margin-left: auto;
   }
   
   .navbar-controls {
@@ -207,8 +209,8 @@
   .control-button {
     background: none;
     border: none;
-    padding: 8px;
-    border-radius: 8px;
+    padding: 12px;
+    border-radius: 12px;
     cursor: pointer;
     transition: all 0.3s ease;
     display: flex;
@@ -216,14 +218,13 @@
     justify-content: center;
     position: relative;
     overflow: hidden;
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
   }
   
   .control-button.language-button {
     width: auto;
-    padding: 8px 12px;
-    height: 36px;
+    padding: 12px 16px;
   }
   
   .control-button::before {
@@ -248,7 +249,7 @@
   }
   
   .control-icon {
-    font-size: 16px;
+    font-size: 20px;
     color: #6c757d;
     transition: all 0.3s ease;
   }
@@ -259,10 +260,10 @@
   }
   
   .control-text {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     color: #6c757d;
-    margin-left: 4px;
+    margin-left: 6px;
     transition: color 0.3s ease;
   }
   
@@ -301,8 +302,8 @@
     background: rgba(220, 53, 69, 0.1);
     border: 1px solid rgba(220, 53, 69, 0.2);
     position: relative;
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -325,12 +326,12 @@
     background: linear-gradient(135deg, #dc3545, #c82333);
     color: white;
     border-radius: 50%;
-    min-width: 18px;
-    height: 18px;
+    min-width: 22px;
+    height: 22px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 10px;
+    font-size: 12px;
     font-weight: 700;
     border: 2px solid white;
     box-shadow: 0 2px 8px rgba(220, 53, 69, 0.5);
@@ -394,25 +395,23 @@
     box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
   }
   
-     /* Login Button */
-   .login-button {
-     display: flex;
-     align-items: center;
-     gap: 0px;
-     padding: 5px 5px;
-     background: linear-gradient(135deg, #007bff, #0056b3);
-     color: white;
-     border: none;
-     border-radius: 20px;
-     cursor: pointer;
-     transition: all 0.3s ease;
-     font-size: 13px;
-     font-weight: 600;
-     text-decoration: none;
-     box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
-     height: 36px;
-     min-width: 60px;
-   }
+  /* Login Button */
+  .login-button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+  }
   
   .login-button:hover {
     background: linear-gradient(135deg, #0056b3, #004085);
@@ -420,23 +419,17 @@
     box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
   }
   
-     .login-icon {
-     /* font-size: 4rem; */
-     /* color: var(--primary); */
-     /* margin-bottom: 1rem; */
-     font-size: 1rem !important;
-     margin-bottom: 0.1rem !important;
-     color: #e5e9ee !important;
-     padding-right: 0.1rem !important;
-     transition: transform 0.3s ease;
-   }
+  .login-icon {
+    font-size: 16px;
+    transition: transform 0.3s ease;
+  }
   
   .login-button:hover .login-icon {
     transform: scale(1.1);
   }
   
   .login-text {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 600;
   }
   
@@ -463,6 +456,20 @@
   .user-avatar:hover {
     transform: scale(1.05);
     box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+  }
+
+  .clickable-avatar {
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .clickable-avatar:hover {
+    transform: scale(1.1) !important;
+    box-shadow: 0 6px 16px rgba(0, 123, 255, 0.5) !important;
+  }
+
+  .clickable-avatar:active {
+    transform: scale(0.95);
   }
   
   .avatar-initials {
@@ -655,6 +662,11 @@
   
   body.dark-mode .user-avatar:hover {
     box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+  }
+
+  body.dark-mode .clickable-avatar:hover {
+    transform: scale(1.1) !important;
+    box-shadow: 0 6px 16px rgba(52, 152, 219, 0.6) !important;
   }
   
   body.dark-mode .logout-button {
@@ -984,31 +996,6 @@
       width: 24px;
       height: 24px;
       padding: 4px;
-    }
-  }
-  
-  /* Responsive Design for Grid Layout */
-  @media (max-width: 1024px) {
-    .navbar-container {
-      grid-template-columns: auto 1fr auto;
-      gap: 16px;
-    }
-  }
-  
-  @media (max-width: 768px) {
-    .navbar-container {
-      grid-template-columns: auto 1fr;
-      gap: 12px;
-    }
-    
-    .navbar-center {
-      grid-column: 1 / -1;
-      order: 3;
-      margin-top: 8px;
-    }
-    
-    .navbar-right {
-      grid-column: 2;
     }
   }
   

@@ -67,7 +67,6 @@ console.log("🔑 current user from localStorage:", currentUser);
 
   return (
     <div className="pb-5">
-      <Navbar />
       {/* Cover */}
       <div className="profile-cover">
         <div className="profile-avatar">{worker?.username ? worker.username[0].toUpperCase() : "W"}</div>
@@ -108,7 +107,9 @@ console.log("🔑 current user from localStorage:", currentUser);
     ? worker.skills.split(",").join(", ")
     : "No skills"}
 </p>
-              <p><b>Certifications:</b> {worker.certifications?.join(", ") || "N/A"}</p>
+              <p><b>Certifications:</b> {Array.isArray(worker.certifications)
+    ? worker.certifications.join(", ")
+    : worker.certifications || "N/A"}</p>
               <p>{worker.bio}</p>
             </div>
           </div>
@@ -191,26 +192,12 @@ console.log("🔑 current user from localStorage:", currentUser);
           )}
         </div>
 
-        {/* Edit Profile */}
-        {/* {String(worker.id) === String(JSON.parse(localStorage.getItem("user"))?.id) && (
-  <div style={{ position: "absolute", top: 0, right: 0 }}>
-    <EditWorkerForm worker={worker} setWorker={setWorker} />
-  </div>
-)} */}
-
-{String(worker.user_id) === String(JSON.parse(localStorage.getItem("user"))?.id) && (
-  <div style={{ position: "absolute", top: 0, right: 0 }}>
-    <EditWorkerForm worker={worker} setWorker={setWorker} />
-  </div>
-)}
-
-
-
-{/* {worker && String(worker.id) === String(JSON.parse(localStorage.getItem("user"))?.id) && (
-  <div style={{ position: "absolute", top: 0, right: 0 }}>
-    <EditWorkerForm worker={worker} setWorker={setWorker} />
-  </div>
-)} */}
+        {/* Edit Profile Form */}
+        {String(worker.user_id) === String(JSON.parse(localStorage.getItem("user"))?.id) && (
+            <div style={{ position: "absolute", top: 0, right: 0 }}>
+              <EditWorkerForm worker={worker} setWorker={setWorker} />
+           </div>
+        )}
 
 
         {errorMsg && <p className="text-danger mt-3">{errorMsg}</p>}
@@ -221,7 +208,7 @@ console.log("🔑 current user from localStorage:", currentUser);
 
 export default WorkerProfile;
 
-// ------------------ EditWorkerForm ------------------
+// ------------------ EditWorkerForm Component ------------------
 const EditWorkerForm = ({ worker, setWorker }) => {
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -239,98 +226,27 @@ const EditWorkerForm = ({ worker, setWorker }) => {
       : worker.certifications || "",
     password: "",
   });
-  
   const [errorMsg, setErrorMsg] = useState("");
 
   const handleChange = (e) => setFormData({...formData, [e.target.name]: e.target.value});
 
-//   const handleSubmit = async (e) => {
-//     e.preventDefault();
-//     setErrorMsg("");
-//     try {
-//       // const dataToSend = {...formData};
-//       const dataToSend = {
-//         ...formData,
-//         skills: formData.skills ? formData.skills.split(",").map(s => s.trim()) : [],
-//         certifications: formData.certifications
-//           ? formData.certifications.split(",").map(c => c.trim())
-//           : [],
-//       };
-//       if (!dataToSend.password) delete dataToSend.password;
-//       const token = localStorage.getItem("access") || localStorage.getItem("token");
-//       if (!token) {
-//         setErrorMsg("⚠️ غير مسموح: لازم تكوني مسجلة دخول");
-//         return;
-//       }
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setErrorMsg("");
+    try {
+      const dataToSend = {...formData};
+      if (!dataToSend.password) delete dataToSend.password;
 
+      await apiService.put(`api/accounts/worker/profile/full-update/`, dataToSend);
 
-//       // split skills/certifications by comma before sending
-//       // dataToSend.skills = formData.skills.split(",").map(s => s.trim());
-//       // dataToSend.certifications = formData.certifications.split(",").map(c => c.trim());
-
-      
-
-
-// await apiService.put("/accounts/worker/profile/full-update/", payload, {
-//   headers: { Authorization: `Bearer ${token}` },
-// });
-      
-//       setWorker({...worker, ...dataToSend, password: undefined});
-//       setEditing(false);
-//     } catch (err) {
-//       console.error(err);
-//       setErrorMsg("فشل في تحديث البروفايل");
-//     }
-//   };
-
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setErrorMsg("");
-
-  try {
-    // جهزي البيانات اللي هتبعت
-    const dataToSend = {
-      ...formData,
-      skills: formData.skills
-        ? formData.skills.split(",").map((s) => s.trim())
-        : [],
-      certifications: formData.certifications
-        ? formData.certifications.split(",").map((c) => c.trim())
-        : [],
-    };
-
-    // لو مفيش باسورد متكتبش في الريكوست
-    if (!dataToSend.password) delete dataToSend.password;
-
-    // هات التوكن من localStorage
-    const token =
-      localStorage.getItem("access") || localStorage.getItem("token");
-
-    if (!token) {
-      setErrorMsg("⚠️ غير مسموح: لازم تكوني مسجلة دخول");
-      return;
+      // تحديث محليًا بدون إعادة تحميل الصفحة
+      setWorker({...worker, ...dataToSend, password: undefined});
+      setEditing(false);
+    } catch (err) {
+      console.error(err);
+      setErrorMsg("فشل في تحديث البروفايل");
     }
-
-    // Debug: شوفي الداتا اللي رايحة للـ API
-    console.log("📤 Sending payload:", dataToSend);
-
-    // ابعتي الريكوست
-    await apiService.put(
-      "/accounts/worker/profile/full-update/",
-      dataToSend,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
-
-    // لو نجح: حدثي بيانات الـ worker
-    setWorker({ ...worker, ...dataToSend, password: undefined });
-    setEditing(false);
-  } catch (err) {
-    console.error("❌ فشل التحديث:", err.response || err);
-    setErrorMsg("فشل في تحديث البروفايل");
-  }
-};
+  };
 
 
   return (

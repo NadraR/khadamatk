@@ -32,8 +32,8 @@ urlpatterns = [
     path('api/auth/', include('djoser.urls')),
     path('api/auth/', include('djoser.urls.jwt')),
 
-    # Chat
-    path("api/chat/", include("chat.urls")),
+    # Chat - Temporarily disabled
+    # path("api/chat/", include("chat.urls")),
 
     # Notifications
     path('api/notifications/', include('notifications.urls')),

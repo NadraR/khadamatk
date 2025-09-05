@@ -255,40 +255,5 @@
 "Join Our Community!": "انضم إلى مجتمعنا!",
 "Sign Up Now! and be part of our family": "اشترك الآن! وكن جزءًا من عائلتنا",
 "join As Provider": "انضم كمزود خدمة",
-"explore Services": "استكشف الخدمات",
-"orderPage": {
-  "bannerTitle": "تأكيد حجز الخدمة",
-  "bannerSubtitle": "أكمل بياناتك لتأكيد طلب الخدمة",
-  "loginRequired": "تسجيل الدخول مطلوب",
-  "loginDescription": "يجب عليك تسجيل الدخول أولاً لإكمال طلب الخدمة",
-  "backToSearch": "العودة للبحث",
-  "login": "تسجيل الدخول",
-  "selectedService": "خدمة مختارة",
-  "provider": "المزود",
-  "serviceProvider": "مزود خدمة",
-  "suggestedPrice": "السعر المقترح",
-  "currency": "جنيه",
-  "distance": "المسافة",
-  "km": "كم",
-  "address": "العنوان",
-  "customerInfo": "معلومات العميل",
-  "name": "الاسم",
-  "email": "البريد الإلكتروني",
-  "orderDetails": "تفاصيل الطلب",
-  "orderDescription": "وصف الطلب",
-  "descriptionPlaceholder": "اكتب وصفاً مفصلاً لما تحتاجه...",
-  "offeredPrice": "السعر المقترح",
-  "serviceDate": "موعد الخدمة",
-  "printOrder": "طباعة الطلب",
-  "sending": "جاري الإرسال...",
-  "confirmOrder": "تأكيد الطلب",
-  "successMessage": "تم تأكيد الطلب بنجاح! سيتم التواصل معك قريباً.",
-  "noServiceSelected": "لا توجد خدمة مختارة.",
-  "errors": {
-    "descriptionRequired": "يرجى إدخال وصف للطلب",
-    "priceRequired": "يرجى إدخال سعر صحيح",
-    "dateRequired": "يرجى اختيار موعد للخدمة",
-    "submitError": "حصل خطأ أثناء تأكيد الطلب"
-  }
-}
+"explore Services": "استكشف الخدمات"
 }

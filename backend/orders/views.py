@@ -22,6 +22,13 @@ def order_list(request):
         return Response(serializer.data)
 
     elif request.method == "POST":
+        # Check if user has the right role to create orders
+        if hasattr(request.user, 'role') and request.user.role == 'worker':
+            return Response(
+                {"error": "Workers cannot create orders. They can only make offers."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        
         serializer = OrderSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save(customer=request.user)

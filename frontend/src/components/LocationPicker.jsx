@@ -143,25 +143,8 @@ export default function LocationPicker({ onLocationSelect, height = 500 }) {
     }
   };
 
-  if (loadError) {
-    return (
-      <div className="location-picker-error">
-        <div className="error-icon">🗺️</div>
-        <h4>خطأ في تحميل الخريطة</h4>
-        <p>تأكد من اتصالك بالإنترنت أو جرب تحديث الصفحة</p>
-      </div>
-    );
-  }
-  
-  if (!isLoaded) {
-    return (
-      <div className="location-picker-loading">
-        <div className="loading-spinner"></div>
-        <h4>جاري تحميل الخريطة...</h4>
-        <p>يرجى الانتظار قليلاً</p>
-      </div>
-    );
-  }
+  if (loadError) return <div className="location-picker-error">خطأ في تحميل الخريطة</div>;
+  if (!isLoaded) return <div className="location-picker-loading">جاري تحميل الخريطة...</div>;
 
   return (
     <div className="location-picker">

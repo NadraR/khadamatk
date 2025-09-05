@@ -56,39 +56,26 @@ class WorkerProfileCreateView(generics.CreateAPIView):
     serializer_class = WorkerProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-    def create(self, request, *args, **kwargs):
-        logger.info(f"[WorkerProfileCreateView] Create method called with data: {request.data}")
-        logger.info(f"[WorkerProfileCreateView] User: {request.user}, Role: {getattr(request.user, 'role', 'No role')}")
-        try:
-            return super().create(request, *args, **kwargs)
-        except Exception as e:
-            logger.error(f"[WorkerProfileCreateView] Error in create: {str(e)}")
-            raise
-
     def perform_create(self, serializer):
-        logger.info(f"[WorkerProfileCreateView] perform_create called with serializer: {serializer}")
+        # Allow any authenticated user to create a worker profile
+        # Update user role to worker if they're creating a worker profile
         if self.request.user.role != 'worker':
-            logger.error(f"[WorkerProfileCreateView] Permission denied for user {self.request.user} with role {getattr(self.request.user, 'role', 'No role')}")
-            raise PermissionDenied("Only workers can create a worker profile.")
+            self.request.user.role = 'worker'
+            self.request.user.save()
+            print(f"Updated user {self.request.user.id} role from {self.request.user.role} to worker")
         
         # Check if user already has a worker profile
         if hasattr(self.request.user, 'worker_profile'):
-            logger.info(f"[WorkerProfileCreateView] User {self.request.user} already has a worker profile, updating it")
-            # Update existing profile instead of creating new one
+            # Update existing profile
             existing_profile = self.request.user.worker_profile
             for field, value in serializer.validated_data.items():
-                if field != 'user':  # Don't update the user field
-                    setattr(existing_profile, field, value)
+                setattr(existing_profile, field, value)
             existing_profile.save()
-            logger.info(f"[WorkerProfileCreateView] Profile updated successfully")
+            print(f"Updated existing worker profile for user {self.request.user.id}")
         else:
-            logger.info(f"[WorkerProfileCreateView] Creating new profile for user {self.request.user}")
-            try:
-                serializer.save(user=self.request.user)
-                logger.info(f"[WorkerProfileCreateView] Profile created successfully")
-            except Exception as e:
-                logger.error(f"[WorkerProfileCreateView] Error saving profile: {str(e)}")
-                raise
+            # Create new profile
+            serializer.save(user=self.request.user)
+            print(f"Created new worker profile for user {self.request.user.id}")
 
 
 class ClientProfileCreateView(generics.CreateAPIView):
@@ -97,7 +84,7 @@ class ClientProfileCreateView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         if self.request.user.role != 'client':
-            raise PermissionError("Only clients can create a client profile.")
+            raise PermissionDenied("Only clients can create a client profile.")
         serializer.save(user=self.request.user) 
 
 class ClientProfileView(generics.RetrieveUpdateAPIView):
@@ -198,7 +185,7 @@ def worker_full_update(request):
     profile = get_object_or_404(WorkerProfile, user=user)
 
     # 2️⃣ قسم الداتا بين User + WorkerProfile
-    user_fields = ['username', 'email', 'first_name', 'last_name', 'password']
+    user_fields = ['username', 'email', 'first_name', 'last_name', 'password', 'bio']
     user_data = {k: v for k, v in request.data.items() if k in user_fields}
     profile_data = {k: v for k, v in request.data.items() if k not in user_fields}
 

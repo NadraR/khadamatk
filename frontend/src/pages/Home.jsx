@@ -17,23 +17,57 @@ import paintingImg from "../images/Painting.jpg";
 import searchImage from "../images/search.jpg";
 import apiService from "../services/ApiService";
 
+const services = [
+  { key: "assembly", title: "Assembly", icon: <BsTools />, img: assemblyImg, desc: "Assemble or disassemble furniture items with care." },
+  { key: "moving", title: "Moving", icon: <BsTruck />, img: movingImg, desc: "Help with packing, moving heavy items, and safe transport." },
+  { key: "cleaning", title: "Cleaning", icon: <BsBrush />, img: cleaningImg, desc: "Deep home cleaning, regular housekeeping, and office cleanup." },
+  { key: "repairs", title: "Home Repairs", icon: <BsHammer />, img: repairsImg, desc: "Fix leaks, furniture, small electrical jobs, and more." },
+  { key: "painting", title: "Painting", icon: <BsPaintBucket />, img: paintingImg, desc: "Interior & exterior painting with premium quality." }
+];
+
+const projects = [
+  { title: "تركيب دولاب", img: assemblyImg, price: "150 ج.م" },  
+  { title: "تنظيف شقة", img: cleaningImg, price: "250 ج.م" },
+  { title: "دهان غرفة", img: paintingImg, price: "400 ج.م" },
+  { title: "نقل أثاث", img: movingImg, price: "600 ج.م" },
+];
+
+const Testimonial = ({ name, quote }) => (
+  <div className="testimonial h-100 text-center">
+    <div className="mb-2">
+      {[...Array(5)].map((_, i) => <BsStarFill key={i} className="text-warning" />)}
+    </div>
+    <p className="text-muted">"{quote}"</p>
+    <div className="mt-2 fw-bold">{name}</div>
+  </div>
+);
+
 const Home = () => {
   const injected = useRef(false);
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [activeService, setActiveService] = useState(() => services[0]);
-   const [clients, setClients] = useState([]);
-   const [workers, setWorkers] = useState([]);
+   const [client, setClients] = useState([]);
+   const [worker, setWorkers] = useState([]);
 
      const [selectedClient, setSelectedClient] = useState(null);
      const [selectedWorker, setSelectedWorker] = useState(null);
+     const [errorMsg, setErrorMsg] = useState("");
 
-  const fetchClientDetails = (id) => {
-    fetch(`http://127.0.0.1:8000/api/accounts/users/${id}/`)
-      .then((res) => res.json())
-      .then((data) => setSelectedClient(data))
-      .catch((err) => console.error("Error fetching client details:", err));
-  };
+     useEffect(() => {
+      const fetchClientProfile = async () => {
+      try {
+      // للـ Home page نستخدم الـ current user profile
+      const url = `api/accounts/client/profile/`;
+      const data = await apiService.get(url);
+      setClient(data);
+      } catch (err) {
+      console.error("❌ Error fetching client profile:", err);
+      setErrorMsg("فشل في تحميل بيانات البروفايل");
+      }
+      };
+      fetchClientProfile();
+      }, []); // No dependencies needed
 
   const fetchWorkerDetails = (id) => {
     fetch(`http://127.0.0.1:8000/api/accounts/workers/${id}/`)
@@ -529,7 +563,7 @@ const Home = () => {
         </div>
       </section>
 
-      <div>
+      {/* <div>
   <h2>Clients</h2>
   <ul>
     {clients.map((client) => (
@@ -586,38 +620,13 @@ const Home = () => {
   </div>
 )}
 
-</div>
+</div> */}
 
 
       
     </div>
   );
 };
-
-const services = [
-   { key: "assembly", title: "Assembly", icon: <BsTools />, img: assemblyImg, desc: "Assemble or disassemble furniture items with care." },
-  { key: "moving", title: "Moving", icon: <BsTruck />, img: movingImg, desc: "Help with packing, moving heavy items, and safe transport." },
-  { key: "cleaning", title: "Cleaning", icon: <BsBrush />, img: cleaningImg, desc: "Deep home cleaning, regular housekeeping, and office cleanup." },
-  { key: "repairs", title: "Home Repairs", icon: <BsHammer />, img: repairsImg, desc: "Fix leaks, furniture, small electrical jobs, and more." },
-  { key: "painting", title: "Painting", icon: <BsPaintBucket />, img: paintingImg, desc: "Interior & exterior painting with premium quality." }
-];
-
-const projects = [
-  { title: "تركيب دولاب", img: assemblyImg, price: "150 ج.م" },  
-  { title: "تنظيف شقة", img: cleaningImg, price: "250 ج.م" },
-  { title: "دهان غرفة", img: paintingImg, price: "400 ج.م" },
-  { title: "نقل أثاث", img: movingImg, price: "600 ج.م" },
-];
-
-const Testimonial = ({ name, quote }) => (
-  <div className="testimonial h-100 text-center">
-    <div className="mb-2">
-      {[...Array(5)].map((_, i) => <BsStarFill key={i} className="text-warning" />)}
-    </div>
-    <p className="text-muted">“{quote}”</p>
-    <div className="mt-2 fw-bold">{name}</div>
-  </div>
-);
 
 export default Home;
 

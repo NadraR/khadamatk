@@ -63,9 +63,9 @@ INSTALLED_APPS = [
     'services.apps.ServicesConfig',
     'admin_api',
     'location',
-    'chat',
+    # 'chat',  # Temporarily disabled
     'notifications.apps.NotificationsConfig',
-    'channels',
+    # 'channels',  # Temporarily disabled
     ]
    
 
@@ -122,16 +122,16 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'core.wsgi.application'
-ASGI_APPLICATION = 'core.asgi.application'
+# ASGI_APPLICATION = 'core.asgi.application'  # Temporarily disabled
 
-CHANNEL_LAYERS = {
-    "default": {
-        "BACKEND": "channels_redis.core.RedisChannelLayer",
-        "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)], 
-        },
-    },
-}
+# CHANNEL_LAYERS = {  # Temporarily disabled
+#     "default": {
+#         "BACKEND": "channels_redis.core.RedisChannelLayer",
+#         "CONFIG": {
+#             "hosts": [("127.0.0.1", 6379)], 
+#         },
+#     },
+# }
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -202,9 +202,9 @@ AUTH_USER_MODEL = 'accounts.User'
 
 
 
-# CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
+CORS_PREFLIGHT_MAX_AGE = 86400  # 24 hours
 
 # Additional CORS settings for better compatibility
 CORS_ALLOW_METHODS = [
@@ -216,16 +216,22 @@ CORS_ALLOW_METHODS = [
     "PUT",
 ]
 
-CORS_ALLOW_HEADERS = list(default_headers) + [
-#    "accept",
-#     "accept-encoding",
-    "authorization",
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization", 
     "content-type",
-    # "dnt",
-    # "origin",
-    # "user-agent",
-    # "x-csrftoken",
-    # "x-requested-with",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+    "x-forwarded-for",
+    "x-forwarded-proto",
+    "cache-control",
+    "pragma",
+    "expires",
+    "headers",  # Added this explicitly
 ]
 
 PASSWORD_HASHERS = [
