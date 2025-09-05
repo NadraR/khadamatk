@@ -104,6 +104,8 @@ const WorkerProfileCompletion = () => {
 
       const result = await authService.completeWorkerProfile(profileData);
       
+      console.log('Profile completion result:', result);
+      
       if (result.success) {
         toast.success(i18n.language === 'ar' ? 'تم إكمال الملف الشخصي بنجاح!' : 'Profile completed successfully!');
         
@@ -112,14 +114,38 @@ const WorkerProfileCompletion = () => {
         userData.profile_completed = true;
         localStorage.setItem('user', JSON.stringify(userData));
         
-        // Navigate to home or dashboard
-        navigate('/');
+        // Navigate to provider dashboard after a short delay
+        setTimeout(() => {
+          navigate('/homeProvider');
+        }, 1000);
       } else {
         toast.error(result.message || (i18n.language === 'ar' ? 'فشل في إكمال الملف الشخصي' : 'Failed to complete profile'));
       }
     } catch (error) {
       console.error('Profile completion error:', error);
-      toast.error(i18n.language === 'ar' ? 'حدث خطأ أثناء إكمال الملف الشخصي' : 'Error completing profile');
+      
+      // Handle different types of errors
+      let errorMessage = i18n.language === 'ar' ? 'حدث خطأ أثناء إكمال الملف الشخصي' : 'Error completing profile';
+      
+      if (error.message === 'Network Error') {
+        errorMessage = i18n.language === 'ar' 
+          ? 'لا يمكن الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت أو المحاولة مرة أخرى.' 
+          : 'Cannot connect to server. Please check your internet connection or try again.';
+      } else if (error.response?.status === 500) {
+        errorMessage = i18n.language === 'ar' 
+          ? 'خطأ في الخادم. يرجى المحاولة مرة أخرى.' 
+          : 'Server error. Please try again.';
+      } else if (error.response?.status === 401) {
+        errorMessage = i18n.language === 'ar' 
+          ? 'انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى.' 
+          : 'Session expired. Please log in again.';
+        // Redirect to login
+        setTimeout(() => {
+          navigate('/auth');
+        }, 2000);
+      }
+      
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

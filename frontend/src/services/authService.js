@@ -518,9 +518,12 @@ class AuthService {
   // إكمال الملف الشخصي للعامل
   async completeWorkerProfile(profileData) {
     try {
+      console.log('[DEBUG] completeWorkerProfile called with:', profileData);
       if (!this.user) throw new Error('لا يوجد مستخدم مسجل');
       
-      const response = await apiService.post('/api/accounts/complete-worker-profile/', profileData);
+      console.log('[DEBUG] Making API call to:', '/api/accounts/worker/profile/');
+      const response = await apiService.post('/api/accounts/worker/profile/', profileData);
+      console.log('[DEBUG] API response:', response);
       
       // تحديث بيانات المستخدم المحلية
       if (this.user) {
@@ -534,6 +537,13 @@ class AuthService {
       };
     } catch (error) {
       console.error('خطأ في إكمال الملف الشخصي:', error);
+      console.error('Error details:', {
+        message: error.message,
+        code: error.code,
+        status: error.response?.status,
+        data: error.response?.data
+      });
+      
       return {
         success: false,
         message: error.response?.data?.detail || error.message || 'فشل في إكمال الملف الشخصي'
