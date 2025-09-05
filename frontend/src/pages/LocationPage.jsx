@@ -1,6 +1,6 @@
 // src/pages/LocationPage.jsx
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import { 
+import {
   Box, Typography, CircularProgress, Chip, Button, List, ListItem, Paper,
   FormControl, InputLabel, Select, MenuItem, Container, IconButton, Card, CardContent
 } from "@mui/material";
@@ -8,6 +8,7 @@ import { LocationOn as LocationIcon, Directions as DirectionsIcon, Refresh as Re
 import { locationService } from '../services/LocationService';
 import LocationPicker from '../components/LocationPicker';
 import Navbar from '../components/Navbar';
+import ChatbotWidget from '../components/ChatbotWidget';
 import "bootstrap/dist/css/bootstrap.min.css";
 
 export default function LocationPage() {
@@ -68,36 +69,36 @@ export default function LocationPage() {
       try {
         const serviceData = JSON.parse(savedService);
         console.log('Loaded service from localStorage:', serviceData);
-        
+
         // Find matching service in servicesList by name or searchTerm
         const searchTerm = serviceData.searchTerm || serviceData.name?.ar || serviceData.name?.en || '';
         console.log('Searching for service:', searchTerm);
         console.log('Available services:', servicesList);
-        
+
         // First try to find by exact ID match (if serviceData.id is numeric)
         let matchingService = null;
         if (typeof serviceData.id === 'number' || !isNaN(Number(serviceData.id))) {
-          matchingService = servicesList.find(service => 
+          matchingService = servicesList.find(service =>
             service.id === Number(serviceData.id)
           );
         }
-        
+
         // If no ID match, try to find by exact name match
         if (!matchingService) {
-          matchingService = servicesList.find(service => 
-            service.name === searchTerm || 
+          matchingService = servicesList.find(service =>
+            service.name === searchTerm ||
             service.name?.toLowerCase() === searchTerm.toLowerCase()
           );
         }
-        
+
         // If no exact match, try partial matching
         if (!matchingService) {
-          matchingService = servicesList.find(service => 
+          matchingService = servicesList.find(service =>
             service.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             searchTerm.toLowerCase().includes(service.name?.toLowerCase())
           );
         }
-        
+
         // If still no match, try to match by common service names
         if (!matchingService) {
           const serviceNameMap = {
@@ -110,33 +111,33 @@ export default function LocationPage() {
             'electrical': 'كهرباء',
             'carpentry': 'نجارة'
           };
-          
+
           // Handle both string and numeric IDs
           const serviceId = typeof serviceData.id === 'string' ? serviceData.id : serviceData.id?.toString();
           const mappedName = serviceNameMap[serviceId?.toLowerCase()];
           if (mappedName) {
-            matchingService = servicesList.find(service => 
+            matchingService = servicesList.find(service =>
               service.name?.toLowerCase().includes(mappedName.toLowerCase()) ||
               mappedName.toLowerCase().includes(service.name?.toLowerCase())
             );
           }
         }
-        
+
         // If still no match, try to find by the original service ID from localStorage
         if (!matchingService && serviceData.id) {
           // Try to find a service that might match the original ID
           const serviceId = typeof serviceData.id === 'string' ? serviceData.id : serviceData.id.toString();
-          matchingService = servicesList.find(service => 
+          matchingService = servicesList.find(service =>
             service.id.toString() === serviceId ||
             service.name?.toLowerCase().includes(serviceId.toLowerCase())
           );
         }
-        
+
         if (matchingService) {
           // Set the selected service ID for the Select component
           setSelectedService(matchingService.id.toString());
           console.log('Matched service:', matchingService);
-      } else {
+        } else {
           // If no exact match, create a custom service option
           setSelectedService('custom');
           setCustomService({
@@ -146,10 +147,10 @@ export default function LocationPage() {
           });
           console.log('Created custom service for:', searchTerm);
         }
-        
+
         // Store the full service data for later use
         setServiceData(serviceData);
-        
+
       } catch (error) {
         console.error('Error parsing saved service:', error);
         setSelectedService(''); // Reset to avoid MUI error
@@ -174,24 +175,24 @@ export default function LocationPage() {
     searchTimeoutRef.current = setTimeout(async () => {
       // Use serviceTerm if provided, otherwise use selectedService
       let searchTerm = serviceTerm || selectedService;
-      
+
       // If selectedService is 'custom', use the custom service name
       if (selectedService === 'custom' && customService) {
         searchTerm = customService.name;
       }
-      
+
       if (!searchTerm) {
         console.log('Skipping search - no search term');
         return;
       }
-      
+
       try {
         setIsSearching(true);
         setLoading(true);
         setError(null);
-        
+
         console.log('Starting search for:', searchTerm, 'at location:', location);
-        
+
         // Get the service type ID for the API
         let serviceTypeId = null;
         if (selectedService && selectedService !== 'custom') {
@@ -199,9 +200,9 @@ export default function LocationPage() {
         } else if (customService && customService.originalData?.id) {
           serviceTypeId = customService.originalData.id;
         }
-        
+
         console.log('Searching with service type ID:', serviceTypeId);
-        
+
         const result = await locationService.searchNearbyLocations(
           location.lat,
           location.lng,
@@ -213,7 +214,7 @@ export default function LocationPage() {
           setResults(result.data || []);
           setError(null);
           console.log('Search successful, found', result.data?.length || 0, 'results');
-          
+
           if (result.data?.length === 0) {
             setError('لم يتم العثور على مزودي خدمات في هذه المنطقة. جرب البحث في منطقة أخرى أو غير نوع الخدمة.');
           } else {
@@ -315,7 +316,7 @@ export default function LocationPage() {
               }
             }));
             setSearchSuggestions(suggestions);
-      } else {
+          } else {
             setSearchSuggestions([]);
           }
         });
@@ -340,10 +341,10 @@ export default function LocationPage() {
       const distance = service.distance_km || 0;
       const rating = service.rating || 0;
       const price = service.price || 0;
-      
-      return distance <= filters.maxDistance && 
-             rating >= filters.minRating && 
-             price <= filters.maxPrice;
+
+      return distance <= filters.maxDistance &&
+        rating >= filters.minRating &&
+        price <= filters.maxPrice;
     });
   };
 
@@ -373,8 +374,8 @@ export default function LocationPage() {
               <h4 className="alert-heading">حدث خطأ!</h4>
               <p>{error}</p>
               <hr />
-              <button 
-                className="btn btn-primary" 
+              <button
+                className="btn btn-primary"
                 onClick={() => window.location.reload()}
               >
                 إعادة تحميل الصفحة
@@ -389,7 +390,7 @@ export default function LocationPage() {
   return (
     <div style={{ background: '#f9fbff', minHeight: '100vh' }}>
       <Navbar />
-      
+
       {/* Header Section */}
       <div className="container-fluid py-4" style={{ background: 'linear-gradient(135deg, #0077ff, #4da6ff)' }}>
         <div className="container">
@@ -421,10 +422,10 @@ export default function LocationPage() {
 
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <div className="row g-4">
-          
+
           {/* Left Column - Search and Filters */}
           <div className="col-lg-4">
-            
+
             {/* City Search Card */}
             <Card className="mb-4" style={{ borderRadius: '16px', boxShadow: '0 6px 18px rgba(0,0,0,0.05)' }}>
               <CardContent className="p-4">
@@ -432,7 +433,7 @@ export default function LocationPage() {
                   <LocationIcon className="text-primary me-2" />
                   <h5 className="mb-0 fw-bold">موقعك</h5>
                 </div>
-                
+
                 <div className="position-relative">
                   <input
                     type="text"
@@ -442,7 +443,7 @@ export default function LocationPage() {
                     onChange={(e) => handleCitySearch(e.target.value)}
                     style={{ borderRadius: '12px', border: '2px solid #e5e7eb' }}
                   />
-                  
+
                   {searchSuggestions.length > 0 && (
                     <div className="suggestions-dropdown">
                       {searchSuggestions.map((suggestion, index) => (
@@ -459,7 +460,7 @@ export default function LocationPage() {
                   )}
                 </div>
 
-      {selectedLocation && (
+                {selectedLocation && (
                   <div className="mt-3 p-3 bg-light rounded-3">
                     <div className="d-flex align-items-center">
                       <div className="bg-success rounded-circle p-2 me-3">
@@ -482,7 +483,7 @@ export default function LocationPage() {
                   <SearchIcon className="text-primary me-2" />
                   <h5 className="mb-0 fw-bold">نوع الخدمة</h5>
                 </div>
-                
+
                 <FormControl fullWidth>
                   <InputLabel>اختر نوع الخدمة</InputLabel>
                   <Select
@@ -536,8 +537,8 @@ export default function LocationPage() {
                         </div>
                       </div>
                     </div>
-        </div>
-      )}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -545,7 +546,7 @@ export default function LocationPage() {
             <Card className="mb-4" style={{ borderRadius: '16px', boxShadow: '0 6px 18px rgba(0,0,0,0.05)' }}>
               <CardContent className="p-4">
                 <h5 className="fw-bold mb-3">الفلاتر</h5>
-                
+
                 <div className="mb-3">
                   <label className="form-label fw-bold">المسافة القصوى (كم)</label>
                   <input
@@ -554,7 +555,7 @@ export default function LocationPage() {
                     min="1"
                     max="50"
                     value={filters.maxDistance}
-                    onChange={(e) => setFilters({...filters, maxDistance: parseInt(e.target.value)})}
+                    onChange={(e) => setFilters({ ...filters, maxDistance: parseInt(e.target.value) })}
                   />
                   <div className="d-flex justify-content-between">
                     <small className="text-muted">1 كم</small>
@@ -572,7 +573,7 @@ export default function LocationPage() {
                     max="5"
                     step="0.5"
                     value={filters.minRating}
-                    onChange={(e) => setFilters({...filters, minRating: parseFloat(e.target.value)})}
+                    onChange={(e) => setFilters({ ...filters, minRating: parseFloat(e.target.value) })}
                   />
                   <div className="d-flex justify-content-between">
                     <small className="text-muted">0 ⭐</small>
@@ -590,7 +591,7 @@ export default function LocationPage() {
               fullWidth
               disabled={!selectedLocation || !selectedService || loading || isSearching}
               onClick={handleRefresh}
-          style={{
+              style={{
                 borderRadius: '12px',
                 padding: '12px',
                 fontSize: '1.1rem',
@@ -615,7 +616,7 @@ export default function LocationPage() {
 
           {/* Right Column - Results and Map */}
           <div className="col-lg-8">
-            
+
             {/* Results Header */}
             <div className="d-flex justify-content-between align-items-center mb-4">
               <div>
@@ -644,43 +645,43 @@ export default function LocationPage() {
                         <div className="row align-items-center">
                           <div className="col-md-8">
                             <h6 className="fw-bold mb-2 text-primary">
-                              {service.provider?.first_name && service.provider?.last_name 
+                              {service.provider?.first_name && service.provider?.last_name
                                 ? `${service.provider.first_name} ${service.provider.last_name}`
                                 : service.provider?.username || service.title || 'مزود خدمة'}
                             </h6>
-                            
+
                             {service.title && (
                               <p className="text-muted mb-1 small">
                                 <strong>الخدمة:</strong> {service.title}
                               </p>
                             )}
-                            
+
                             {service.description && (
                               <p className="text-muted mb-1 small">
-                                {service.description.length > 100 
-                                  ? `${service.description.substring(0, 100)}...` 
+                                {service.description.length > 100
+                                  ? `${service.description.substring(0, 100)}...`
                                   : service.description}
                               </p>
                             )}
-                            
+
                             <div className="d-flex flex-wrap gap-2 mb-2">
                               {service.distance_km != null && (
-                                <Chip 
-                                  label={`${service.distance_km.toFixed(1)} كم`} 
-                                  size="small" 
-                                  variant="outlined" 
+                                <Chip
+                                  label={`${service.distance_km.toFixed(1)} كم`}
+                                  size="small"
+                                  variant="outlined"
                                   color="primary"
                                 />
                               )}
                               {service.rating && (
-                                <Chip 
-                                  label={`${service.rating} ⭐`} 
-                                  size="small" 
-                                  variant="outlined" 
+                                <Chip
+                                  label={`${service.rating} ⭐`}
+                                  size="small"
+                                  variant="outlined"
                                   color="secondary"
                                 />
-        )}
-      </div>
+                              )}
+                            </div>
 
                             {(service.address || service.location_address) && (
                               <div className="d-flex align-items-center text-muted">
@@ -689,7 +690,7 @@ export default function LocationPage() {
                               </div>
                             )}
                           </div>
-                          
+
                           <div className="col-md-4 text-end">
                             <Button
                               variant="outlined"
@@ -702,7 +703,7 @@ export default function LocationPage() {
                               عرض الاتجاهات
                             </Button>
                           </div>
-                </div>
+                        </div>
                       </CardContent>
                     </Card>
                   </div>
@@ -730,7 +731,7 @@ export default function LocationPage() {
                     <h6 className="fw-bold mb-0">الخريطة التفاعلية</h6>
                     <small className="text-muted">انقر على الخريطة لتحديد موقعك</small>
                   </div>
-                  <LocationPicker 
+                  <LocationPicker
                     onLocationSelect={(loc) => setSelectedLocation(loc)}
                     height={400}
                   />
@@ -790,6 +791,7 @@ export default function LocationPage() {
           border-bottom: none;
         }
       `}</style>
+      <ChatbotWidget />
     </div>
   );
 }

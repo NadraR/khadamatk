@@ -6,6 +6,7 @@ import LoginForm from "../components/LoginForm";
 import RegisterForm from "../components/RegisterForm";
 import GoogleLoginButton from "../components/GoogleLoginButton";
 import RoleSelector from "../components/RoleSelector";
+import ChatbotWidget from "../components/ChatbotWidget";
 import { authService } from "../services/authService";
 import "./AuthPage.css";
 
@@ -60,7 +61,7 @@ const AuthPage = () => {
 
   const redirectAfterLogin = (userData) => {
     console.log("[DEBUG] AuthPage: redirectAfterLogin called with:", userData);
-    
+
     // Always redirect to Home page after successful login
     console.log("[DEBUG] AuthPage: Redirecting to Home page");
     window.location.href = "/";
@@ -69,7 +70,7 @@ const AuthPage = () => {
   // Google Login handlers
   const handleGoogleSuccess = (googleData) => {
     console.log("[DEBUG] AuthPage: Google success data received:", googleData);
-    
+
     // Check if user needs role selection
     if (googleData.needsRole) {
       console.log("[DEBUG] AuthPage: User needs role selection");
@@ -78,17 +79,17 @@ const AuthPage = () => {
       showNotification(language === "ar" ? "تم تسجيل الدخول بنجاح باستخدام Google. يرجى اختيار نوع الحساب" : "Google login successful. Please choose account type", "info");
       return;
     }
-    
-          // User already has a role, proceed with login
+
+    // User already has a role, proceed with login
     if (googleData.access && googleData.user_id) {
       console.log("[DEBUG] AuthPage: User has role, proceeding with login");
-      
+
       // Store the tokens in localStorage (using consistent keys)
       localStorage.setItem('access', googleData.access);
       localStorage.setItem('refresh', googleData.refresh);
       localStorage.setItem('user_id', googleData.user_id);
       localStorage.setItem('user_role', googleData.role);
-      
+
       // Also store user data for immediate access
       const userData = {
         id: googleData.user_id,
@@ -99,10 +100,10 @@ const AuthPage = () => {
         profile_completed: true
       };
       localStorage.setItem('user', JSON.stringify(userData));
-      
+
       // Show success message
       showNotification(language === "ar" ? "تم تسجيل الدخول بنجاح!" : "Logged in successfully!", "success");
-      
+
       // Redirect based on role
       redirectAfterLogin({
         role: googleData.role,
@@ -120,14 +121,14 @@ const AuthPage = () => {
       showNotification(language === "ar" ? "لا يوجد رمز وصول صالح" : "No valid access token");
       return;
     }
-    
+
     setIsLoading(true);
     try {
       console.log("[DEBUG] AuthPage: Confirming role with token:", pendingGoogleToken.substring(0, 20) + "...");
       const result = await authService.googleLogin(pendingGoogleToken, selectedRole);
       if (result.success) {
         console.log("[DEBUG] AuthPage: Role confirmation successful, result:", result);
-        
+
         // Store user data in localStorage for immediate access
         if (result.data) {
           const userData = {
@@ -139,7 +140,7 @@ const AuthPage = () => {
             profile_completed: true
           };
           localStorage.setItem('user', JSON.stringify(userData));
-          
+
           // Store tokens if available (using consistent keys)
           if (result.data.access) {
             localStorage.setItem('access', result.data.access);
@@ -148,10 +149,10 @@ const AuthPage = () => {
             localStorage.setItem('refresh', result.data.refresh);
           }
         }
-        
-        showNotification(language === "ar" 
+
+        showNotification(language === "ar"
           ? `مرحباً بك! تم تسجيل الدخول بنجاح كـ ${selectedRole === "client" ? "عميل" : "مزود خدمة"}`
-          : `Welcome! Logged in successfully as ${selectedRole}`, 
+          : `Welcome! Logged in successfully as ${selectedRole}`,
           "success");
         redirectAfterLogin(result.data);
       } else {
@@ -198,7 +199,7 @@ const AuthPage = () => {
             <h1>{language === "ar" ? "منصة خدماتك" : "Your Services Platform"}</h1>
             <p>{language === "ar" ? "منصتك لكل الخدمات في مكان واحد" : "Your platform for all services in one place"}</p>
           </div>
-          
+
           <div className="header-controls">
             <button
               className="header-btn darkmode-toggle"
@@ -233,7 +234,7 @@ const AuthPage = () => {
               </div>
             </div>
             <p>
-              {mode === "login" 
+              {mode === "login"
                 ? (language === "ar" ? "سجل الدخول إلى حسابك للوصول إلى الخدمات" : "Sign in to your account to access services")
                 : (language === "ar" ? "أنشئ حساباً جديداً للبدء" : "Create a new account to get started")
               }
@@ -291,6 +292,7 @@ const AuthPage = () => {
           pauseOnHover
           theme={darkMode ? "dark" : "light"}
         />
+        <ChatbotWidget />
       </div>
     </div>
   );

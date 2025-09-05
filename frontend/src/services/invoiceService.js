@@ -1,26 +1,34 @@
-import api from './api';
+import api from '../api';
 
 export const invoiceService = {
-  // الحصول على جميع فواتير المستخدم
   getMyInvoices: () => {
-    return api.get('/invoices/my_invoices/');
+    return api.get('/api/invoices/my_invoices/');
   },
 
-  // الحصول على فاتورة محددة
   getInvoice: (id) => {
-    return api.get(`/invoices/${id}/`);
+    return api.get(`/api/invoices/${id}/`);
   },
 
-  // وضع فاتورة كمُدفوعة (للمشرفين فقط)
   markAsPaid: (id) => {
-    return api.post(`/invoices/${id}/mark_paid/`);
+    return api.post(`/api/invoices/${id}/mark_as_paid/`);
   },
 
-  // تنزيل الفاتورة كـPDF
   downloadInvoice: (id) => {
-    return api.get(`/invoices/${id}/download/`, {
-      responseType: 'blob' // مهم لتحميل الملفات
+    return api.get(`/api/invoices/${id}/download/`, {
+      responseType: 'blob'
     });
+  },
+
+  getReports: () => {
+    return api.get('/api/invoices/reports/');
+  },
+
+  createPayment: (invoiceId) => {
+    return api.post(`/api/invoices/create-payment/${invoiceId}/`);
+  },
+
+  getInvoiceForBooking: (bookingId) => {
+    return api.get(`/api/invoices/by-booking/${bookingId}/`);
   }
 };
 
