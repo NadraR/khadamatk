@@ -1,212 +1,230 @@
-/* RoleSelector.css */
+.role-selector-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.role-selector-overlay.dark {
+  background: rgba(0, 0, 0, 0.7);
+}
+
 .role-selector-container {
-  padding: 1rem;
-  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: white;
+  padding: 2rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  max-width: 450px;
+  width: 100%;
+}
+
+.dark .role-selector-container {
+  background: #2a2a2a;
+  color: #eee;
 }
 
 .role-selector-title {
-  font-size: 1.25rem;
-  font-weight: 600;
-  color: #202124;
+  font-size: 1.5rem;
   margin-bottom: 0.5rem;
   text-align: center;
+  color: #333;
+}
+
+.dark .role-selector-title {
+  color: #eee;
 }
 
 .role-selector-description {
-  color: #5f6368;
+  color: #666;
   text-align: center;
   margin-bottom: 1.5rem;
-  font-size: 0.9rem;
+}
+
+.dark .role-selector-description {
+  color: #ccc;
 }
 
 .role-options {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
+  margin-bottom: 2rem;
 }
 
 .role-option {
-  border: 2px solid #e8eaed;
-  border-radius: 12px;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
   padding: 1rem;
   cursor: pointer;
   transition: all 0.3s ease;
-  background: white;
+}
+
+.dark .role-option {
+  border-color: #444;
+  background: #333;
 }
 
 .role-option:hover:not(.disabled) {
-  border-color: #4285f4;
-  box-shadow: 0 2px 8px rgba(66, 133, 244, 0.15);
+  border-color: #6a11cb;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(106, 17, 203, 0.2);
 }
 
 .role-option.selected {
-  border-color: #4285f4;
-  background-color: #e8f0fe;
+  border-color: #6a11cb;
+  background: rgba(106, 17, 203, 0.1);
+}
+
+.dark .role-option.selected {
+  background: rgba(106, 17, 203, 0.2);
 }
 
 .role-option.disabled {
-  cursor: not-allowed;
   opacity: 0.6;
-}
-
-.role-option:focus {
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(66, 133, 244, 0.3);
+  cursor: not-allowed;
 }
 
 .role-option-content {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 
 .role-icon {
-  font-size: 1.5rem;
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #f8f9fa;
-  border-radius: 50%;
-}
-
-.role-option.selected .role-icon {
-  background: #d2e3fc;
+  font-size: 2rem;
 }
 
 .role-text {
   flex: 1;
+  text-align: right;
 }
 
 .role-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #202124;
-  margin-bottom: 0.25rem;
+  margin: 0 0 0.25rem 0;
+  font-size: 1.1rem;
+  color: #333;
+}
+
+.dark .role-title {
+  color: #eee;
 }
 
 .role-description {
-  font-size: 0.85rem;
-  color: #5f6368;
   margin: 0;
+  font-size: 0.9rem;
+  color: #666;
+}
+
+.dark .role-description {
+  color: #ccc;
 }
 
 .radio-indicator {
   width: 20px;
   height: 20px;
-  border: 2px solid #dadce0;
+  border: 2px solid #ccc;
   border-radius: 50%;
   display: flex;
-  align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  align-items: center;
 }
 
 .role-option.selected .radio-indicator {
-  border-color: #4285f4;
-  background-color: #4285f4;
+  border-color: #6a11cb;
 }
 
 .radio-circle {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
+  background: #6a11cb;
   border-radius: 50%;
-  background: white;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.3s ease;
 }
 
 .role-option.selected .radio-circle {
   opacity: 1;
 }
 
+.role-selector-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.cancel-button, .confirm-button {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.cancel-button {
+  background: #f0f0f0;
+  color: #333;
+}
+
+.dark .cancel-button {
+  background: #444;
+  color: #eee;
+}
+
+.cancel-button:hover:not(:disabled) {
+  background: #e0e0e0;
+}
+
+.confirm-button {
+  background: linear-gradient(to right, #6a11cb, #2575fc);
+  color: white;
+}
+
+.confirm-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(106, 17, 203, 0.3);
+}
+
+.cancel-button:disabled, .confirm-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .role-selector-disabled-message {
   text-align: center;
-  color: #5f6368;
-  font-size: 0.85rem;
+  color: #666;
   margin-top: 1rem;
-  padding: 0.5rem;
-  background: #f8f9fa;
-  border-radius: 6px;
+  font-size: 0.9rem;
 }
 
-/* تحسينات للوضع الداكن */
-@media (prefers-color-scheme: dark) {
-  .role-selector-title {
-    color: #e8eaed;
-  }
-  
-  .role-selector-description {
-    color: #9aa0a6;
-  }
-  
-  .role-option {
-    border-color: #5f6368;
-    background: #303134;
-  }
-  
-  .role-option.selected {
-    border-color: #8ab4f8;
-    background-color: #1b3a7c;
-  }
-  
-  .role-icon {
-    background: #202124;
-  }
-  
-  .role-option.selected .role-icon {
-    background: #1b3a7c;
-  }
-  
-  .role-title {
-    color: #e8eaed;
-  }
-  
-  .role-description {
-    color: #9aa0a6;
-  }
-  
-  .radio-indicator {
-    border-color: #5f6368;
-  }
-  
-  .role-selector-disabled-message {
-    color: #9aa0a6;
-    background: #202124;
-  }
+.dark .role-selector-disabled-message {
+  color: #ccc;
 }
 
-/* تحسينات للهواتف */
 @media (max-width: 480px) {
   .role-selector-container {
-    padding: 0.5rem;
+    padding: 1.5rem;
   }
   
   .role-option-content {
+    flex-direction: column;
+    text-align: center;
     gap: 0.5rem;
   }
   
-  .role-icon {
-    width: 32px;
-    height: 32px;
-    font-size: 1.25rem;
+  .role-text {
+    text-align: center;
   }
   
-  .role-title {
-    font-size: 0.9rem;
+  .role-selector-actions {
+    flex-direction: column;
   }
-  
-  .role-description {
-    font-size: 0.8rem;
-  }
-}
-
-/* تحسينات للوضع المتركز (عند استخدامه في مودال) */
-.role-selector-container.modal-version {
-  padding: 0;
-}
-
-.role-selector-container.modal-version .role-selector-title {
-  margin-top: 0;
 }

@@ -1,0 +1,194 @@
+/* ImageTicker.css */
+.ticker-container {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+  padding: 2rem 0;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.ticker-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  z-index: 10;
+  position: relative;
+}
+
+.ticker-controls button {
+  background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(30, 58, 138, 0.3);
+}
+
+.ticker-controls button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.4);
+}
+
+.speed-indicator {
+  font-weight: 600;
+  color: #1e3a8a;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.current-image-info {
+  font-weight: 500;
+  color: #059669;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ticker-track {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  will-change: transform;
+  width: 100%;
+}
+
+.ticker-item {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+  cursor: pointer;
+}
+
+.ticker-item:hover {
+  transform: scale(1.05);
+}
+
+.ticker-item img {
+  width: 250px;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.ticker-item img:hover {
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* تحسينات للشاشات الصغيرة */
+@media (max-width: 768px) {
+  .ticker-track {
+    gap: 1rem;
+  }
+  
+  .ticker-container {
+    padding: 1rem 0;
+  }
+  
+  .ticker-controls {
+    gap: 0.5rem;
+  }
+  
+  .ticker-controls button {
+    width: 35px;
+    height: 35px;
+  }
+  
+  .speed-indicator {
+    font-size: 0.9rem;
+    padding: 0.4rem 0.8rem;
+  }
+  
+  .current-image-info {
+    font-size: 0.9rem;
+    padding: 0.4rem 0.8rem;
+    max-width: 150px;
+  }
+  
+  .ticker-item img {
+    width: 200px;
+    height: 160px;
+  }
+}
+
+@media (max-width: 480px) {
+  .ticker-item img {
+    width: 150px;
+    height: 120px;
+  }
+}
+
+/* تأثيرات التدرج على الجوانب */
+.ticker-container::before,
+.ticker-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 100px;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.ticker-container::before {
+  left: 0;
+  background: linear-gradient(to right, 
+    rgba(248, 249, 250, 1) 0%, 
+    rgba(248, 249, 250, 0) 100%);
+}
+
+.ticker-container::after {
+  right: 0;
+  background: linear-gradient(to left, 
+    rgba(248, 249, 250, 1) 0%, 
+    rgba(248, 249, 250, 0) 100%);
+}
+
+/* وضع الظلام */
+body.dark-mode .ticker-container {
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+}
+
+body.dark-mode .ticker-controls button {
+  background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+}
+
+body.dark-mode .speed-indicator {
+  color: #ecf0f1;
+  background: rgba(52, 73, 94, 0.9);
+}
+
+body.dark-mode .current-image-info {
+  color: #2ecc71;
+  background: rgba(52, 73, 94, 0.9);
+}
+
+body.dark-mode .ticker-container::before {
+  background: linear-gradient(to right, 
+    rgba(44, 62, 80, 1) 0%, 
+    rgba(44, 62, 80, 0) 100%);
+}
+
+body.dark-mode .ticker-container::after {
+  background: linear-gradient(to left, 
+    rgba(44, 62, 80, 1) 0%, 
+    rgba(44, 62, 80, 0) 100%);
+}

@@ -1,97 +1,101 @@
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
-import "bootstrap/dist/css/bootstrap.min.css"; 
-
-// 🔹 Components & Layout
-import Layout from './Layout';
-import LoginForm from './components/LoginForm'; 
-
-// 🔹 Pages
-import Home from './pages/Home';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import AuthPage from './pages/AuthPage';
 import HomeClient from './pages/HomeClient';
 import HomeProvider from './pages/HomeProvider';
-import AdminDashboard from './pages/AdminDashboard';
-
-// 🔹 Categories
-import Cleaning from './pages/Cleaning';
-import Gardening from './pages/Gardening';
-import Painters from './pages/Painting';
-import Carpenters from './pages/Carpentry';
-import Electricians from './pages/Electricity';
-import Plumbers from './pages/Plumbing';
-
-// 🔹 Core Pages
+import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminLogin from './pages/admin/AdminLogin';
+import UsersPage from './pages/admin/UsersPage';
+import ServicesPage from './pages/admin/ServicesPage';
+import OrdersPage from './pages/admin/OrdersPage';
+import InvoicesPage from './pages/admin/InvoicesPage';
+import AdminLayout from './layouts/AdminLayout';
+import { AdminAuthProvider, useAdminAuth } from './contexts/AdminAuthContext';
+import Layout from './Layout';
+import ServiceDetails from './pages/ServiceDetails';
 import Services from './pages/Services';
 import Orders from './pages/Orders';
 import Reviews from './pages/Reviews';
 import Ratings from './pages/Ratings';
-import Search from './pages/Search';
-import OrderPage from './pages/OrderPage';
-
-// 🔹 Management Pages
 import Clients from './pages/Clients';
 import Users from './pages/Users';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
-import SystemManagement from './pages/SystemManagement';
+import Painting from './pages/Painting';
+import Carpentry from './pages/Carpentry';
+import Electricity from './pages/Electricity';
+import Plumbing from './pages/Plumbing';
+import LocationPage from './pages/LocationPage';
 
-// 🔹 Details
-import ServiceDetails from './pages/ServiceDetails';
-import OrderDetails from './pages/OrderDetails';
-import UserDetails from './pages/UserDetails';
-// import Invoices from './pages/Invoices';
+// Protected Route Component for Admin
+const ProtectedAdminRoute = ({ children }) => {
+  const { isAuthenticated, loading } = useAdminAuth();
 
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  return isAuthenticated ? <>{children}</> : <Navigate to="/admin/login" />;
+};
 
 function App() {
   return (
-    <Routes>
+    <AdminAuthProvider>
+      <Routes>
+        {/* صفحة تسجيل الدخول / إنشاء حساب */}
+        <Route path="/" element={<AuthPage />} />
 
-      {/* Landing page */}      
-      <Route path="/" element={<Layout><Home /></Layout>} />
+        {/* صفحات العملاء */}
+        <Route path="/homeClient" element={<Layout><HomeClient /></Layout>} />
+        <Route path="/homeProvider" element={<Layout><HomeProvider /></Layout>} />
+        
+        {/* Admin Routes */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedAdminRoute>
+              <AdminLayout />
+            </ProtectedAdminRoute>
+          }
+        >
+          <Route index element={<AdminDashboard />} />
+          <Route path="users" element={<UsersPage />} />
+          <Route path="services" element={<ServicesPage />} />
+          <Route path="orders" element={<OrdersPage />} />
+          <Route path="reviews" element={<div>صفحة التقييمات</div>} />
+          <Route path="invoices" element={<InvoicesPage />} />
+          <Route path="settings" element={<div>صفحة الإعدادات</div>} />
+          <Route path="notifications" element={<div>صفحة الإشعارات</div>} />
+        </Route>
 
+        {/* Legacy Admin Route - redirect to new admin */}
+        <Route path="/adminDashboard" element={<Navigate to="/admin" />} />
 
-      {/* Homes */}      
-      <Route path="/login" element={<LoginForm />} />
-      <Route path="/homeClient" element={<Layout><HomeClient /></Layout>} />
-      <Route path="/homeProvider" element={<Layout><HomeProvider /></Layout>} />
-      <Route path="/adminDashboard" element={<Layout><AdminDashboard /></Layout>} />
-
-      {/* Categories */}
-      <Route path="/category/cleaning" element={<Layout><Cleaning /></Layout>} />
-      <Route path="/category/gardening" element={<Layout><Gardening /></Layout>} />
-      <Route path="/category/painters" element={<Layout><Painters /></Layout>} />
-      <Route path="/category/carpenters" element={<Layout><Carpenters /></Layout>} />
-      <Route path="/category/electricians" element={<Layout><Electricians /></Layout>} />
-      <Route path="/category/plumbers" element={<Layout><Plumbers /></Layout>} />
-
-      {/* Services & Orders */}
+      {/* صفحات الخدمات */}
+      <Route path="/service/:id" element={<Layout><ServiceDetails /></Layout>} />
       <Route path="/services" element={<Layout><Services /></Layout>} />
       <Route path="/orders" element={<Layout><Orders /></Layout>} />
-      <Route path="/orders/:id" element={<Layout><OrderDetails /></Layout>} />
-      <Route path="/orderpage" element={<Layout><OrderPage /></Layout>} />
-      <Route path="/admin/services/:id" element={<Layout><ServiceDetails /></Layout>} />
+      <Route path="/reviews/:serviceId" element={<Layout><Reviews /></Layout>} />
+      <Route path="/ratings/:serviceId" element={<Layout><Ratings /></Layout>} />
 
-
-      {/* Reviews & Ratings */}
-      <Route path="/reviews" element={<Layout><Reviews /></Layout>} />
-      <Route path="/ratings" element={<Layout><Ratings /></Layout>} />
-
-      {/* Users & Clients */}
+      {/* صفحات الإدارة */}
       <Route path="/clients" element={<Layout><Clients /></Layout>} />
-      <Route path="/users" element={<Layout><Users /></Layout>} />
-      <Route path="/users/:id" element={<Layout><UserDetails /></Layout>} />
-
-      {/* Reports & Settings */}
-      <Route path="/reports" element={<Layout><Reports /></Layout>} />
       <Route path="/settings" element={<Layout><Settings /></Layout>} />
-      <Route path="/system-management" element={<Layout><SystemManagement /></Layout>} />
 
-      {/* Search */}
-      <Route path="/search" element={<Layout><Search /></Layout>} />
+      {/* صفحات الفئات */}
+      <Route path="/category/painting" element={<Layout><Painting /></Layout>} />
+      <Route path="/category/carpentry" element={<Layout><Carpentry /></Layout>} />
+      <Route path="/category/electricity" element={<Layout><Electricity /></Layout>} />
+      <Route path="/category/plumbing" element={<Layout><Plumbing /></Layout>} />
 
-      {/* Optional future route */}
-      {/* <Route path="/invoices" element={<Layout><Invoices /></Layout>} /> */}
-    </Routes>
+        {/* صفحات إضافية */}
+        
+        {/* Location pages without Layout wrapper - using custom LocationNavbar */}
+        <Route path="/location" element={<LocationPage />} />
+        <Route path="/location/my-location" element={<LocationPage />} />
+      </Routes>
+    </AdminAuthProvider>
   );
 }
 

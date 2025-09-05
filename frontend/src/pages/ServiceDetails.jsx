@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import api from "../api";
 import { ACCESS_TOKEN } from "../constants";
-import "./AdminDashboard.css"; 
 
 const ServiceDetails = () => {
   const { id } = useParams();

@@ -1,83 +1,513 @@
-.sidebarr {
-  width: 220px; /* شوية أكبر عشان يكون متناسق */
-  background: linear-gradient(135deg, #ffffff, #f3f3f3, #e1e1e1);
-  padding: 25px 15px;
+/* Burger Menu Sidebar Styles */
+.burger-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  backdrop-filter: blur(4px);
+  transition: all 0.3s ease;
+}
+
+.burger-sidebar {
+  position: fixed;
+  top: 0;
+  left: -100%;
+  width: 320px;
+  height: 100vh;
+  background: linear-gradient(135deg, #ffffff, #f8f9fa, #e9ecef);
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  transition: all 0.3s ease;
+  overflow-y: auto;
+}
+
+.burger-sidebar-open {
+  left: 0;
+}
+
+.burger-sidebar-content {
+  padding: 20px;
+  height: 100%;
   display: flex;
   flex-direction: column;
-  justify-content:space-between;
-  border-radius: 16px; /* حواف مدورة زي login box */
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-  margin: 20px; /* عشان يبقى في مسافة من الحواف */
-  animation: fadeIn 0.8s ease-in-out;
 }
 
-.sidebar-logo {
+/* Header */
+.burger-header {
   display: flex;
-  text-align: start;
-  margin-bottom: 25px;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 2px solid #e9ecef;
 }
 
-.sidebar-menu, 
-.sidebar-footer {
+.burger-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.burger-logo-icon {
+  font-size: 28px;
+  color: #007bff;
+  filter: drop-shadow(0 2px 4px rgba(0, 123, 255, 0.3));
+}
+
+.burger-logo h3 {
+  font-size: 24px;
+  font-weight: 800;
+  color: #2c3e50;
+  margin: 0;
+}
+
+.burger-close-btn {
+  background: rgba(220, 53, 69, 0.1);
+  border: 1px solid rgba(220, 53, 69, 0.2);
+  color: #dc3545;
+  border-radius: 8px;
+  padding: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+}
+
+.burger-close-btn:hover {
+  background: rgba(220, 53, 69, 0.2);
+  border-color: rgba(220, 53, 69, 0.4);
+  transform: scale(1.05);
+}
+
+/* Menu Items */
+.burger-menu-items {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: 15px;
+  gap: 8px;
+  margin-bottom: 20px;
 }
 
-.sidebar-item {
+.burger-menu-item {
   display: flex;
   align-items: center;
   gap: 15px;
-  cursor: pointer;
-  padding: 10px 12px;
+  padding: 15px 20px;
+  color: #6c757d;
+  text-decoration: none;
   border-radius: 12px;
   transition: all 0.3s ease;
-  font-size: 14px;
-  color: #333;
+  font-size: 16px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.burger-menu-item:hover {
+  background: rgba(0, 123, 255, 0.1);
+  color: #007bff;
   text-decoration: none;
-  background: linear-gradient(135deg, #f5f5f5, #e0e0e0, #bdbdbd);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transform: translateX(5px);
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.15);
 }
 
-.sidebar-item:hover {
-  background: linear-gradient(135deg, #e2e2e2, #c0c0c0, #a0a0a0);
-  transform: scale(1.03);
+.burger-item-icon {
+  font-size: 20px;
+  transition: all 0.3s ease;
 }
 
-.icon {
-  font-size: 20px; 
+.burger-menu-item:hover .burger-item-icon {
+  transform: scale(1.1);
 }
 
-.homee { color: #3498db; }
-.wrench { color: #e67e22; }
-.users { color: #2ecc71; }
-.settings { color: #9b59b6; }
-.logout { color: #e74c3c; }
-
-.sidebar-footer {
-  border-top: 1px solid rgba(0,0,0,0.1);
-  padding-top: 10px;
-  margin-top: 10px;
+/* Features Section */
+.burger-features {
+  margin-bottom: 20px;
 }
 
-body.dark-mode .sidebarr {
-  background: linear-gradient(135deg, #2a2a2a, #1e1e1e, #121212);
-  color: #f5f5f5;
-  box-shadow: 0 6px 20px rgba(255, 255, 255, 0.08);
+.burger-features h4 {
+  font-size: 18px;
+  font-weight: 700;
+  color: #2c3e50;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e9ecef;
 }
 
-body.dark-mode .sidebar-item {
-  background: linear-gradient(135deg, #3a3a3a, #2a2a2a, #1a1a1a);
-  color: #f5f5f5;
+.burger-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding: 12px 16px;
+  margin-bottom: 8px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+  cursor: pointer;
 }
 
-body.dark-mode .sidebar-item:hover {
-  background: linear-gradient(135deg, #505050, #404040, #303030);
-  transform: scale(1.03);
+.burger-feature-item:hover {
+  background: rgba(0, 123, 255, 0.05);
+  transform: translateX(3px);
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(15px); }
-  to { opacity: 1; transform: translateY(0); }
+.burger-feature-icon {
+  font-size: 18px;
+  color: #007bff;
+}
+
+.burger-feature-item div h5 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0 0 2px 0;
+}
+
+.burger-feature-item div p {
+  font-size: 12px;
+  color: #6c757d;
+  margin: 0;
+}
+
+/* Chatbot Section */
+.burger-chatbot-section {
+  margin-bottom: 20px;
+}
+
+.burger-chatbot-btn {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  width: 100%;
+  padding: 15px 20px;
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 16px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+.burger-chatbot-btn:hover {
+  background: linear-gradient(135deg, #0056b3, #004085);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 123, 255, 0.4);
+}
+
+.burger-chatbot-icon {
+  font-size: 20px;
+  transition: transform 0.3s ease;
+}
+
+.burger-chatbot-btn:hover .burger-chatbot-icon {
+  transform: scale(1.1);
+}
+
+/* Footer */
+.burger-footer {
+  border-top: 2px solid #e9ecef;
+  padding-top: 20px;
+}
+
+.burger-logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  width: 100%;
+  padding: 15px 20px;
+  background: rgba(220, 53, 69, 0.1);
+  color: #dc3545;
+  text-decoration: none;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  font-size: 16px;
+  font-weight: 600;
+  border: 1px solid rgba(220, 53, 69, 0.2);
+}
+
+.burger-logout-btn:hover {
+  background: rgba(220, 53, 69, 0.2);
+  color: #dc3545;
+  text-decoration: none;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.2);
+}
+
+.burger-logout-icon {
+  font-size: 20px;
+  transition: transform 0.3s ease;
+}
+
+.burger-logout-btn:hover .burger-logout-icon {
+  transform: scale(1.1);
+}
+
+/* Chatbot Window */
+.burger-chatbot-window {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  width: 350px;
+  height: 500px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  z-index: 1001;
+  transform: translateY(100%) scale(0.8);
+  opacity: 0;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.burger-chatbot-open {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+.burger-chatbot-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  color: white;
+}
+
+.burger-chatbot-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.burger-chatbot-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  color: white;
+  border-radius: 8px;
+  padding: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.burger-chatbot-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+.burger-chatbot-messages {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.burger-message {
+  display: flex;
+  flex-direction: column;
+  max-width: 80%;
+}
+
+.burger-message.user {
+  align-self: flex-end;
+}
+
+.burger-message.bot {
+  align-self: flex-start;
+}
+
+.burger-message-content {
+  background: #f8f9fa;
+  padding: 12px 16px;
+  border-radius: 16px;
+  position: relative;
+}
+
+.burger-message.user .burger-message-content {
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  color: white;
+}
+
+.burger-message-content p {
+  margin: 0 0 5px 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.burger-message-time {
+  font-size: 11px;
+  color: #6c757d;
+  opacity: 0.7;
+}
+
+.burger-message.user .burger-message-time {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.burger-chatbot-input {
+  display: flex;
+  padding: 20px;
+  border-top: 1px solid #e9ecef;
+  gap: 10px;
+}
+
+.burger-chatbot-input-field {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid #e9ecef;
+  border-radius: 24px;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.burger-chatbot-input-field:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+.burger-chatbot-send-btn {
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.burger-chatbot-send-btn:hover {
+  background: linear-gradient(135deg, #0056b3, #004085);
+  transform: scale(1.05);
+}
+
+/* Dark Mode Styles */
+body.dark-mode .burger-sidebar {
+  background: linear-gradient(135deg, #2c3e50, #34495e, #2c3e50);
+}
+
+body.dark-mode .burger-logo h3 {
+  color: #ecf0f1;
+}
+
+body.dark-mode .burger-menu-item {
+  background: rgba(52, 73, 94, 0.3);
+  color: #bdc3c7;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode .burger-menu-item:hover {
+  background: rgba(52, 152, 219, 0.2);
+  color: #3498db;
+}
+
+body.dark-mode .burger-features h4 {
+  color: #ecf0f1;
+  border-bottom-color: #4a5568;
+}
+
+body.dark-mode .burger-feature-item {
+  background: rgba(52, 73, 94, 0.3);
+}
+
+body.dark-mode .burger-feature-item:hover {
+  background: rgba(52, 152, 219, 0.1);
+}
+
+body.dark-mode .burger-feature-item div h5 {
+  color: #ecf0f1;
+}
+
+body.dark-mode .burger-feature-item div p {
+  color: #bdc3c7;
+}
+
+body.dark-mode .burger-chatbot-window {
+  background: #2c3e50;
+}
+
+body.dark-mode .burger-chatbot-messages {
+  background: #2c3e50;
+}
+
+body.dark-mode .burger-message-content {
+  background: #34495e;
+  color: #ecf0f1;
+}
+
+body.dark-mode .burger-message.user .burger-message-content {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: white;
+}
+
+body.dark-mode .burger-chatbot-input {
+  border-top-color: #4a5568;
+}
+
+body.dark-mode .burger-chatbot-input-field {
+  background: #34495e;
+  border-color: #4a5568;
+  color: #ecf0f1;
+}
+
+body.dark-mode .burger-chatbot-input-field:focus {
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .burger-sidebar {
+    width: 100%;
+    left: -100%;
+  }
+  
+  .burger-chatbot-window {
+    width: calc(100% - 40px);
+    right: 20px;
+    left: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .burger-sidebar-content {
+    padding: 15px;
+  }
+  
+  .burger-logo h3 {
+    font-size: 20px;
+  }
+  
+  .burger-menu-item {
+    padding: 12px 16px;
+    font-size: 15px;
+  }
+  
+  .burger-chatbot-window {
+    height: 400px;
+  }
 }
