@@ -1,280 +1,329 @@
-from rest_framework.decorators import api_view, permission_classes
+# backend/admin_api/views.py
+from rest_framework import viewsets, filters, status
 from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import IsAdminUser
-from django.db.models import Count, Avg
+from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.views import APIView
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
-from .serializers import AdminActionLogSerializer
-from services.models import Service
+from django.db.models import Avg, Sum, Count
+from django.http import HttpResponse
+import csv
+
+from services.models import Service, ServiceCategory
 from orders.models import Order
 from reviews.models import Review
 from ratings.models import Rating
 from invoices.models import Invoice
-from .models import AdminActionLog
-from rest_framework.views import APIView
 
+from .models import AdminActionLog, AdminNotification, PlatformSetting
 from .serializers import (
     AdminUserSerializer, AdminServiceSerializer, AdminOrderSerializer,
-    AdminReviewSerializer, AdminRatingSerializer, AdminInvoiceSerializer, AdminActionLogSerializer
+    AdminReviewSerializer, AdminRatingSerializer, AdminInvoiceSerializer,
+    AdminActionLogSerializer, AdminNotificationSerializer,
+    AdminCategorySerializer, PlatformSettingSerializer
 )
+from .permissions import IsStaffOrSuperuser
 
 User = get_user_model()
 
-# ---------- Users ----------
-@api_view(['GET', 'POST'])
-@permission_classes([IsAdminUser])
-def admin_users(request):
-    if request.method == 'GET':
-        users = User.objects.all().order_by('id')
-        serializer = AdminUserSerializer(users, many=True)
+# helper function to log admin actions
+def log_admin_action(user, action, target_model, target_id, notes=""):
+    AdminActionLog.objects.create(
+        admin=user,
+        action=action,
+        target_model=target_model,
+        target_id=target_id,
+        notes=notes
+    )
+
+# ---------------- Authentication ----------------
+class AdminLoginView(APIView):
+    permission_classes = [AllowAny]
+    
+    def post(self, request):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        
+        if not username or not password:
+            return Response(
+                {"detail": "Username and password required"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        user = authenticate(username=username, password=password)
+        
+        # Only allow superuser (superadmin) to login
+        if user and user.is_superuser:
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'access': str(refresh.access_token),
+                'refresh': str(refresh),
+                'user': {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                    'role': 'superadmin',
+                    'is_staff': user.is_staff,
+                    'is_superuser': user.is_superuser,
+                }
+            })
+        else:
+            return Response(
+                {"detail": "Only superadmin can login to admin panel."},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+class AdminRegisterView(APIView):
+    permission_classes = [IsStaffOrSuperuser]  # فقط السوبر أدمن يقدر ينشئ أدمن جديد
+    
+    def post(self, request):
+        username = request.data.get('username')
+        email = request.data.get('email')
+        password = request.data.get('password')
+        role = 'superadmin'  # Always superadmin
+
+        if not all([username, email, password]):
+            return Response(
+                {"detail": "Username, email and password required"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if User.objects.filter(username=username).exists():
+            return Response(
+                {"detail": "Username already exists"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if User.objects.filter(email=email).exists():
+            return Response(
+                {"detail": "Email already exists"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        user = User.objects.create_superuser(
+            username=username,
+            email=email,
+            password=password
+        )
+        
+        log_admin_action(request.user, "create", "User", user.id, "admin_register")
+        
+        return Response({
+            'message': 'Superadmin user created successfully',
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'role': 'superadmin',
+                'is_staff': user.is_staff,
+                'is_superuser': user.is_superuser,
+            }
+        }, status=status.HTTP_201_CREATED)
+
+# ---------------- Users ----------------
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all().order_by("id")
+    serializer_class = AdminUserSerializer
+    permission_classes = [IsStaffOrSuperuser]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ["username", "email"]
+
+    @action(detail=True, methods=["post"])
+    def activate(self, request, pk=None):
+        user = self.get_object()
+        user.is_active = True
+        user.save()
+        log_admin_action(request.user, "update", "User", user.id, "activate")
+        return Response({"status": "activated"})
+
+    @action(detail=True, methods=["post"])
+    def deactivate(self, request, pk=None):
+        user = self.get_object()
+        user.is_active = False
+        user.save()
+        log_admin_action(request.user, "update", "User", user.id, "deactivate")
+        return Response({"status": "deactivated"})
+
+    @action(detail=True, methods=["post"])
+    def set_staff(self, request, pk=None):
+        user = self.get_object()
+        is_staff = bool(request.data.get("is_staff", True))
+        user.is_staff = is_staff
+        user.save()
+        log_admin_action(request.user, "update", "User", user.id, "set_staff")
+        return Response({"status": "updated", "is_staff": user.is_staff})
+
+# ---------------- Services ----------------
+class ServiceViewSet(viewsets.ModelViewSet):
+    queryset = Service.objects.all().order_by("id")
+    serializer_class = AdminServiceSerializer
+    permission_classes = [IsStaffOrSuperuser]
+
+    @action(detail=True, methods=["post"])
+    def toggle_active(self, request, pk=None):
+        service = self.get_object()
+        service.is_active = not service.is_active
+        service.save()
+        log_admin_action(request.user, "update", "Service", service.id, "toggle_active")
+        return Response({"is_active": service.is_active})
+
+# ---------------- Categories ----------------
+class CategoryViewSet(viewsets.ModelViewSet):
+    queryset = ServiceCategory.objects.all().order_by("name")
+    serializer_class = AdminCategorySerializer
+    permission_classes = [IsStaffOrSuperuser]
+
+# ---------------- Orders ----------------
+class OrderViewSet(viewsets.ModelViewSet):
+    queryset = Order.objects.all().order_by("-date_created")
+    serializer_class = AdminOrderSerializer
+    permission_classes = [IsStaffOrSuperuser]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ["status", "customer__username", "service__title"]
+
+    @action(detail=True, methods=["post"])
+    def set_status(self, request, pk=None):
+        order = self.get_object()
+        status_value = request.data.get("status")
+        if status_value not in ["pending", "accepted", "completed", "cancelled"]:
+            return Response({"detail": "invalid status"}, status=status.HTTP_400_BAD_REQUEST)
+        order.status = status_value
+        order.save()
+        log_admin_action(request.user, "update", "Order", order.id, f"set_status:{status_value}")
+        return Response({"status": order.status})
+
+    @action(detail=True, methods=["post"])
+    def assign_provider(self, request, pk=None):
+        provider_id = request.data.get("provider_id")
+        if not provider_id:
+            return Response({"detail": "provider_id required"}, status=status.HTTP_400_BAD_REQUEST)
+        order = self.get_object()
+        provider = User.objects.filter(id=provider_id).first()
+        if not provider:
+            return Response({"detail": "provider not found"}, status=status.HTTP_404_NOT_FOUND)
+        service = order.service
+        service.provider = provider
+        service.save()
+        log_admin_action(request.user, "update", "Order", order.id, f"assign_provider:{provider_id}")
+        return Response({"assigned_provider": provider.id})
+
+# ---------------- Reviews ----------------
+class ReviewViewSet(viewsets.ModelViewSet):
+    queryset = Review.objects.all().order_by("-created_at")
+    serializer_class = AdminReviewSerializer
+    permission_classes = [IsStaffOrSuperuser]
+
+    @action(detail=True, methods=["post"])
+    def soft_delete(self, request, pk=None):
+        review = self.get_object()
+        review.is_deleted = True
+        review.save()
+        log_admin_action(request.user, "update", "Review", review.id, "soft_delete")
+        return Response({"is_deleted": True})
+
+# ---------------- Ratings ----------------
+class RatingViewSet(viewsets.ModelViewSet):
+    queryset = Rating.objects.all().order_by("-created_at")
+    serializer_class = AdminRatingSerializer
+    permission_classes = [IsStaffOrSuperuser]
+
+# ---------------- Invoices ----------------
+class InvoiceViewSet(viewsets.ModelViewSet):
+    queryset = Invoice.objects.all().order_by("-issued_at")
+    serializer_class = AdminInvoiceSerializer
+    permission_classes = [IsStaffOrSuperuser]
+
+    @action(detail=True, methods=["post"])
+    def mark_paid(self, request, pk=None):
+        invoice = self.get_object()
+        from django.utils import timezone
+        invoice.status = getattr(Invoice, "STATUS_PAID", "paid")
+        invoice.paid_at = timezone.now()
+        invoice.save()
+        log_admin_action(request.user, "update", "Invoice", invoice.id, "mark_paid")
+        return Response({"status": invoice.status, "paid_at": invoice.paid_at})
+
+    @action(detail=False, methods=["get"])
+    def export_csv(self, request):
+        qs = self.get_queryset()
+        response = HttpResponse(content_type='text/csv')
+        response['Content-Disposition'] = 'attachment; filename="invoices.csv"'
+        writer = csv.writer(response)
+        writer.writerow(['ID', 'Booking', 'Amount', 'Status', 'Issued At', 'Paid At'])
+        for inv in qs:
+            writer.writerow([inv.id, getattr(inv.booking, 'id', None), inv.amount, inv.status, inv.issued_at, inv.paid_at])
+        return response
+
+# ---------------- Logs ----------------
+class AdminActionLogViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = AdminActionLog.objects.all().order_by("-timestamp")
+    serializer_class = AdminActionLogSerializer
+    permission_classes = [IsStaffOrSuperuser]
+
+# ---------------- Notifications ----------------
+class AdminNotificationViewSet(viewsets.ModelViewSet):
+    queryset = AdminNotification.objects.all().order_by("-created_at")
+    serializer_class = AdminNotificationSerializer
+    permission_classes = [IsStaffOrSuperuser]
+
+    @action(detail=False, methods=["get"])
+    def unread(self, request):
+        notifs = self.queryset.filter(is_read=False)
+        serializer = self.get_serializer(notifs, many=True)
         return Response(serializer.data)
-    elif request.method == 'POST':
-        serializer = AdminUserSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['GET', 'PUT', 'DELETE'])
-@permission_classes([IsAdminUser])
-def admin_user_detail(request, pk):
-    try:
-        user = User.objects.get(pk=pk)
-    except User.DoesNotExist:
-        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+# ---------------- Stats ----------------
+class AdminStatsView(APIView):
+    permission_classes = [IsStaffOrSuperuser]
 
-    if request.method == 'GET':
-        serializer = AdminUserSerializer(user)
-        return Response(serializer.data)
-    elif request.method == 'PUT':
-        serializer = AdminUserSerializer(user, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    elif request.method == 'DELETE':
-        user.delete()
-        return Response({'message': 'User deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+    def get(self, request):
+        return Response({
+            "users_count": User.objects.count(),
+            "services_count": Service.objects.count(),
+            "orders_count": Order.objects.count(),
+            "reviews_count": Review.objects.count(),
+            "ratings_count": Rating.objects.count(),
+            "invoices_count": Invoice.objects.count(),
+            "avg_rating": Rating.objects.aggregate(avg=Avg("score"))["avg"],
+        })
 
-# ---------- Services ----------
-@api_view(['GET', 'POST'])
-@permission_classes([IsAdminUser])
-def admin_services(request):
-    if request.method == 'GET':
-        services = Service.objects.all().order_by('id')
-        serializer = AdminServiceSerializer(services, many=True)
-        return Response(serializer.data)
-    elif request.method == 'POST':
-        serializer = AdminServiceSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class FinancialReportView(APIView):
+    permission_classes = [IsStaffOrSuperuser]
 
-@api_view(['GET', 'PUT', 'DELETE'])
-@permission_classes([IsAdminUser])
-def admin_service_detail(request, pk):
-    try:
-        service = Service.objects.get(pk=pk)
-    except Service.DoesNotExist:
-        return Response({'error': 'Service not found'}, status=status.HTTP_404_NOT_FOUND)
-
-    if request.method == 'GET':
-        serializer = AdminServiceSerializer(service)
-        return Response(serializer.data)
-    elif request.method == 'PUT':
-        serializer = AdminServiceSerializer(service, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    elif request.method == 'DELETE':
-        service.delete()
-        return Response({'message': 'User deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
-
-# ---------- Orders ----------
-@api_view(['GET', 'POST'])
-@permission_classes([IsAdminUser])
-def admin_orders(request):
-    if request.method == 'GET':
-        orders = Order.objects.all().order_by('id')
-        serializer = AdminOrderSerializer(orders, many=True)
-        return Response(serializer.data)
-    elif request.method == 'POST':
-        serializer = AdminOrderSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-@api_view(['GET', 'PUT', 'DELETE'])
-@permission_classes([IsAdminUser])
-def admin_order_detail(request, pk):
-    try:
-        order = Order.objects.get(pk=pk)
-    except Order.DoesNotExist:
-        return Response({'error': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
-
-    if request.method == 'GET':
-        serializer = AdminOrderSerializer(order)
-        return Response(serializer.data)
-    elif request.method == 'PUT':
-        serializer = AdminOrderSerializer(order, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    elif request.method == 'DELETE':
-        order.delete()
-        return Response({'message': 'User deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
-
-# ---------- Reviews ----------
-@api_view(['GET', 'POST'])
-@permission_classes([IsAdminUser])
-def admin_reviews(request):
-    if request.method == 'GET':
-        reviews = Review.objects.all().order_by('id')
-        serializer = AdminReviewSerializer(reviews, many=True)
-        return Response(serializer.data)
-    elif request.method == 'POST':
-        serializer = AdminReviewSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-@api_view(['GET', 'PUT', 'DELETE'])
-@permission_classes([IsAdminUser])
-def admin_review_detail(request, pk):
-    try:
-        review = Review.objects.get(pk=pk)
-    except Review.DoesNotExist:
-        return Response({'error': 'Review not found'}, status=status.HTTP_404_NOT_FOUND)
-
-    if request.method == 'GET':
-        serializer = AdminReviewSerializer(review)
-        return Response(serializer.data)
-    elif request.method == 'PUT':
-        serializer = AdminReviewSerializer(review, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    elif request.method == 'DELETE':
-        review.delete()
-        return Response({'message': 'User deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
-
-# ---------- Ratings ----------
-@api_view(['GET', 'POST'])
-@permission_classes([IsAdminUser])
-def admin_ratings(request):
-    if request.method == 'GET':
-        ratings = Rating.objects.all().order_by('id')
-        serializer = AdminRatingSerializer(ratings, many=True)
-        return Response(serializer.data)
-    elif request.method == 'POST':
-        serializer = AdminRatingSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-@api_view(['GET', 'PUT', 'DELETE'])
-@permission_classes([IsAdminUser])
-def admin_rating_detail(request, pk):
-    try:
-        rating = Rating.objects.get(pk=pk)
-    except Rating.DoesNotExist:
-        return Response({'error': 'Rating not found'}, status=status.HTTP_404_NOT_FOUND)
-
-    if request.method == 'GET':
-        serializer = AdminRatingSerializer(rating)
-        return Response(serializer.data)
-    elif request.method == 'PUT':
-        serializer = AdminRatingSerializer(rating, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    elif request.method == 'DELETE':
-        rating.delete()
-        return Response({'message': 'User deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
-
-# ---------- Invoices ----------
-@api_view(['GET', 'POST'])
-@permission_classes([IsAdminUser])
-def admin_invoices(request):
-    if request.method == 'GET':
-        invoices = Invoice.objects.all().order_by('id')
-        serializer = AdminInvoiceSerializer(invoices, many=True)
-        return Response(serializer.data)
-    elif request.method == 'POST':
-        serializer = AdminInvoiceSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-@api_view(['GET', 'PUT', 'DELETE'])
-@permission_classes([IsAdminUser])
-def admin_invoice_detail(request, pk):
-    try:
-        invoice = Invoice.objects.get(pk=pk)
-    except Invoice.DoesNotExist:
-        return Response({'error': 'Invoice not found'}, status=status.HTTP_404_NOT_FOUND)
-
-    if request.method == 'GET':
-        serializer = AdminInvoiceSerializer(invoice)
-        return Response(serializer.data)
-    elif request.method == 'PUT':
-        serializer = AdminInvoiceSerializer(invoice, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    elif request.method == 'DELETE':
-        invoice.delete()
-        return Response({'message': 'User deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
-
-# ---------- Stats ----------
-@api_view(['GET'])
-@permission_classes([IsAdminUser])
-def admin_stats(request):
-    # users_count = User.objects.count()
-    # services_count = Service.objects.count()
-    # orders_total = Order.objects.count()
-    # orders_pending = Order.objects.filter(status='pending').count()
-    # orders_completed = Order.objects.filter(status='completed').count()
-    # orders_cancelled = Order.objects.filter(status='cancelled').count()
-    # avg_rating = Rating.objects.aggregate(avg=Avg('score'))['avg']
-
-    return Response({
-        "users_count": User.objects.count(),
-        "services_count": Service.objects.count(),
-        "orders_count": Order.objects.count(),
-        "reviews_count": Review.objects.count(),
-        "ratings_count": Rating.objects.count(),
-        "invoices_count": Invoice.objects.count(),
-    })
-
-@api_view(["GET"])
-@permission_classes([IsAdminUser])
-def admin_logs_view(request):
-    """عرض كل اللوجات الخاصة بالـ Admin"""
-    logs = AdminActionLog.objects.all().order_by("-timestamp")  # مرتب بالأحدث
-    serializer = AdminActionLogSerializer(logs, many=True)
-    return Response(serializer.data)
-
-
+    def get(self, request):
+        by_status = (Invoice.objects
+                     .values("status")
+                     .annotate(total=Sum("amount"), count=Count("id"))
+                     .order_by())
+        return Response({"by_status": list(by_status)})
 
 class AdminMeView(APIView):
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsStaffOrSuperuser]
 
     def get(self, request):
         user = request.user
+        role = "superadmin" if user.is_superuser else "admin"
+        permissions = {
+            "can_manage_users": user.is_superuser,
+            "can_manage_services": True,
+            "can_manage_orders": True,
+            "can_view_logs": user.is_superuser,
+            "can_manage_settings": user.is_superuser,
+        }
         return Response({
             "id": user.id,
             "username": user.username,
             "email": user.email,
-            "role": "superadmin" if user.is_superuser else "admin"
+            "role": role,
+            "permissions": permissions,
         })
+
+# ---------------- Platform Settings ----------------
+class PlatformSettingViewSet(viewsets.ModelViewSet):
+    queryset = PlatformSetting.objects.all().order_by("group", "key")
+    serializer_class = PlatformSettingSerializer
+    permission_classes = [IsStaffOrSuperuser]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["key", "group", "value"]
