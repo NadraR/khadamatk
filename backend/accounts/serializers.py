@@ -96,12 +96,14 @@ class UserSerializer(serializers.ModelSerializer):
 
 # 🔹 Worker Profile Serializer
 class WorkerProfileSerializer(serializers.ModelSerializer):
+    user_id = serializers.IntegerField(source="user.id", read_only=True)
+    username = serializers.CharField(source="user.username", read_only=True)
+
     class Meta:
         model = WorkerProfile
         fields = [
-            "id", "user", "job_title", "hourly_rate",
+            "id", "user","username","user_id", "job_title", "hourly_rate",
             "experience_years", "skills",
-
             "created_at", "updated_at"
         ]
         read_only_fields = ["user", "created_at", "updated_at"]
@@ -152,3 +154,12 @@ class LoginSerializer(serializers.Serializer):
 
         attrs['user'] = user
         return attrs
+
+
+# class WorkerProfileSerializer(serializers.ModelSerializer):
+#     user = UserSerializer(read_only=True)
+
+#     class Meta:
+#         model = WorkerProfile
+#         fields = ["id", "user", "specialization", "experience", "rating"]
+

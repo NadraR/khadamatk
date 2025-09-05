@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 from datetime import timedelta
 from decouple import config, Csv
 import sys
+from corsheaders.defaults import default_headers
+
 
 load_dotenv()
 
@@ -61,24 +63,25 @@ INSTALLED_APPS = [
     'invoices',
     'orders',
     'ratings',  
-    'invoices.apps.InvoicesConfig',
-    'orders.apps.OrdersConfig',
-    'ratings.apps.RatingsConfig', 
+    # 'invoices.apps.InvoicesConfig',
+    # 'orders.apps.OrdersConfig',
+    # 'ratings.apps.RatingsConfig', 
     'reviews',
     'services.apps.ServicesConfig',
     'admin_api',
     'location',
     'chat',
     'notifications.apps.NotificationsConfig',
+
     ]
    
 
 SITE_ID = 1
 
-MIDDLEWARE = [
+MIDDLEWARE = [    
+    'corsheaders.middleware.CorsMiddleware', 
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
-    'corsheaders.middleware.CorsMiddleware', 
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -196,6 +199,8 @@ AUTH_USER_MODEL = 'accounts.User'
 
 
 
+# CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
 
 # Additional CORS settings for better compatibility
@@ -208,16 +213,16 @@ CORS_ALLOW_METHODS = [
     "PUT",
 ]
 
-CORS_ALLOW_HEADERS = [
-    "accept",
-    "accept-encoding",
+CORS_ALLOW_HEADERS = list(default_headers) + [
+#    "accept",
+#     "accept-encoding",
     "authorization",
     "content-type",
-    "dnt",
-    "origin",
-    "user-agent",
-    "x-csrftoken",
-    "x-requested-with",
+    # "dnt",
+    # "origin",
+    # "user-agent",
+    # "x-csrftoken",
+    # "x-requested-with",
 ]
 
 PASSWORD_HASHERS = [

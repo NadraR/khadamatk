@@ -110,7 +110,8 @@ class WorkerProfile(BaseProfile):
         verbose_name_plural = 'Worker Profiles'
 
     def __str__(self):
-        return f"{self.user.username} - {self.job_title or 'No Title'}"
+        # return f"{self.user.username} - {self.job_title or 'No Title'}"
+            return self.user.get_full_name() or self.user.username
 
     def clean(self):
         if self.user.role != 'worker':

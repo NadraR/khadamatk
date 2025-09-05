@@ -33,7 +33,7 @@ const AdminDashboard = () => {
   const [orders, setOrders] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [ratings, setRatings] = useState([]);
-  const [invoices, setInvoices] = useState([]);
+  // const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -66,7 +66,7 @@ const AdminDashboard = () => {
           api.get(`${baseURL}/admin/orders/`, { headers }),
           api.get(`${baseURL}/admin/reviews/`, { headers }),
           api.get(`${baseURL}/admin/ratings/`, { headers }),
-          api.get(`${baseURL}/admin/invoices/`, { headers }),
+          // api.get(`${baseURL}/admin/invoices/`, { headers }),
         ]);
 
         setUsers(usersRes.data || []);
@@ -74,7 +74,7 @@ const AdminDashboard = () => {
         setOrders(ordersRes.data || []);
         setReviews(reviewsRes.data || []);
         setRatings(ratingsRes.data || []);
-        setInvoices(invoicesRes.data || []);
+        // setInvoices(invoicesRes.data || []);
       } catch (err) {
         console.error("Error fetching admin data:", err.response?.data || err);
       } finally {
@@ -95,11 +95,11 @@ const AdminDashboard = () => {
   const totalUsers = users.length;
   const totalServices = services.length;
   const totalOrders = orders.length;
-  const totalInvoices = invoices.length;
-  const totalRevenue = invoices.reduce(
-    (s, inv) => s + (Number(inv.amount) || 0),
-    0
-  );
+  // const totalInvoices = invoices.length;
+  // const totalRevenue = invoices.reduce(
+  //   (s, inv) => s + (Number(inv.amount) || 0),
+  //   0
+  // );
 
   const notifications = [
     ...reviews
@@ -361,7 +361,7 @@ const AdminDashboard = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {invoices
+                  {/* {invoices
                     .slice(-6)
                     .reverse()
                     .map((inv) => (
@@ -381,7 +381,7 @@ const AdminDashboard = () => {
                         لا توجد فواتير
                       </td>
                     </tr>
-                  )}
+                  )} */}
                 </tbody>
               </table>
             </Card>
