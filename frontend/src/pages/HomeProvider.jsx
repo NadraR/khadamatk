@@ -3,6 +3,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { BsEnvelope, BsTelephone, BsGeoAlt, BsStarFill } from "react-icons/bs";
 import { useNavigate, useParams } from "react-router-dom";
 import apiService from "../services/ApiService";
+import Navbar from "../components/Navbar";
 
 const WorkerProfile = () => {
   const injected = useRef(false);
@@ -12,6 +13,7 @@ const WorkerProfile = () => {
   const [activeTab, setActiveTab] = useState("overview");
   const [errorMsg, setErrorMsg] = useState("");
   const currentUser = JSON.parse(localStorage.getItem("user"));
+  const [userData, setUserData] = useState(null);
 // console.log(currentUser.username);
 console.log("👤 worker from API:", worker);
 console.log("🔑 current user from localStorage:", currentUser);
@@ -32,6 +34,12 @@ console.log("🔑 current user from localStorage:", currentUser);
       }
     };
     fetchWorkerProfile();
+    
+    // Load user data from localStorage
+    const user = localStorage.getItem('user');
+    if (user) {
+      setUserData(JSON.parse(user));
+    }
   }, [id]);
 
   // Inject CSS once
@@ -59,15 +67,18 @@ console.log("🔑 current user from localStorage:", currentUser);
 
   return (
     <div className="pb-5">
+      <Navbar />
+      {/* Cover */}
       <div className="profile-cover">
-        <div className="profile-avatar">{worker.username ? worker.username[0].toUpperCase() : "W"}</div>
+        <div className="profile-avatar">{worker?.username ? worker.username[0].toUpperCase() : "W"}</div>
       </div>
 
-      <div className="container mt-5 position-relative">
-        <h3 className="fw-bold d-inline">{worker.first_name} {worker.last_name}</h3>
-        <p className="text-muted">@{worker.username}</p>
-        <p>{worker.bio || "No bio available."}</p>
-        <small className="text-muted">Joined {worker.joined_date || "N/A"}</small>
+      {/* Info */}
+      <div className="container mt-5">
+        <h3 className="fw-bold">{worker?.first_name} {worker?.last_name}</h3>
+        <p className="text-muted">@{worker?.username}</p>
+        <p>{worker?.bio || "No bio available."}</p>
+        <small className="text-muted">Joined {worker?.joined_date || "N/A"}</small>
 
         {/* Stats */}
         <div className="row text-center mt-4 g-3">

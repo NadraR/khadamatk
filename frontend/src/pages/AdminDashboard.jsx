@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
-import api from "../api";
-import { ACCESS_TOKEN } from "../constants";
+import { ApiService } from "../services/ApiService";
 import "./AdminDashboard.css";
 
 import {
@@ -22,9 +21,8 @@ const AdminDashboard = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
-  const token = localStorage.getItem(ACCESS_TOKEN);
+  const apiService = new ApiService();
   const baseURL = import.meta.env.VITE_API_URL;
-  const headers = { Authorization: `Bearer ${token}` };
 
   const [currentUser, setCurrentUser] = useState(null);
 
@@ -39,7 +37,7 @@ const AdminDashboard = () => {
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const res = await api.get(`${baseURL}/auth/me/`, { headers });
+        const res = await apiService.get(`/auth/me/`);
         setCurrentUser(res.data);
       } catch (err) {
         console.error("Error fetching current user:", err.response?.data || err);
@@ -61,12 +59,12 @@ const AdminDashboard = () => {
           ratingsRes,
           invoicesRes,
         ] = await Promise.all([
-          api.get(`${baseURL}/admin/users/`, { headers }),
-          api.get(`${baseURL}/admin/services/`, { headers }),
-          api.get(`${baseURL}/admin/orders/`, { headers }),
-          api.get(`${baseURL}/admin/reviews/`, { headers }),
-          api.get(`${baseURL}/admin/ratings/`, { headers }),
-          // api.get(`${baseURL}/admin/invoices/`, { headers }),
+          apiService.get(`/admin/users/`),
+          apiService.get(`/admin/services/`),
+          apiService.get(`/admin/orders/`),
+          apiService.get(`/admin/reviews/`),
+          apiService.get(`/admin/ratings/`),
+          apiService.get(`/admin/invoices/`),
         ]);
 
         setUsers(usersRes.data || []);

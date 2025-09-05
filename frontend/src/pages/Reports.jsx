@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
-import api from "../api";
-import { ACCESS_TOKEN } from "../constants";
+import { ApiService } from "../services/ApiService";
 
 const styles = {
   container: {
@@ -95,9 +94,8 @@ const styles = {
 
 // --- Main Component ---
 const Reports = () => {
-  const token = localStorage.getItem(ACCESS_TOKEN);
+  const apiService = new ApiService();
   const baseURL = import.meta.env.VITE_API_URL;
-  const headers = { Authorization: `Bearer ${token}` };
 
   const [orders, setOrders] = useState([]);
   const [invoices, setInvoices] = useState([]);
@@ -108,9 +106,9 @@ const Reports = () => {
     const fetchReports = async () => {
       try {
         const [ordersRes, invoicesRes, servicesRes] = await Promise.all([
-          api.get(`${baseURL}/admin/orders/`, { headers }),
-          api.get(`${baseURL}/admin/invoices/`, { headers }),
-          api.get(`${baseURL}/admin/services/`, { headers }),
+          apiService.get(`/admin/orders/`),
+          apiService.get(`/admin/invoices/`),
+          apiService.get(`/admin/services/`),
         ]);
 
         setOrders(ordersRes.data || []);

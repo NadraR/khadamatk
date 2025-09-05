@@ -6,6 +6,7 @@ import axios from "axios";
 const GoogleLoginButton = ({ onSuccess, language = "ar", onError }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [hasAttemptedLogin, setHasAttemptedLogin] = useState(false);
+  const [loginInProgress, setLoginInProgress] = useState(false);
 
   const handleLoginResponse = async (idToken) => {
     console.log("[DEBUG] GoogleLoginButton: handleLoginResponse called with token:", idToken ? "Present" : "Missing");
@@ -19,12 +20,14 @@ const GoogleLoginButton = ({ onSuccess, language = "ar", onError }) => {
       return;
     }
 
-    if (hasAttemptedLogin) {
-      console.warn("[DEBUG] GoogleLoginButton: Login already attempted, ignoring duplicate request");
+    // منع المحاولات المتعددة
+    if (hasAttemptedLogin || loginInProgress) {
+      console.warn("[DEBUG] GoogleLoginButton: Login already attempted or in progress, ignoring duplicate request");
       return;
     }
 
     setHasAttemptedLogin(true);
+    setLoginInProgress(true);
     setIsLoading(true);
     try {
       console.log("[DEBUG] GoogleLoginButton: Starting Google login process");
@@ -81,6 +84,11 @@ const GoogleLoginButton = ({ onSuccess, language = "ar", onError }) => {
       // Don't show toast here - let parent component handle it
     } finally {
       setIsLoading(false);
+      setLoginInProgress(false);
+      // إعادة تعيين hasAttemptedLogin بعد 5 ثواني للسماح بمحاولة جديدة
+      setTimeout(() => {
+        setHasAttemptedLogin(false);
+      }, 5000);
     }
   };
 
@@ -138,7 +146,8 @@ export default function GoogleLoginWrapper({ onSuccess, language = "ar", onError
   const [configError, setConfigError] = useState(null);
 
   useEffect(() => {
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    // Use environment variable or fallback to hardcoded client ID
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || "449603582190-a5spd13dsq4kjm6mmn910lvsoi84r975.apps.googleusercontent.com";
     console.log("[DEBUG] GoogleLoginWrapper: Client ID from env:", clientId ? "Found" : "Missing");
 
     if (clientId && clientId !== "YOUR_GOOGLE_CLIENT_ID") {
@@ -148,7 +157,8 @@ export default function GoogleLoginWrapper({ onSuccess, language = "ar", onError
       const currentOrigin = window.location.origin;
       console.log("[DEBUG] GoogleLoginWrapper: Current origin:", currentOrigin);
       
-      if (currentOrigin.includes('localhost') && !clientId.includes('localhost')) {
+      // Add warning for localhost development
+      if (currentOrigin.includes('localhost')) {
         const warningMsg = language === "ar"
           ? "تحذير: تأكد من إضافة http://localhost:5173 إلى Authorized JavaScript origins في Google Console"
           : "Warning: Make sure to add http://localhost:5173 to Authorized JavaScript origins in Google Console";

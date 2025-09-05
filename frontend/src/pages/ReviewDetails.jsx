@@ -1,22 +1,19 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import api from "../api";
-import { ACCESS_TOKEN } from "../constants";
+import { ApiService } from "../services/ApiService";
 import "./AdminDashboard.css";
 
 const ReviewDetails = () => {
   const { id } = useParams();
   const { t } = useTranslation();
   const [review, setReview] = useState(null);
-  const token = localStorage.getItem(ACCESS_TOKEN);
+  const apiService = new ApiService();
 
   useEffect(() => {
     const fetchReview = async () => {
       try {
-        const res = await api.get(`/admin/reviews/${id}/`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await apiService.get(`/admin/reviews/${id}/`);
         setReview(res.data);
       } catch (err) {
         console.error("Error fetching review:", err);

@@ -1,6 +1,8 @@
+# chat/urls.py
 from django.urls import path
-from .views import message_list_create
+from .views import ConversationDetailView, MessageListCreateView
 
 urlpatterns = [
-    path('', message_list_create, name="message-list-create"),
+    path("orders/<int:order_id>/conversation/", ConversationDetailView.as_view(), name="conversation-detail"),
+    path("orders/<int:order_id>/messages/", MessageListCreateView.as_view(), name="message-list-create"),
 ]

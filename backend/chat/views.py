@@ -1,32 +1,60 @@
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework import generics, permissions, status
 from rest_framework.response import Response
-from rest_framework import status
-from .models import Message
-from .serializers import MessageSerializer
+from django.shortcuts import get_object_or_404
+from .models import Conversation, Message
+from .serializers import ConversationSerializer, MessageSerializer
+from orders.models import Order
 
-@api_view(["GET", "POST"])
-@permission_classes([IsAuthenticated])  
-def message_list_create(request):
-    if request.method == "GET":
-        user1 = request.query_params.get("user1")
-        user2 = request.query_params.get("user2")
+class ConversationDetailView(generics.RetrieveAPIView):
+    serializer_class = ConversationSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
-        if user1 and user2:
-            messages = Message.objects.filter(
-                sender_id__in=[user1, user2],
-                receiver_id__in=[user1, user2]
-            ).order_by("timestamp")  
-        else:
-            return Response({"detail": "user1 and user2 are required."},
-                            status=status.HTTP_400_BAD_REQUEST)
+    def get_object(self):
+        order_id = self.kwargs['order_id']
+        order = get_object_or_404(Order, id=order_id)
+        
+        # Check if user can access this order
+        if not (self.request.user == order.client or 
+                self.request.user == order.worker or 
+                self.request.user.is_staff):
+            return Response(
+                {'error': 'You do not have permission to access this conversation'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        conversation, created = Conversation.objects.get_or_create(order=order)
+        return conversation
 
-        serializer = MessageSerializer(messages, many=True)
-        return Response(serializer.data)
 
-    elif request.method == "POST":
-        serializer = MessageSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(sender=request.user)  
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class MessageListCreateView(generics.ListCreateAPIView):
+    serializer_class = MessageSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        order_id = self.kwargs['order_id']
+        order = get_object_or_404(Order, id=order_id)
+        
+        # Check if user can access this order
+        if not (self.request.user == order.client or 
+                self.request.user == order.worker or 
+                self.request.user.is_staff):
+            return Message.objects.none()
+        
+        conversation, _ = Conversation.objects.get_or_create(order=order)
+        return Message.objects.filter(conversation=conversation).order_by('timestamp')
+
+    def perform_create(self, serializer):
+        order_id = self.kwargs['order_id']
+        order = get_object_or_404(Order, id=order_id)
+        
+        # Check if user can access this order
+        if not (self.request.user == order.client or 
+                self.request.user == order.worker or 
+                self.request.user.is_staff):
+            return Response(
+                {'error': 'You do not have permission to send messages to this conversation'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        conversation, _ = Conversation.objects.get_or_create(order=order)
+        serializer.save(conversation=conversation, sender=self.request.user)

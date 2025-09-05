@@ -1,0 +1,107 @@
+{
+  "about": {
+    "hero": {
+      "title": "Khadamatk Development Team",
+      "subtitle": "We are a team of Full Stack Web Developers, graduates of the Information Technology Institute (ITI) class of 2025, united under one goal: providing the best platform to connect clients with professional service providers.",
+      "stats": {
+        "developers": "Specialized Developers",
+        "graduates": "ITI Graduates",
+        "batch": "Single Batch"
+      }
+    },
+    "story": {
+      "title": "Our Founding Story",
+      "subtitle": "From ITI graduation project to national platform",
+      "content1": "Khadamatk started as a graduation project for ITI students of 2025, where the team noticed the difficulty of finding reliable service providers in the area. Since then, the idea has evolved into a comprehensive platform connecting clients with professional service providers.",
+      "content2": "We believe that every home and every business deserves the best services, and we strive daily to achieve this vision through our platform. We have worked as a cohesive team of full-stack web developers to create an exceptional user experience.",
+      "highlights": {
+        "founded": "Year Founded",
+        "institute": "Institute Graduates",
+        "members": "Team Members"
+      },
+      "teamPhoto": "Khadamatk Team - ITI 2025 Graduates"
+    },
+    "stats": {
+      "title": "Our Statistics",
+      "subtitle": "Numbers that speak of our success",
+      "customers": "Satisfied Customers",
+      "providers": "Service Providers",
+      "services": "Available Services",
+      "rating": "Positive Rating"
+    },
+    "technologies": {
+      "title": "Technologies We Use",
+      "subtitle": "Latest technologies for better user experience",
+      "python": "For robust backend infrastructure",
+      "react": "For interactive and modern user interfaces",
+      "postgresql": "For strong and reliable database",
+      "javascript": "For interactive and modern development",
+      "html": "For web page structure",
+      "css": "For beautiful interface design"
+    },
+    "team": {
+      "title": "Our Complete Team",
+      "subtitle": "ITI 2025 Graduates - Full Stack Web Developers",
+      "members": {
+        "ahmed": {
+          "name": "Ahmed Mahmoud",
+          "role": "Full Stack Developer",
+          "bio": "ITI 2025 graduate, specialized in web application development using Python and Django.",
+          "iti": "2025 Batch - Python Track"
+        },
+        "fatma": {
+          "name": "Fatma Ali",
+          "role": "Full Stack Developer",
+          "bio": "ITI 2025 graduate, specialized in user interface development and user experience using React.",
+          "iti": "2025 Batch - Web Development Track"
+        },
+        "omar": {
+          "name": "Omar Hassan",
+          "role": "Full Stack Developer",
+          "bio": "ITI 2025 graduate, specialized in full-stack web application development using JavaScript and Node.js.",
+          "iti": "2025 Batch - Web Development Track"
+        },
+        "mariam": {
+          "name": "Mariam Ahmed",
+          "role": "Full Stack Developer",
+          "bio": "ITI 2025 graduate, specialized in web development and digital marketing.",
+          "iti": "2025 Batch - Web Development Track"
+        },
+        "youssef": {
+          "name": "Youssef Mohamed",
+          "role": "Full Stack Developer",
+          "bio": "ITI 2025 graduate, specialized in full-stack web application development using Python and React.",
+          "iti": "2025 Batch - Python Track"
+        },
+        "nour": {
+          "name": "Nour El-Din",
+          "role": "Full Stack Developer",
+          "bio": "ITI 2025 graduate, specialized in web application development using Python and Django.",
+          "iti": "2025 Batch - Python Track"
+        }
+      }
+    },
+    "values": {
+      "title": "Our Values",
+      "subtitle": "The principles we believe in and follow",
+      "satisfaction": {
+        "title": "Complete Satisfaction",
+        "description": "We strive to achieve the highest levels of customer satisfaction through excellent services"
+      },
+      "innovation": {
+        "title": "Innovation",
+        "description": "We develop innovative solutions to facilitate the daily lives of our customers"
+      },
+      "quality": {
+        "title": "Quality",
+        "description": "We are committed to the highest quality standards in everything we provide"
+      }
+    },
+    "cta": {
+      "title": "Join Our Growing Community",
+      "subtitle": "Register today and be part of our success journey",
+      "joinProvider": "Join as Service Provider",
+      "exploreServices": "Explore Services"
+    }
+  }
+}

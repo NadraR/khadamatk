@@ -1,21 +1,17 @@
 import React, { useEffect, useState } from "react";
-import api from "../api";
-import { ACCESS_TOKEN } from "../constants";
+import { ApiService } from "../services/ApiService";
 import "./Orders.css";
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const token = localStorage.getItem(ACCESS_TOKEN);
-  const baseURL = `${import.meta.env.VITE_API_URL}/orders/`;
+  const apiService = new ApiService();
 
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const response = await api.get(baseURL, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await apiService.get(`/orders/`);
 
       if (Array.isArray(response.data)) {
         setOrders(response.data);

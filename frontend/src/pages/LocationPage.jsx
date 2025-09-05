@@ -1,279 +1,858 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import LocationPicker from '../components/LocationPicker';
+// src/pages/LocationPage.jsx
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { 
+  Box, Typography, CircularProgress, Chip, Button, List, ListItem, Paper,
+  FormControl, InputLabel, Select, MenuItem, Container, IconButton, Card, CardContent
+} from "@mui/material";
+import { 
+  LocationOn as LocationIcon, 
+  Refresh as RefreshIcon, 
+  Search as SearchIcon,
+  Person as PersonIcon,
+  EventAvailable as EventIcon
+} from "@mui/icons-material";
 import { locationService } from '../services/LocationService';
-import { authService } from '../services/authService';
+import LocationPicker from '../components/LocationPicker';
+import Navbar from '../components/Navbar';
+import "bootstrap/dist/css/bootstrap.min.css";
+import "./LocationPage.css";
 
-function LocationPage() {
-  const [selectedLocation, setSelectedLocation] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState('');
-  const [messageType, setMessageType] = useState('');
-  const [nearbyLocations, setNearbyLocations] = useState([]);
-  const [myLocationLoaded, setMyLocationLoaded] = useState(false);
+export default function LocationPage() {
   const navigate = useNavigate();
+  
+  // الموقع المختار
+  const [selectedLocation, setSelectedLocation] = useState(null);
+  const [citySearch, setCitySearch] = useState("");
+  const [searchSuggestions, setSearchSuggestions] = useState([]);
 
-  // جلب الموقع الحالي عند الدخول
+  // نتائج الخدمات
+  const [results, setResults] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  // نوع الخدمة المختار وقائمة الخدمات
+  const [selectedService, setSelectedService] = useState("");
+  const [servicesList, setServicesList] = useState([]);
+  const [serviceData, setServiceData] = useState(null);
+  const [customService, setCustomService] = useState(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
+  const hasSearchedRef = useRef(false);
+  const searchTimeoutRef = useRef(null);
+
+  // فلاتر إضافية
+  const [filters, setFilters] = useState({
+    maxDistance: 10,
+    minRating: 0,
+    maxPrice: 1000
+  });
+
+  // الدوال الجديدة للزرين
+  const handleShowProviderProfile = (service) => {
+    // الانتقال إلى صفحة الملف الشخصي لمزود الخدمة
+    const providerId = service.provider?.id || service.provider_id;
+    if (providerId) {
+      window.open(`/provider/${providerId}`, '_blank');
+    } else {
+      console.error('لا يوجد معرف للمزود', service);
+      setError('لا يمكن عرض الملف الشخصي - المعرف غير متوفر');
+    }
+  };
+
+  const handleBookService = (service) => {
+    // الانتقال إلى صفحة الطلب
+    const serviceId = service.id;
+    if (serviceId) {
+      // Store service data in localStorage for the order page
+      localStorage.setItem('selectedService', JSON.stringify(service));
+      // Navigate to order page
+      window.location.href = '/order';
+    } else {
+      console.error('لا يوجد معرف للخدمة', service);
+      setError('لا يمكن حجز الخدمة - المعرف غير متوفر');
+    }
+  };
+
+  // جلب أنواع الخدمات
   useEffect(() => {
-    const fetchMyLocation = async () => {
-      if (!authService.isAuthenticated()) {
-        navigate('/login');
-        return;
-      }
-
+    const fetchServiceTypes = async () => {
       try {
-        const result = await locationService.getMyLocation();
-        if (result.success && result.data) {
-          // البيانات تأتي مباشرة كـ { lat, lng, address, ... }
-          setSelectedLocation(result.data);
+        console.log('Fetching service types...');
+        const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+        const response = await fetch(`${baseURL}/api/services/types/`);
+        if (response.ok) {
+          const data = await response.json();
+          setServicesList(data);
+          console.log('Service types loaded:', data.length, 'services');
+        } else {
+          console.error('Failed to fetch service types:', response.status);
+          setError('فشل في تحميل أنواع الخدمات');
         }
       } catch (err) {
-        console.error('Error fetching my location:', err);
+        console.error("فشل في تحميل أنواع الخدمات", err);
+        setError('خطأ في الاتصال بالخادم');
+      }
+    };
+    fetchServiceTypes();
+  }, []);
+
+  // تحميل الخدمة المختارة من localStorage (فقط عند التحميل الأول)
+  useEffect(() => {
+    const savedService = localStorage.getItem('selectedService');
+    if (savedService && servicesList.length > 0 && !selectedService) {
+      try {
+        const serviceData = JSON.parse(savedService);
+        console.log('Loaded service from localStorage:', serviceData);
+        
+        // Find matching service in servicesList by name or searchTerm
+        const searchTerm = serviceData.searchTerm || serviceData.name?.ar || serviceData.name?.en || '';
+        console.log('Searching for service:', searchTerm);
+        console.log('Available services:', servicesList);
+        
+        // First try to find by exact ID match (if serviceData.id is numeric)
+        let matchingService = null;
+        if (typeof serviceData.id === 'number' || !isNaN(Number(serviceData.id))) {
+          matchingService = servicesList.find(service => 
+            service.id === Number(serviceData.id)
+          );
+        }
+        
+        // If no ID match, try to find by exact name match
+        if (!matchingService) {
+          matchingService = servicesList.find(service => 
+            service.name === searchTerm || 
+            service.name?.toLowerCase() === searchTerm.toLowerCase()
+          );
+        }
+        
+        // If no exact match, try partial matching
+        if (!matchingService) {
+          matchingService = servicesList.find(service => 
+            service.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            searchTerm.toLowerCase().includes(service.name?.toLowerCase())
+          );
+        }
+        
+        // If still no match, try to match by common service names
+        if (!matchingService) {
+          const serviceNameMap = {
+            'cleaning': 'تنظيف',
+            'assembly': 'تركيب',
+            'moving': 'نقل',
+            'painting': 'دهان',
+            'repairs': 'إصلاح',
+            'plumbing': 'سباكة',
+            'electrical': 'كهرباء',
+            'carpentry': 'نجارة'
+          };
+          
+          // Handle both string and numeric IDs
+          const serviceId = typeof serviceData.id === 'string' ? serviceData.id : serviceData.id?.toString();
+          const mappedName = serviceNameMap[serviceId?.toLowerCase()];
+          if (mappedName) {
+            matchingService = servicesList.find(service => 
+              service.name?.toLowerCase().includes(mappedName.toLowerCase()) ||
+              mappedName.toLowerCase().includes(service.name?.toLowerCase())
+            );
+          }
+        }
+        
+        // If still no match, try to find by the original service ID from localStorage
+        if (!matchingService && serviceData.id) {
+          // Try to find a service that might match the original ID
+          const serviceId = typeof serviceData.id === 'string' ? serviceData.id : serviceData.id.toString();
+          matchingService = servicesList.find(service => 
+            service.id.toString() === serviceId ||
+            service.name?.toLowerCase().includes(serviceId.toLowerCase())
+          );
+        }
+        
+        if (matchingService) {
+          // Set the selected service ID for the Select component
+          setSelectedService(matchingService.id.toString());
+          console.log('Matched service:', matchingService);
+        } else {
+          // If no exact match, create a custom service option
+          setSelectedService('custom');
+          setCustomService({
+            id: 'custom',
+            name: searchTerm,
+            originalData: serviceData
+          });
+          console.log('Created custom service for:', searchTerm);
+        }
+        
+        // Store the full service data for later use
+        setServiceData(serviceData);
+        
+      } catch (error) {
+        console.error('Error parsing saved service:', error);
+        setSelectedService(''); // Reset to avoid MUI error
+        setError('خطأ في تحميل الخدمة المحفوظة');
+      }
+    }
+  }, [servicesList, selectedService]); // Added selectedService to dependencies
+
+  // استدعاء البحث عن الخدمات القريبة
+  const fetchNearbyServices = useCallback(async (location, serviceTerm = null) => {
+    if (!location || isSearching) {
+      console.log('Skipping search - no location or already searching');
+      return;
+    }
+
+    // Clear any existing timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // Debounce the search by 300ms
+    searchTimeoutRef.current = setTimeout(async () => {
+      // Use serviceTerm if provided, otherwise use selectedService
+      let searchTerm = serviceTerm || selectedService;
+      
+      // If selectedService is 'custom', use the custom service name
+      if (selectedService === 'custom' && customService) {
+        searchTerm = customService.name;
+      }
+      
+      if (!searchTerm) {
+        console.log('Skipping search - no search term');
+        return;
+      }
+      
+      try {
+        setIsSearching(true);
+        setLoading(true);
+        setError(null);
+        
+        console.log('Starting search for:', searchTerm, 'at location:', location);
+        
+        // Get the service type ID for the API
+        let serviceTypeId = null;
+        if (selectedService && selectedService !== 'custom') {
+          serviceTypeId = selectedService;
+        } else if (customService && customService.originalData?.id) {
+          serviceTypeId = customService.originalData.id;
+        }
+        
+        console.log('Searching with service type ID:', serviceTypeId);
+        
+        const result = await locationService.searchNearbyLocations(
+          location.lat,
+          location.lng,
+          10,
+          serviceTypeId
+        );
+
+        if (result.success) {
+          setResults(result.data || []);
+          setError(null);
+          console.log('Search successful, found', result.data?.length || 0, 'results');
+          
+          if (result.data?.length === 0) {
+            setError('لم يتم العثور على مزودي خدمات في هذه المنطقة. جرب البحث في منطقة أخرى أو غير نوع الخدمة.');
+          } else {
+            setError(null); // Clear any previous errors
+          }
+        } else {
+          setError(result.error || "فشل في تحميل الخدمات القريبة");
+          console.error('Search failed:', result.error);
+        }
+      } catch (err) {
+        setError("فشل في تحميل الخدمات القريبة");
+        console.error('Search error:', err);
       } finally {
-        setMyLocationLoaded(true);
+        setLoading(false);
+        setIsSearching(false);
+      }
+    }, 300);
+  }, [selectedService, customService, isSearching]);
+
+  // جلب آخر موقع محفوظ
+  useEffect(() => {
+    const fetchUserLocation = async () => {
+      try {
+        console.log('Fetching user location...');
+        const result = await locationService.getLatestLocation();
+        if (result.success && result.data) {
+          const locationData = result.data;
+          if (locationData.lat && locationData.lng) {
+            setSelectedLocation({
+              lat: locationData.lat,
+              lng: locationData.lng,
+              address: locationData.address
+            });
+            console.log('User location loaded:', locationData.address);
+          }
+        } else {
+          console.log('No saved location found');
+        }
+      } catch (err) {
+        console.error('Error fetching user location:', err);
+        // Don't set error for location fetch as it's optional
+      } finally {
+        setIsInitialized(true);
       }
     };
+    fetchUserLocation();
+  }, []);
 
-    fetchMyLocation();
-  }, [navigate]);
-
-  const handleLocationSelect = (location) => {
-    setSelectedLocation(location);
-    setMessage('');
-    setNearbyLocations([]); // مسح النتائج القديمة عند اختيار موقع جديد
-  };
-
-  const handleSaveLocation = async () => {
-    if (!selectedLocation) {
-      setMessage('يرجى تحديد موقع أولاً');
-      setMessageType('error');
-      return;
-    }
-
-    setIsLoading(true);
-    setMessage('');
-
-    if (!authService.isAuthenticated()) {
-      setMessage('انتهت الجلسة، يرجى تسجيل الدخول مرة أخرى');
-      setMessageType('error');
-      setIsLoading(false);
-      navigate('/login');
-      return;
-    }
-
-    // إرسال البيانات بالهيكل الصحيح
-    const locationData = {
-      lat: selectedLocation.lat,
-      lng: selectedLocation.lng,
-      address: selectedLocation.address || ''
-    };
-
-    const result = await locationService.saveMyLocation(locationData);
-
-    if (result.success) {
-      setMessage(result.message);
-      setMessageType('success');
-      console.log('تم حفظ الموقع:', result.data);
-    } else {
-      setMessage(result.error);
-      setMessageType('error');
-      if (result.status === 401) {
-        authService.clearAuth();
-        navigate('/login');
+  // Auto-search when both location and service are available (only once)
+  useEffect(() => {
+    if (selectedLocation && selectedService && serviceData && !isSearching && isInitialized && !hasSearchedRef.current) {
+      const searchTerm = serviceData.searchTerm || serviceData.name?.ar || serviceData.name?.en || '';
+      if (searchTerm) {
+        console.log('Auto-triggering search with:', searchTerm);
+        hasSearchedRef.current = true; // Mark as searched to prevent re-triggering
+        fetchNearbyServices(selectedLocation, searchTerm);
       }
     }
+  }, [selectedLocation, selectedService, serviceData, isSearching, isInitialized, fetchNearbyServices]);
 
-    setIsLoading(false);
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleRefresh = () => {
+    if (selectedLocation && !isSearching) {
+      console.log('Manual refresh triggered');
+      hasSearchedRef.current = false; // Reset search flag for manual refresh
+      fetchNearbyServices(selectedLocation);
+    } else {
+      console.log('Refresh skipped - no location or already searching');
+    }
   };
 
-  const handleSearchNearby = async () => {
-    if (!selectedLocation) {
-      setMessage('يرجى تحديد موقعك أولاً للبحث عن المواقع القريبة');
-      setMessageType('error');
+  // البحث عن المدن
+  const handleCitySearch = async (query) => {
+    setCitySearch(query);
+    if (query.length > 2 && window.google && window.google.maps) {
+      try {
+        const geocoder = new window.google.maps.Geocoder();
+        geocoder.geocode({ address: query }, (results, status) => {
+          if (status === 'OK' && results) {
+            const suggestions = results.slice(0, 5).map(result => ({
+              address: result.formatted_address,
+              location: {
+                lat: result.geometry.location.lat(),
+                lng: result.geometry.location.lng()
+              }
+            }));
+            setSearchSuggestions(suggestions);
+      } else {
+            setSearchSuggestions([]);
+          }
+        });
+      } catch (error) {
+        console.error('Error searching cities:', error);
+        setSearchSuggestions([]);
+      }
+    } else {
+      setSearchSuggestions([]);
+    }
+  };
+
+  const handleCitySelect = (suggestion) => {
+    setCitySearch(suggestion.address);
+    setSelectedLocation(suggestion.location);
+    setSearchSuggestions([]);
+  };
+
+  // دالة لتغيير الخدمة المختارة
+  const handleServiceChange = (newServiceId) => {
+    setSelectedService(newServiceId);
+    
+    // مسح الخدمة المحفوظة من localStorage عند تغيير الخدمة
+    if (newServiceId !== 'custom') {
+      localStorage.removeItem('selectedService');
+      setServiceData(null);
+      setCustomService(null);
+    }
+    
+    // إعادة تعيين حالة البحث
+    hasSearchedRef.current = false;
+  };
+
+  // دالة للتنقل إلى صفحة الطلب
+  const handleNavigateToOrder = () => {
+    // التحقق من وجود الموقع والخدمة المختارة
+    if (!selectedLocation || !selectedService) {
+      setError('يرجى اختيار الموقع ونوع الخدمة أولاً');
       return;
     }
-
-    setIsLoading(true);
-    setMessage('');
-
-    const { lat, lng } = selectedLocation;
-    const result = await locationService.searchNearbyLocations(lat, lng);
-
-    if (result.success) {
-      setNearbyLocations(result.data);
-      setMessage(`تم العثور على ${result.data.length} موقع قريب`);
-      setMessageType('success');
-    } else {
-      setMessage(result.error);
-      setMessageType('error');
-    }
-
-    setIsLoading(false);
+    
+    // حفظ بيانات الموقع في localStorage للصفحة التالية
+    localStorage.setItem('selectedLocation', JSON.stringify(selectedLocation));
+    
+    // التنقل إلى صفحة الطلب
+    navigate('/order');
   };
 
-  const handleDeleteLocation = async () => {
-    if (!confirm('هل أنت متأكد من حذف موقعك؟')) {
-      return;
-    }
-
-    setIsLoading(true);
-    setMessage('');
-
-    const result = await locationService.deleteMyLocation();
-
-    if (result.success) {
-      setMessage('تم حذف الموقع بنجاح');
-      setMessageType('success');
-      setSelectedLocation(null);
-      setNearbyLocations([]);
-    } else {
-      setMessage(result.error);
-      setMessageType('error');
-    }
-
-    setIsLoading(false);
+  // دالة للتنقل إلى صفحة المصادقة
+  const handleNavigateToAuth = () => {
+    navigate('/auth');
   };
+
+  // تطبيق الفلاتر
+  const applyFilters = (services) => {
+    return services.filter(service => {
+      const distance = service.distance_km || 0;
+      const rating = service.rating || 0;
+      const price = service.price || 0;
+      
+      return distance <= filters.maxDistance && 
+             rating >= filters.minRating && 
+             price <= filters.maxPrice;
+    });
+  };
+
+  // Show loading state during initialization
+  if (!isInitialized) {
+    return (
+      <div style={{ background: '#f9fbff', minHeight: '100vh' }}>
+        <Navbar />
+        <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '50vh' }}>
+          <div className="text-center">
+            <CircularProgress size={60} />
+            <div className="mt-3">جارٍ تحميل الصفحة...</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error fallback
+  if (error && !selectedLocation && !selectedService) {
+    return (
+      <div style={{ background: '#f9fbff', minHeight: '100vh' }}>
+        <Navbar />
+        <div className="container py-5">
+          <div className="text-center">
+            <div className="alert alert-danger" role="alert">
+              <h4 className="alert-heading">حدث خطأ!</h4>
+              <p>{error}</p>
+              <hr />
+              <button 
+                className="btn btn-primary" 
+                onClick={() => window.location.reload()}
+              >
+                إعادة تحميل الصفحة
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="location-page-container" style={{ padding: '20px', maxWidth: '800px', margin: '0 auto' }}>
-      <h1>🌍 إدارة الموقع</h1>
-      <p style={{ color: '#666', marginBottom: '20px' }}>
-        يمكنك تحديد موقعك على الخريطة أو استخدام البحث، ثم حفظه أو البحث عن أشخاص قريبين منك
-      </p>
+    <div style={{ background: '#f9fbff', minHeight: '100vh' }}>
+      <Navbar />
+      
+      {/* Header Section */}
+      <div className="container-fluid location-banner">
+        <div className="container">
+          <div className="row align-items-center">
+            <div className="col-md-8">
+              <h1 className="banner-title">اختر موقعك</h1>
+              <p className="banner-subtitle">حدد موقعك واختر نوع الخدمة المطلوبة</p>
+            </div>
+            <div className="col-md-4 text-end">
+              <div className="d-flex align-items-center justify-content-end">
+                <nav aria-label="Order steps">
+                  <ul className="pagination pagination-sm mb-0">
+                    <li className="page-item disabled">
+                      <span className="page-link">Previous</span>
+                    </li>
+                    <li className="page-item active">
+                      <span className="page-link" aria-current="page">1</span>
+                    </li>
+                    <li className="page-item">
+                      <button 
+                        className="page-link" 
+                        onClick={handleNavigateToOrder}
+                        disabled={!selectedLocation || !selectedService}
+                        style={{ 
+                          background: 'none', 
+                          border: 'none', 
+                          cursor: selectedLocation && selectedService ? 'pointer' : 'not-allowed',
+                          opacity: selectedLocation && selectedService ? 1 : 0.5
+                        }}
+                      >
+                        2
+                      </button>
+                    </li>
+                    <li className="page-item">
+                      <button 
+                        className="page-link" 
+                        onClick={handleNavigateToOrder}
+                        disabled={!selectedLocation || !selectedService}
+                        style={{ 
+                          background: 'none', 
+                          border: 'none', 
+                          cursor: selectedLocation && selectedService ? 'pointer' : 'not-allowed',
+                          opacity: selectedLocation && selectedService ? 1 : 0.5
+                        }}
+                      >
+                        Next
+                      </button>
+                    </li>
+                  </ul>
+                </nav>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
-      {myLocationLoaded && (
-        <LocationPicker 
-          onLocationSelect={handleLocationSelect} 
-          initialLocation={selectedLocation}
-        />
-      )}
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <div className="row g-4">
+          
+          {/* Left Column - Search and Filters */}
+          <div className="col-lg-4">
+            
+            {/* City Search Card */}
+            <Card className="mb-4 location-card">
+              <CardContent className="p-4">
+                <div className="d-flex align-items-center mb-3">
+                  <LocationIcon className="text-primary me-2" />
+                  <h5 className="mb-0 fw-bold">موقعك</h5>
+                </div>
+                
+                <div className="position-relative">
+                  <input
+                    type="text"
+                    className="form-control form-control-lg"
+                    placeholder="ابحث عن مدينتك أو عنوانك..."
+                    value={citySearch}
+                    onChange={(e) => handleCitySearch(e.target.value)}
+                  />
+                  
+                  {searchSuggestions.length > 0 && (
+                    <div className="suggestions-dropdown">
+                      {searchSuggestions.map((suggestion, index) => (
+                        <div
+                          key={index}
+                          className="suggestion-item"
+                          onClick={() => handleCitySelect(suggestion)}
+                        >
+                          <LocationIcon className="me-2 text-muted" />
+                          {suggestion.address}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
 
       {selectedLocation && (
-        <div className="selected-location-info" style={{
-          background: '#f5f5f5',
-          padding: '15px',
-          borderRadius: '8px',
-          margin: '15px 0'
-        }}>
-          <h3>📍 الموقع المحدد:</h3>
-          <p><strong>خط العرض:</strong> {selectedLocation.lat?.toFixed(6)}</p>
-          <p><strong>خط الطول:</strong> {selectedLocation.lng?.toFixed(6)}</p>
-          {selectedLocation.address && (
-            <p><strong>العنوان:</strong> {selectedLocation.address}</p>
-          )}
-        </div>
-      )}
+                  <div className="mt-3 p-3 bg-light rounded-3">
+                    <div className="d-flex align-items-center">
+                      <div className="bg-success rounded-circle p-2 me-3">
+                        <i className="bi bi-check text-white"></i>
+                      </div>
+                      <div>
+                        <div className="fw-bold text-success">أو قم بتحديد الموقع على الخريطة</div>
+                        <div className="text-muted small">{citySearch}</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
-      <div className="action-buttons" style={{ 
-        display: 'flex', 
-        gap: '10px', 
-        margin: '20px 0',
-        flexWrap: 'wrap'
-      }}>
-        <button 
-          onClick={handleSaveLocation} 
-          disabled={isLoading || !selectedLocation}
-          style={{
-            padding: '10px 20px',
-            background: '#28a745',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
-            cursor: isLoading || !selectedLocation ? 'not-allowed' : 'pointer'
-          }}
-        >
-          {isLoading ? '⏳ جاري الحفظ...' : '💾 حفظ الموقع'}
-        </button>
-        
-        <button 
-          onClick={handleSearchNearby} 
-          disabled={isLoading || !selectedLocation}
-          style={{
-            padding: '10px 20px',
-            background: '#17a2b8',
-            color: 'white',
-            border: 'none',
-            borderRadius: '5px',
-            cursor: isLoading || !selectedLocation ? 'not-allowed' : 'pointer'
-          }}
-        >
-          {isLoading ? '⏳ جاري البحث...' : '🔍 البحث عن مواقع قريبة'}
-        </button>
-        
-        {selectedLocation && (
-          <button 
-            onClick={handleDeleteLocation} 
-            disabled={isLoading}
-            style={{
-              padding: '10px 20px',
-              background: '#dc3545',
-              color: 'white',
-              border: 'none',
-              borderRadius: '5px',
-              cursor: isLoading ? 'not-allowed' : 'pointer'
-            }}
-          >
-            {isLoading ? '⏳ جاري الحذف...' : '🗑️ حذف الموقع'}
-          </button>
+            {/* Service Selection Card */}
+            <Card className="mb-4 location-card">
+              <CardContent className="p-4">
+                <div className="d-flex align-items-center mb-3">
+                  <SearchIcon className="text-primary me-2" />
+                  <h5 className="mb-0 fw-bold">نوع الخدمة</h5>
+                </div>
+                
+                <FormControl fullWidth>
+                  <InputLabel>اختر نوع الخدمة</InputLabel>
+                  <Select
+                    value={selectedService}
+                    onChange={(e) => handleServiceChange(e.target.value)}
+                    label="اختر نوع الخدمة"
+                    style={{ borderRadius: '12px' }}
+                  >
+                    <MenuItem value="">
+                      <em>اختر نوع الخدمة</em>
+                    </MenuItem>
+                    {servicesList.map(service => (
+                      <MenuItem key={service.id} value={service.id}>{service.name}</MenuItem>
+                    ))}
+                    {customService && (
+                      <MenuItem value="custom" style={{ backgroundColor: '#e3f2fd' }}>
+                        <em>{customService.name} (خدمة مخصصة)</em>
+                      </MenuItem>
+                    )}
+                  </Select>
+                </FormControl>
+
+                {selectedService && (
+                  <div className="mt-3 p-3 bg-light rounded-3">
+                    <div className="d-flex align-items-center justify-content-between">
+                      <div className="d-flex align-items-center">
+                        <div className="bg-success rounded-circle p-2 me-3">
+                          <i className="bi bi-check text-white"></i>
+                        </div>
+                        <div>
+                          <div className="fw-bold text-success">تم اختيار الخدمة!</div>
+                          <div className="text-muted small">
+                            {selectedService === 'custom' && customService ? (
+                              <>
+                                <div>{customService.name} (خدمة مخصصة)</div>
+                                {customService.originalData?.price && <div className="text-primary fw-bold">{customService.originalData.price}</div>}
+                                <div className="text-muted" style={{ fontSize: '0.75rem' }}>
+                                  تم الاختيار من: {customService.originalData?.fromSearch ? 'البحث' : 'الصفحة الرئيسية'}
+                                </div>
+                              </>
+                            ) : serviceData ? (
+                              <>
+                                <div>{serviceData.searchTerm || serviceData.name?.ar || serviceData.name?.en}</div>
+                                {serviceData.price && <div className="text-primary fw-bold">{serviceData.price}</div>}
+                                <div className="text-muted" style={{ fontSize: '0.75rem' }}>
+                                  تم الاختيار من: {serviceData.fromSearch ? 'البحث' : 'الصفحة الرئيسية'}
+                                </div>
+                              </>
+                            ) : (
+                              servicesList.find(s => s.id.toString() === selectedService)?.name
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <button 
+                        className="btn btn-sm btn-outline-secondary"
+                        onClick={() => handleServiceChange('')}
+                        title="تغيير الخدمة"
+                      >
+                        <i className="bi bi-x"></i>
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Filters Card */}
+            <Card className="mb-4 location-card">
+              <CardContent className="p-4">
+                <h5 className="fw-bold mb-3">تصفية البحث</h5>
+                
+                <div className="mb-3">
+                  <label className="form-label fw-bold">المسافة القصوى (كم)</label>
+                  <input
+                    type="range"
+                    className="form-range"
+                    min="1"
+                    max="50"
+                    value={filters.maxDistance}
+                    onChange={(e) => setFilters({...filters, maxDistance: parseInt(e.target.value)})}
+                  />
+                  <div className="d-flex justify-content-between">
+                    <small className="text-muted">1 كم</small>
+                    <small className="fw-bold text-primary">{filters.maxDistance} كم</small>
+                    <small className="text-muted">50 كم</small>
+                  </div>
+                </div>
+
+                <div className="mb-3">
+                  <label className="form-label fw-bold">الحد الأدنى للتقييم</label>
+                  <input
+                    type="range"
+                    className="form-range"
+                    min="0"
+                    max="5"
+                    step="0.5"
+                    value={filters.minRating}
+                    onChange={(e) => setFilters({...filters, minRating: parseFloat(e.target.value)})}
+                  />
+                  <div className="d-flex justify-content-between">
+                    <small className="text-muted">0 ⭐</small>
+                    <small className="fw-bold text-primary">{filters.minRating} ⭐</small>
+                    <small className="text-muted">5 ⭐</small>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Search Button */}
+            <Button
+              variant="contained"
+              size="large"
+              fullWidth
+              disabled={!selectedLocation || !selectedService || loading || isSearching}
+              onClick={handleRefresh}
+              className="search-button"
+            >
+              {loading || isSearching ? (
+                <>
+                  <CircularProgress size={20} className="me-2" />
+                  {isSearching ? 'جاري البحث...' : 'جاري التحميل...'}
+                </>
+              ) : (
+                <>
+                  <SearchIcon className="me-2" />
+                  ابحث عن مزودي الخدمة
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* Right Column - Results and Map */}
+          <div className="col-lg-8">
+            
+            {/* Results Header */}
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <div>
+                <h4 className="fw-bold mb-1">أقرب مزودي الخدمة</h4>
+                <p className="text-muted mb-0">
+                  {results.length > 0 ? `تم العثور على ${results.length} مزود خدمة` : 'لم يتم العثور على نتائج'}
+                </p>
+              </div>
+              <IconButton onClick={handleRefresh} disabled={loading || !selectedService}>
+                <RefreshIcon />
+              </IconButton>
+            </div>
+
+            {/* Results List */}
+            {loading ? (
+              <div className="text-center py-5">
+                <CircularProgress size={40} />
+                <div className="mt-3">جارٍ تحميل الخدمات...</div>
+              </div>
+            ) : results.length > 0 ? (
+              <div className="row g-3">
+                {applyFilters(results).map(service => (
+                  <div key={service.id} className="col-12">
+                    <Card className="results-card">
+                      <CardContent className="p-4">
+                        <div className="row align-items-center">
+                          <div className="col-md-8">
+                            <h6 className="fw-bold mb-2 text-primary">
+                              {service.provider?.first_name && service.provider?.last_name 
+                                ? `${service.provider.first_name} ${service.provider.last_name}`
+                                : service.provider?.username || service.title || 'مزود خدمة'}
+                            </h6>
+                            
+                            {service.title && (
+                              <p className="text-muted mb-1 small">
+                                <strong>الخدمة:</strong> {service.title}
+                              </p>
+                            )}
+                            
+                            {service.description && (
+                              <p className="text-muted mb-1 small">
+                                {service.description.length > 100 
+                                  ? `${service.description.substring(0, 100)}...` 
+                                  : service.description}
+                              </p>
+                            )}
+                            
+                            <div className="d-flex flex-wrap gap-2 mb-2">
+                              {service.distance_km != null && (
+                                <Chip 
+                                  label={`${service.distance_km.toFixed(1)} كم`} 
+                                  size="small" 
+                                  variant="outlined" 
+                                  color="primary"
+                                />
+                              )}
+                              {service.rating && (
+                                <Chip 
+                                  label={`${service.rating} ⭐`} 
+                                  size="small" 
+                                  variant="outlined" 
+                                  color="secondary"
+                                />
         )}
       </div>
 
-      {message && (
-        <div className={`message ${messageType}`} style={{
-          padding: '10px',
-          margin: '10px 0',
-          borderRadius: '5px',
-          background: messageType === 'success' ? '#d4edda' : '#f8d7da',
-          color: messageType === 'success' ? '#155724' : '#721c24',
-          border: `1px solid ${messageType === 'success' ? '#c3e6cb' : '#f5c6cb'}`
-        }}>
-          {message}
-        </div>
-      )}
-
-      {nearbyLocations.length > 0 && (
-        <div className="nearby-locations" style={{
-          marginTop: '20px',
-          padding: '15px',
-          background: '#e9ecef',
-          borderRadius: '8px'
-        }}>
-          <h3>👥 الأشخاص القريبون منك ({nearbyLocations.length})</h3>
-          <div style={{ display: 'grid', gap: '10px' }}>
-            {nearbyLocations.map((loc, index) => (
-              <div key={index} style={{
-                padding: '10px',
-                background: 'white',
-                borderRadius: '5px',
-                border: '1px solid #ddd'
-              }}>
-                <div style={{ fontWeight: 'bold' }}>
-                  {loc.user?.first_name && loc.user?.last_name 
-                    ? `${loc.user.first_name} ${loc.user.last_name}`
-                    : loc.user?.username || 'مستخدم'
-                  }
-                  {loc.user?.role === 'worker' && ' 👷‍♂️'}
-                  {loc.user?.role === 'client' && ' 👤'}
-                </div>
-                {loc.address && <div>📍 {loc.address}</div>}
-                {loc.distance_km && (
-                  <div style={{ color: '#666', fontSize: '0.9em' }}>
-                    المسافة: {loc.distance_km} كم
+                            {(service.address || service.location_address) && (
+                              <div className="d-flex align-items-center text-muted">
+                                <LocationIcon className="me-1" style={{ fontSize: '16px' }} />
+                                <small>{service.address || service.location_address}</small>
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="col-md-4 text-end">
+                            <div className="d-flex flex-column gap-2">
+                              <Button
+                                variant="contained"
+                                size="small"
+                                startIcon={<PersonIcon />}
+                                onClick={() => handleShowProviderProfile(service)}
+                                style={{ 
+                                  borderRadius: '8px',
+                                  backgroundColor: '#0077ff',
+                                  minWidth: '140px'
+                                }}
+                              >
+                                عرض الملف الشخصي
+                              </Button>
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                startIcon={<EventIcon />}
+                                onClick={() => handleBookService(service)}
+                                style={{ 
+                                  borderRadius: '8px',
+                                  borderColor: '#28a745',
+                                  color: '#28a745',
+                                  minWidth: '140px'
+                                }}
+                              >
+                                حجز الخدمة
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
-                )}
+                ))}
               </div>
-            ))}
+            ) : (
+              <div className="text-center py-5">
+                <div className="text-muted">
+                  <SearchIcon style={{ fontSize: '48px', opacity: 0.3 }} />
+                  <div className="mt-3">
+                    {error ? error : 'لا توجد خدمات قريبة ضمن النطاق المحدد'}
+                  </div>
+                  <small>
+                    {error ? 'جرب تغيير نوع الخدمة أو البحث في منطقة أخرى' : 'جرب تغيير الفلاتر أو البحث في منطقة أخرى'}
+                  </small>
+                </div>
+              </div>
+            )}
+
+            {/* Map Section */}
+            <div className="mt-4">
+              <Card className="map-card">
+                <CardContent className="p-0">
+                  <div className="p-3 border-bottom">
+                    <h6 className="fw-bold mb-0">الخريطة التفاعلية</h6>
+                    <small className="text-muted">انقر على الخريطة لتحديد موقعك</small>
+                  </div>
+                  <LocationPicker 
+                    onLocationSelect={(loc) => setSelectedLocation(loc)}
+                    height={400}
+                  />
+                </CardContent>
+              </Card>
+            </div>
           </div>
         </div>
-      )}
+      </Container>
 
-      {nearbyLocations.length === 0 && selectedLocation && (
-        <div style={{ textAlign: 'center', color: '#666', marginTop: '20px' }}>
-          اضغط على "البحث عن مواقع قريبة" لرؤية الأشخاص القريبين منك
-        </div>
-      )}
     </div>
   );
 }
-
-export default LocationPage;

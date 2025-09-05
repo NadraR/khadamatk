@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 const LoginForm = ({ onSuccess, onError, darkMode, language = "ar" }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
    const navigate = useNavigate();

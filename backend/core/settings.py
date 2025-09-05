@@ -22,13 +22,9 @@ SECRET_KEY =  os.environ.get("DJANGO_SECRET_KEY", "unsafe-secret-key")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config("DEBUG", cast=bool, default=False)
-
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv(), default=["127.0.0.1", "localhost"])
-
 CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS", cast=Csv(), default=[])
-
-CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", cast=Csv(), default=["http://localhost:5173", "http://127.0.0.1:5173"])
-
+CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", cast=Csv(), default=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000", "http://127.0.0.1:3000"])
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Application definition
@@ -60,19 +56,16 @@ INSTALLED_APPS = [
     
     # Local apps
     'accounts',
-    'invoices',
-    'orders',
-    'ratings',  
-    # 'invoices.apps.InvoicesConfig',
-    # 'orders.apps.OrdersConfig',
-    # 'ratings.apps.RatingsConfig', 
+    'invoices.apps.InvoicesConfig',
+    'orders.apps.OrdersConfig',
+    'ratings.apps.RatingsConfig',
     'reviews',
     'services.apps.ServicesConfig',
     'admin_api',
     'location',
     'chat',
     'notifications.apps.NotificationsConfig',
-
+    'channels',
     ]
    
 
@@ -93,6 +86,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'core.urls'
+CORS_ALLOW_ALL_ORIGINS = True # Allow all origins for development purposes
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -128,7 +122,16 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'core.wsgi.application'
+ASGI_APPLICATION = 'core.asgi.application'
 
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)], 
+        },
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases

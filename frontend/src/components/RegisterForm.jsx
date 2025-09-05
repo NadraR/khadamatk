@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { authService } from "../services/authService";
 import { useNavigate } from "react-router-dom";
 
+
 const RegisterForm = ({ onSuccess, onError, darkMode, language = "ar" }) => {
   const [formData, setFormData] = useState({
     email: "",
@@ -273,9 +274,17 @@ const RegisterForm = ({ onSuccess, onError, darkMode, language = "ar" }) => {
           onChange={handleChange} 
           disabled={isLoading}
           className="form-select"
+          style={{
+            padding: '16px 20px',
+            textAlign: language === "ar" ? "right" : "left",
+          }}
         >
-          <option value="client">{t.client}</option>
-          <option value="worker">{t.worker}</option>
+          <option value="client">
+            {t.client}
+          </option>
+          <option value="worker">
+            {t.worker}
+          </option>
         </select>
       </div>
 
