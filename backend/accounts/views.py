@@ -70,10 +70,27 @@ class WorkerProfileCreateView(generics.CreateAPIView):
                 setattr(existing_profile, field, value)
             existing_profile.save()
             print(f"Updated existing worker profile for user {self.request.user.id}")
+            self.profile_instance = existing_profile
         else:
             # Create new profile
-            serializer.save(user=self.request.user)
+            profile = serializer.save(user=self.request.user)
             print(f"Created new worker profile for user {self.request.user.id}")
+            self.profile_instance = profile
+    
+    def create(self, request, *args, **kwargs):
+        """Override create to return custom response with completion status"""
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        
+        # Return the profile data with completion status
+        profile_serializer = WorkerProfileSerializer(self.profile_instance)
+        
+        return Response({
+            'profile': profile_serializer.data,
+            'profile_completed': self.profile_instance.is_complete,
+            'message': 'Profile updated successfully' if hasattr(request.user, 'worker_profile') else 'Profile created successfully'
+        }, status=status.HTTP_201_CREATED)
 
 
 class ClientProfileCreateView(generics.CreateAPIView):
@@ -84,6 +101,16 @@ class ClientProfileCreateView(generics.CreateAPIView):
         if self.request.user.role != 'client':
             raise PermissionDenied("Only clients can create a client profile.")
         serializer.save(user=self.request.user) 
+
+class WorkerProfileView(generics.RetrieveUpdateAPIView):
+    serializer_class = WorkerProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        try:
+            return WorkerProfile.objects.get(user=self.request.user)
+        except WorkerProfile.DoesNotExist:
+            raise NotFound("Worker profile does not exist. Please create it first.")
 
 class ClientProfileView(generics.RetrieveUpdateAPIView):
     serializer_class = ClientProfileSerializer

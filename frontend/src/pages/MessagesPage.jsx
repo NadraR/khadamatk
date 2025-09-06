@@ -23,36 +23,86 @@ const MessagesPage = () => {
     try {
       setLoading(true);
       setError(null);
-      const orders = await chatService.getUserOrders();
+      const result = await chatService.getUserOrders();
+      
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      
+      // Handle different response formats from the API
+      let orders = result.data || [];
+      
+      // If the response has a results property (paginated), use that
+      if (result.data && result.data.results) {
+        orders = result.data.results;
+      } else if (result.data && !Array.isArray(result.data)) {
+        // If data is an object but not an array, try to extract array from common properties
+        orders = result.data.data || result.data.orders || [];
+      }
+      
+      // Ensure orders is an array
+      if (!Array.isArray(orders)) {
+        console.warn('Orders data is not an array:', orders);
+        orders = [];
+      }
       
       // Filter out cancelled orders and transform into conversation format
       const conversationsData = orders
         .filter(order => order.status !== 'cancelled') // Don't show cancelled orders
         .filter(order => ['accepted', 'completed', 'in_progress'].includes(order.status)) // Only show active orders
-        .map(order => ({
-          id: order.id,
-          orderId: order.id,
-          name: order.worker ? `${order.worker.first_name || order.worker.username} (Worker)` : 
-                order.client ? `${order.client.first_name || order.client.username} (Client)` : 
-                'Unknown User',
-          lastMessage: order.status || 'No messages yet',
-          unread: 0, // TODO: Implement unread count
-          status: order.status,
-          service: order.service?.name || 'Unknown Service'
-        }));
+        .map(order => {
+          // Determine the other party's name based on current user role
+          const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+          let otherPartyName = 'Unknown User';
+          
+          if (currentUser.role === 'worker') {
+            // Worker sees client name
+            otherPartyName = order.customer_first_name && order.customer_last_name 
+              ? `${order.customer_first_name} ${order.customer_last_name}`
+              : order.customer_name || 'عميل غير محدد';
+          } else {
+            // Client sees worker name
+            otherPartyName = order.worker_name || 'عامل غير محدد';
+          }
+          
+          return {
+            id: order.id,
+            orderId: order.id,
+            name: otherPartyName,
+            lastMessage: order.status || 'No messages yet',
+            unread: 0, // TODO: Implement unread count
+            status: order.status,
+            service: order.service_name || order.service?.title || 'Unknown Service'
+          };
+        });
       
       setConversations(conversationsData);
       
       // Auto-select conversation if orderId is provided in location state
       const targetOrderId = location.state?.orderId;
-      if (targetOrderId && conversationsData.length > 0) {
-        const targetConversation = conversationsData.find(conv => conv.orderId === targetOrderId);
+      if (targetOrderId) {
+        let targetConversation = conversationsData.find(conv => conv.orderId === parseInt(targetOrderId));
+        
+        // If conversation doesn't exist yet, create a placeholder
+        if (!targetConversation && location.state?.clientName) {
+          targetConversation = {
+            id: targetOrderId,
+            orderId: targetOrderId,
+            name: location.state.clientName,
+            lastMessage: 'بدء محادثة جديدة',
+            unread: 0,
+            status: 'accepted',
+            service: location.state.serviceName || 'خدمة غير محددة'
+          };
+          setConversations(prev => [targetConversation, ...prev]);
+        }
+        
         if (targetConversation) {
           setActiveConversation(targetConversation);
         }
       }
       
-      if (conversationsData.length === 0) {
+      if (conversationsData.length === 0 && !location.state?.orderId) {
         toast.info(i18n.language === 'ar' ? 'لا توجد محادثات متاحة' : 'No conversations available');
       }
     } catch (error) {
@@ -63,13 +113,20 @@ const MessagesPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [i18n.language]);
+  }, [i18n.language, location.state]);
 
   const loadMessages = useCallback(async (orderId) => {
     try {
       setError(null);
-      const conversation = await chatService.getConversation(orderId);
-      const messagesData = conversation.messages || [];
+      const result = await chatService.getMessages(orderId);
+      
+      if (!result.success) {
+        console.warn('No messages found for order:', orderId);
+        setMessages([]);
+        return;
+      }
+      
+      const messagesData = result.data || [];
       
       // Transform messages to frontend format
       const transformedMessages = messagesData.map(msg => ({
@@ -87,9 +144,8 @@ const MessagesPage = () => {
       setMessages(transformedMessages);
     } catch (error) {
       console.error('Error loading messages:', error);
-      const errorMessage = i18n.language === 'ar' ? 'فشل في تحميل الرسائل' : 'Failed to load messages';
-      setError(errorMessage);
-      toast.error(errorMessage);
+      // Don't show error toast for empty conversations
+      setMessages([]);
     }
   }, [i18n.language]);
 

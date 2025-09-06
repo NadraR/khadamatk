@@ -28,6 +28,7 @@ export default function NearbyServiceSearch() {
         const response = await fetch(`${baseURL}/api/services/types/`);
         if (response.ok) {
           const data = await response.json();
+          console.log('Fetched service types:', data);
           setServicesList(data);
         }
       } catch (err) {
@@ -88,15 +89,18 @@ export default function NearbyServiceSearch() {
     
     try {
       setLoading(true);
+      console.log('Searching for service type:', selectedService);
       const result = await locationService.searchNearbyLocations(
         location.lat, 
         location.lng, 
-        10, // radius in km
-        20  // max results
+        150, // radius in km - increased for better results
+        selectedService, // pass the selected service type
+        100  // max results
       );
       
       if (result.success) {
-        setResults(result.data || []);
+        console.log('Search results:', result.data);
+        setResults(result.data?.results || []);
         setLastUpdated(new Date());
         setError(null);
       } else {

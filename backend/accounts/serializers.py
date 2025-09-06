@@ -96,14 +96,16 @@ class UserSerializer(serializers.ModelSerializer):
 
 # 🔹 Worker Profile Serializer
 class WorkerProfileSerializer(serializers.ModelSerializer):
+    is_complete = serializers.ReadOnlyField()
+    
     class Meta:
         model = WorkerProfile
         fields = [
             "id", "user", "job_title", "hourly_rate",
             "experience_years", "skills", "services_provided", "estimated_price",
-            "created_at", "updated_at"
+            "neighborhood", "is_complete", "created_at", "updated_at"
         ]
-        read_only_fields = ["user", "created_at", "updated_at"]
+        read_only_fields = ["user", "created_at", "updated_at", "is_complete"]
 
 
 # 🔹 Client Profile Serializer

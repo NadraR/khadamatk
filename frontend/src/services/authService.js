@@ -522,15 +522,17 @@ class AuthService {
       
       const response = await apiService.post('/api/accounts/worker/profile/', profileData);
       
-      // تحديث بيانات المستخدم المحلية
-      if (this.user) {
-        this.user.profile_completed = true;
+      // تحديث بيانات المستخدم المحلية based on backend response
+      if (this.user && response.profile_completed !== undefined) {
+        this.user.profile_completed = response.profile_completed;
         this.saveUserToStorage(this.user);
+        console.log('[DEBUG] Updated user profile_completed flag to:', response.profile_completed);
       }
       
       return {
         success: true,
-        data: response
+        data: response,
+        profile_completed: response.profile_completed
       };
     } catch (error) {
       console.error('خطأ في إكمال الملف الشخصي:', error);
@@ -538,29 +540,6 @@ class AuthService {
         success: false,
         message: error.response?.data?.detail || error.message || 'فشل في إكمال الملف الشخصي'
       };
-    }
-  }
-
-  // التحقق من اكتمال الملف الشخصي
-  async checkProfileCompletion() {
-    try {
-      const user = this.getCurrentUser();
-      if (!user) return false;
-      
-      if (user.role === 'worker') {
-        // محاولة جلب بيانات الملف الشخصي من الخادم
-        try {
-          const response = await apiService.get(`/api/accounts/user/${user.id}/profile/`);
-          return response.profile_completed || false;
-        } catch {
-          console.log('Using local profile completion status');
-          return user.profile_completed || false;
-        }
-      }
-      return true; // العملاء لا يحتاجون ملف شخصي
-    } catch (error) {
-      console.error('Error checking profile completion:', error);
-      return this.user?.profile_completed || false;
     }
   }
 }

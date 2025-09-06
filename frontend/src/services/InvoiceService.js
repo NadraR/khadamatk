@@ -48,6 +48,41 @@ class InvoiceService {
   }
 
   /**
+   * جلب فاتورة باستخدام رقم الطلب
+   */
+  async getInvoiceByOrderId(orderId) {
+    try {
+      // Get all user invoices and find the one for this order
+      const invoicesResponse = await this.getMyInvoices();
+      if (invoicesResponse.success) {
+        const invoice = invoicesResponse.data.find(inv => inv.order_id === parseInt(orderId));
+        if (invoice) {
+          return {
+            success: true,
+            data: invoice,
+            error: null
+          };
+        } else {
+          return {
+            success: false,
+            data: null,
+            error: 'لم يتم العثور على فاتورة لهذا الطلب'
+          };
+        }
+      } else {
+        return invoicesResponse;
+      }
+    } catch (error) {
+      console.error('Error fetching invoice by order ID:', error);
+      return {
+        success: false,
+        data: null,
+        error: 'حدث خطأ في جلب الفاتورة'
+      };
+    }
+  }
+
+  /**
    * تحديد فاتورة كمدفوعة
    */
   async markAsPaid(invoiceId, paymentMethod) {
@@ -267,3 +302,5 @@ class InvoiceService {
 }
 
 export default new InvoiceService();
+
+

@@ -25,11 +25,11 @@ class Invoice(models.Model):
         (PAYMENT_BANK, 'تحويل بنكي'),
     ]
     
-    booking = models.OneToOneField(
+    order = models.OneToOneField(
         'orders.Order', 
         on_delete=models.CASCADE,
         related_name='invoice',
-        verbose_name='الحجز'
+        verbose_name='الطلب'
     )
     
     amount = models.DecimalField(
@@ -82,7 +82,7 @@ class Invoice(models.Model):
         ordering = ['-issued_at']
     
     def __str__(self):
-        return f'فاتورة #{self.id} - {self.booking}'
+        return f'فاتورة #{self.id} - {self.order}'
     
     def mark_as_paid(self, payment_method=None):
         if self.status != self.STATUS_PAID:
@@ -100,4 +100,4 @@ class Invoice(models.Model):
     
     @property
     def order_title(self):
-        return f"طلب #{self.booking.id} - {self.booking.service.title if self.booking.service else 'خدمة محذوفة'}"
+        return f"طلب #{self.order.id} - {self.order.service.title if self.order.service else 'خدمة محذوفة'}"

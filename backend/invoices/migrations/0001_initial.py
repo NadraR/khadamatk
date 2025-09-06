@@ -25,7 +25,7 @@ class Migration(migrations.Migration):
                 ('status', models.CharField(choices=[('paid', 'تم الدفع'), ('unpaid', 'لم يتم الدفع')], default='unpaid', max_length=10, verbose_name='حالة الفاتورة')),
                 ('issued_at', models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإصدار')),
                 ('paid_at', models.DateTimeField(blank=True, null=True, verbose_name='تاريخ الدفع')),
-                ('booking', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='invoice', to='orders.order', verbose_name='الحجز')),
+                ('order', models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, related_name='invoice', to='orders.order', verbose_name='الطلب')),
             ],
             options={
                 'verbose_name': 'فاتورة',

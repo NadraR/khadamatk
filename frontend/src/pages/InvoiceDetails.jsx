@@ -226,8 +226,8 @@ const InvoiceDetails = () => {
                 <div className="row">
                   <div className="col-md-6">
                     <div className="invoice-detail">
-                      <label>رقم الحجز:</label>
-                      <span>#{invoice.booking_id}</span>
+                      <label>رقم الطلب:</label>
+                      <span>#{invoice.order_id}</span>
                     </div>
                   </div>
                   <div className="col-md-6">

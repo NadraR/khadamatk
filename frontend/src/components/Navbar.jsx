@@ -843,6 +843,64 @@ const Navbar = () => {
         left: 0;
       }
 
+      /* Avatar Clickable Styles */
+      .user-avatar {
+        transition: all 0.3s ease;
+        border-radius: 50%;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .user-avatar:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+      }
+
+      .user-avatar:active {
+        transform: scale(0.95);
+      }
+
+      .user-avatar::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(0, 123, 255, 0.1) 0%, rgba(0, 86, 179, 0.1) 100%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        border-radius: 50%;
+      }
+
+      .user-avatar:hover::before {
+        opacity: 1;
+      }
+
+      .avatar-initials {
+        position: relative;
+        z-index: 2;
+        transition: all 0.3s ease;
+      }
+
+      .user-avatar:hover .avatar-initials {
+        color: #007bff;
+        font-weight: 700;
+      }
+
+      /* Dark mode avatar styles */
+      .dark-mode .user-avatar:hover {
+        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+      }
+
+      .dark-mode .user-avatar::before {
+        background: linear-gradient(135deg, rgba(0, 123, 255, 0.2) 0%, rgba(0, 86, 179, 0.2) 100%);
+      }
+
+      .dark-mode .user-avatar:hover .avatar-initials {
+        color: #4da6ff;
+      }
+
       /* Mobile responsiveness */
       @media (max-width: 768px) {
         .message-dropdown {
@@ -852,6 +910,10 @@ const Navbar = () => {
 
         [dir="rtl"] .message-dropdown {
           left: -20px;
+        }
+
+        .user-avatar:hover {
+          transform: scale(1.02);
         }
       }
     `;
@@ -903,6 +965,27 @@ const Navbar = () => {
       return words[0][0].toUpperCase();
     }
     return 'U';
+  };
+
+  // Handle avatar click to redirect based on user role
+  const handleAvatarClick = () => {
+    if (!isLoggedIn) {
+      handleLoginClick();
+      return;
+    }
+
+    console.log('[DEBUG] Navbar: Avatar clicked, user role:', userRole);
+    
+    if (userRole === 'client') {
+      console.log('[DEBUG] Navbar: Redirecting client to HomeClient');
+      window.location.href = '/home-client';
+    } else if (userRole === 'worker' || userRole === 'provider') {
+      console.log('[DEBUG] Navbar: Redirecting worker/provider to HomeProvider');
+      window.location.href = '/home-provider';
+    } else {
+      console.log('[DEBUG] Navbar: Unknown user role, redirecting to home');
+      window.location.href = '/';
+    }
   };
 
   return (
@@ -1005,7 +1088,12 @@ const Navbar = () => {
             <div className={`user-section ${isLoggedIn ? 'user-logged-in' : 'user-not-logged-in'}`}>
               {isLoggedIn ? (
                 <div className="user-info">
-                  <div className="user-avatar">
+                  <div 
+                    className="user-avatar" 
+                    onClick={handleAvatarClick}
+                    style={{ cursor: 'pointer' }}
+                    title={i18n.language === "ar" ? "عرض الملف الشخصي" : "View Profile"}
+                  >
                     <span className="avatar-initials">{getAvatarInitials(username)}</span>
                   </div>
                   <div className="user-details">

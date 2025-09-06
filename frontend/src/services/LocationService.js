@@ -76,45 +76,135 @@ class LocationService {
     }
   }
 
-  async searchNearbyLocations(lat, lng, radius = 10, serviceType = null) {
+  async searchNearbyLocations(lat, lng, radius = 20, serviceType = null, searchQuery = '') {
     try {
-      // Use the service nearby API for better filtering
-      let url = `/api/services/nearby/?lat=${lat}&lng=${lng}&radius_km=${radius}`;
+      // First try the enhanced worker search endpoint
+      let url = `${this.baseEndpoint}search-workers/?lat=${lat}&lng=${lng}&radius=${radius}&max_results=100`;
       
       if (serviceType) {
-        url += `&service_type=${serviceType}`;
+        url += `&service_type=${encodeURIComponent(serviceType)}`;
       }
       
-      console.log('Calling API:', url);
+      if (searchQuery && searchQuery.trim()) {
+        url += `&q=${encodeURIComponent(searchQuery.trim())}`;
+      }
+      
+      console.log('[LocationService] Calling enhanced worker search API:', url);
       const response = await apiService.get(url);
+      
+      // Transform the response to match expected format
+      const transformedData = response.results || response || [];
+      
+      console.log('[LocationService] Enhanced search results:', transformedData.length, 'workers found');
+      
       return {
         success: true,
-        data: response,
-        message: 'تم البحث بنجاح'
+        data: transformedData,
+        message: response.message || 'تم البحث بنجاح'
       };
     } catch (error) {
-      console.error('Service API Error:', error);
+      console.error('[LocationService] Enhanced search API Error:', error);
       
-      // Fallback to location API if service API fails
+      // Fallback 1: Try the service nearby API
       try {
-        console.log('Falling back to location API...');
-        const fallbackUrl = `${this.baseEndpoint}nearby/?lat=${lat}&lng=${lng}&radius=${radius}&max_results=20`;
-        const fallbackResponse = await apiService.get(fallbackUrl);
+        console.log('[LocationService] Falling back to service API...');
+        let serviceUrl = `/api/services/nearby/?lat=${lat}&lng=${lng}&radius_km=${radius}`;
         
+        if (serviceType) {
+          serviceUrl += `&service_type=${encodeURIComponent(serviceType)}`;
+        }
+        
+        if (searchQuery && searchQuery.trim()) {
+          serviceUrl += `&q=${encodeURIComponent(searchQuery.trim())}`;
+        }
+        
+        const serviceResponse = await apiService.get(serviceUrl);
         return {
           success: true,
-          data: fallbackResponse,
-          message: 'تم البحث بنجاح (استخدام API بديل)'
+          data: serviceResponse,
+          message: 'تم البحث بنجاح (خدمات)'
         };
-      } catch (fallbackError) {
-        console.error('Fallback API Error:', fallbackError);
-        return {
-          success: false,
-          error: error.message || 'فشل في البحث عن خدمات قريبة',
-          status: error.status
-        };
+      } catch (serviceError) {
+        console.error('[LocationService] Service API Error:', serviceError);
+        
+        // Fallback 2: Try the basic location nearby API
+        try {
+          console.log('[LocationService] Falling back to basic location API...');
+          const locationUrl = `${this.baseEndpoint}nearby/?lat=${lat}&lng=${lng}&radius=${radius}&max_results=50`;
+          const locationResponse = await apiService.get(locationUrl);
+          
+          return {
+            success: true,
+            data: locationResponse,
+            message: 'تم البحث بنجاح (مواقع)'
+          };
+        } catch (locationError) {
+          console.error('[LocationService] All search APIs failed:', locationError);
+          return {
+            success: false,
+            error: error.response?.data?.error || error.message || 'فشل في البحث عن العمال القريبين',
+            status: error.response?.status || error.status
+          };
+        }
       }
     }
+  }
+
+  async searchWorkersWithRetry(lat, lng, options = {}) {
+    const {
+      radius = 20,
+      serviceType = null,
+      searchQuery = '',
+      maxRetries = 3,
+      retryDelay = 1000
+    } = options;
+
+    let lastError = null;
+    let currentDelay = retryDelay;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`[LocationService] Search attempt ${attempt}/${maxRetries}`);
+        
+        const result = await this.searchNearbyLocations(lat, lng, radius, serviceType, searchQuery);
+        
+        if (result.success) {
+          console.log(`[LocationService] Search successful on attempt ${attempt}`);
+          return result;
+        }
+        
+        lastError = result;
+        
+        // If this isn't the last attempt, wait before retrying
+        if (attempt < maxRetries) {
+          console.log(`[LocationService] Waiting ${currentDelay}ms before retry...`);
+          await new Promise(resolve => setTimeout(resolve, currentDelay));
+          // Increase delay for next retry (exponential backoff)
+          currentDelay *= 2;
+        }
+        
+      } catch (error) {
+        console.error(`[LocationService] Search attempt ${attempt} failed:`, error);
+        lastError = {
+          success: false,
+          error: error.message || 'Network error',
+          status: error.status
+        };
+        
+        // If this isn't the last attempt, wait before retrying
+        if (attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, currentDelay));
+          currentDelay *= 2;
+        }
+      }
+    }
+    
+    console.error('[LocationService] All search attempts failed');
+    return lastError || {
+      success: false,
+      error: 'فشل في البحث بعد عدة محاولات',
+      status: 500
+    };
   }
 
   async deleteLocation(locationId) {

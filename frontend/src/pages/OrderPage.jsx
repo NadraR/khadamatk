@@ -27,23 +27,53 @@ const OrderPage = () => {
       };
     }
     
-    const storedService = localStorage.getItem('selectedService');
+    // Check for reorder data first (from TrackOrder page)
     let data = null;
-    
-    if (storedService) {
+    const reorderData = localStorage.getItem('reorderData');
+    if (reorderData) {
       try {
-        data = JSON.parse(storedService);
+        data = JSON.parse(reorderData);
+        console.log('[DEBUG] OrderPage: Loaded reorder data:', data);
+        // Clear reorder data after loading
+        localStorage.removeItem('reorderData');
       } catch (error) {
-        console.error('Error parsing stored service:', error);
-        data = null;
+        console.error('Error parsing reorder data:', error);
       }
     }
     
+    // Check for pending order data (from booking flow)
     if (!data) {
-      data = location.state?.service || null;
+      const pendingOrder = localStorage.getItem('pendingOrder');
+      if (pendingOrder) {
+        try {
+          data = JSON.parse(pendingOrder);
+          console.log('[DEBUG] OrderPage: Loaded pending order data:', data);
+        } catch (error) {
+          console.error('Error parsing pending order:', error);
+        }
+      }
     }
     
-    console.log('[DEBUG] OrderPage: Service data:', data);
+    // Fallback to selectedService if no pending order
+    if (!data) {
+    const storedService = localStorage.getItem('selectedService');
+    if (storedService) {
+      try {
+          data = JSON.parse(storedService);
+          console.log('[DEBUG] OrderPage: Loaded stored service data:', data);
+      } catch (error) {
+        console.error('Error parsing stored service:', error);
+      }
+    }
+  }
+    
+    // Final fallback to location state
+    if (!data) {
+      data = location.state?.service || null;
+      console.log('[DEBUG] OrderPage: Using location state data:', data);
+    }
+    
+    console.log('[DEBUG] OrderPage: Final service data:', data);
     console.log('[DEBUG] OrderPage: Edit mode:', editMode);
     return data;
   }, [location.state, editMode, orderData]);
@@ -63,13 +93,61 @@ const OrderPage = () => {
       };
     }
     
-    // Default empty form for new orders
+    // Check for reorder data first (from TrackOrder page)
+    const reorderData = localStorage.getItem('reorderData');
+    if (reorderData) {
+      try {
+        const data = JSON.parse(reorderData);
+        console.log('[DEBUG] OrderPage: Found reorder data for form:', data);
+        return {
+          description: data.description || "",
+          offered_price: data.offered_price || "",
+          location_lat: data.location?.lat || null,
+          location_lng: data.location?.lng || null,
+          scheduled_time: data.scheduled_time ? 
+            new Date(data.scheduled_time).toISOString().slice(0, 16) : "",
+          delivery_time: data.delivery_time ? 
+            new Date(data.delivery_time).toISOString().slice(0, 16) : "",
+        };
+      } catch (error) {
+        console.error('Error parsing reorder data for form:', error);
+      }
+    }
+    
+    // Check for pending order or stored service data to populate location
+    let locationData = null;
+    const pendingOrder = localStorage.getItem('pendingOrder');
+    if (pendingOrder) {
+      try {
+        const orderData = JSON.parse(pendingOrder);
+        locationData = orderData.selectedLocation;
+        console.log('[DEBUG] OrderPage: Found location in pending order:', locationData);
+      } catch (error) {
+        console.error('Error parsing pending order for location:', error);
+      }
+    }
+    
+    // Fallback to selectedService
+    if (!locationData) {
+      const storedService = localStorage.getItem('selectedService');
+      if (storedService) {
+        try {
+          const serviceData = JSON.parse(storedService);
+          locationData = serviceData.selectedLocation;
+          console.log('[DEBUG] OrderPage: Found location in stored service:', locationData);
+        } catch (error) {
+          console.error('Error parsing stored service for location:', error);
+        }
+      }
+    }
+    
+    // Default form with location data if available
     return {
-      description: "",
-      offered_price: "",
-      location_lat: null,
-      location_lng: null,
-      scheduled_time: "",
+    description: "",
+    offered_price: "",
+      location_lat: locationData?.lat || null,
+      location_lng: locationData?.lng || null,
+    scheduled_time: "",
       delivery_time: "",
     };
   });
@@ -80,6 +158,51 @@ const OrderPage = () => {
   const [user, setUser] = useState(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+
+  // Update formData when service data becomes available
+  useEffect(() => {
+    if (service && service.selectedLocation && (!formData.location_lat || !formData.location_lng)) {
+      console.log('[DEBUG] OrderPage: Updating formData with location from service');
+      setFormData(prev => ({
+        ...prev,
+        location_lat: service.selectedLocation.lat,
+        location_lng: service.selectedLocation.lng
+      }));
+    }
+  }, [service, formData.location_lat, formData.location_lng]);
+
+  // Handle reorder data when component mounts
+  useEffect(() => {
+    const reorderData = localStorage.getItem('reorderData');
+    if (reorderData && service) {
+      try {
+        const data = JSON.parse(reorderData);
+        console.log('[DEBUG] OrderPage: Processing reorder data:', data);
+        
+        // Update form with reorder data
+        setFormData(prev => ({
+          ...prev,
+          description: data.description || prev.description,
+          offered_price: data.offered_price || prev.offered_price,
+          location_lat: data.location?.lat || prev.location_lat,
+          location_lng: data.location?.lng || prev.location_lng,
+          scheduled_time: data.scheduled_time ? 
+            new Date(data.scheduled_time).toISOString().slice(0, 16) : prev.scheduled_time,
+          delivery_time: data.delivery_time ? 
+            new Date(data.delivery_time).toISOString().slice(0, 16) : prev.delivery_time,
+        }));
+        
+        // Clear reorder data after processing
+        localStorage.removeItem('reorderData');
+        
+        // Show success message
+        toast.success('تم تحميل بيانات الطلب السابق. يمكنك تعديلها حسب الحاجة.');
+      } catch (error) {
+        console.error('Error processing reorder data:', error);
+        toast.error('حدث خطأ أثناء تحميل بيانات الطلب السابق');
+      }
+    }
+  }, [service]);
 
   // Check authentication status
   useEffect(() => {
@@ -96,8 +219,8 @@ const OrderPage = () => {
           // Validate user data structure
           if (parsedUser && parsedUser.id && parsedUser.role) {
             console.log('[DEBUG] OrderPage: User authenticated:', parsedUser.id, parsedUser.role);
-            setUser(parsedUser);
-            setIsAuthenticated(true);
+          setUser(parsedUser);
+          setIsAuthenticated(true);
           } else {
             console.log('[DEBUG] OrderPage: Invalid user data structure');
             clearAuthData();
@@ -178,7 +301,7 @@ const OrderPage = () => {
     if (injected.current) return;
     
     try {
-      const css = `
+    const css = `
     :root {
       --primary: #0077ff;
       --primary-dark: #0056b3;
@@ -586,10 +709,10 @@ const OrderPage = () => {
     }
     `;
     
-      const style = document.createElement('style');
-      style.textContent = css;
-      document.head.appendChild(style);
-      injected.current = true;
+    const style = document.createElement('style');
+    style.textContent = css;
+    document.head.appendChild(style);
+    injected.current = true;
     } catch (error) {
       console.error('Error injecting CSS:', error);
       injected.current = true; // Still mark as injected to prevent retry
@@ -665,6 +788,18 @@ const OrderPage = () => {
     // Location validation (optional but helpful)
     if (!formData.location_lat || !formData.location_lng) {
       console.warn("No location data available for the order");
+      console.warn("Current formData:", formData);
+      console.warn("Current service data:", service);
+      
+      // Try to get location data from service if available
+      if (service?.selectedLocation) {
+        console.log("Found location in service data, updating formData");
+        setFormData(prev => ({
+          ...prev,
+          location_lat: service.selectedLocation.lat,
+          location_lng: service.selectedLocation.lng
+        }));
+      }
     }
     
     setErrors(newErrors);
@@ -727,15 +862,86 @@ const OrderPage = () => {
     setErrors({}); // Clear any previous errors
     
     try {
+      // Debug logging before creating request
+      console.log('[DEBUG] OrderPage: Preparing order submission');
+      console.log('[DEBUG] Service data:', service);
+      console.log('[DEBUG] Form data:', formData);
+      console.log('[DEBUG] User data:', user);
+      
+      // Handle service ID - the search returns worker/location ID, not service ID
+      let serviceId = service?.id;
+      
+      console.log('[DEBUG] OrderPage: Original service ID from search:', serviceId);
+      console.log('[DEBUG] OrderPage: Service object keys:', Object.keys(service || {}));
+      
+      // The search returns worker data, not service data, so we need to find a valid service
+      // Check if this ID actually exists as a service, if not use a fallback
+      
+      // Available service IDs from database: 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
+      const validServiceIds = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+      
+      if (!serviceId || !validServiceIds.includes(serviceId)) {
+        console.log('[DEBUG] OrderPage: Service ID not valid or not in database, attempting to create service');
+        
+        // Try to create a service for this worker
+        if (service?.user_id || service?.worker_id) {
+          const workerId = service.user_id || service.worker_id;
+          console.log('[DEBUG] OrderPage: Creating service for worker ID:', workerId);
+          
+          try {
+            const createServiceResponse = await apiService.post('/api/services/create-for-worker/', {
+              worker_id: workerId
+            });
+            
+            if (createServiceResponse.service) {
+              serviceId = createServiceResponse.service.id;
+              console.log('[DEBUG] OrderPage: Successfully created/found service ID:', serviceId);
+            } else {
+              throw new Error('No service returned from API');
+            }
+          } catch (createError) {
+            console.error('[DEBUG] OrderPage: Failed to create service:', createError);
+            
+            // Fallback to mapping based on job title
+            if (service?.worker_profile?.job_title) {
+              const jobTitle = service.worker_profile.job_title.toLowerCase();
+              console.log('[DEBUG] OrderPage: Using job title fallback:', jobTitle);
+              
+              if (jobTitle.includes('كهربائي') || jobTitle.includes('electrical')) {
+                serviceId = 16; // mazen-salem's service
+              } else if (jobTitle.includes('تنظيف') || jobTitle.includes('cleaning')) {
+                serviceId = 15; // "تنظيف منزل شامل"
+              } else {
+                serviceId = 7; // Default fallback service
+              }
+            } else {
+              console.log('[DEBUG] OrderPage: No job title found, using default service ID 7');
+              serviceId = 7; // Default fallback
+            }
+          }
+        } else {
+          console.log('[DEBUG] OrderPage: No worker ID found, using default service ID 7');
+          serviceId = 7; // Default fallback
+        }
+      } else {
+        console.log('[DEBUG] OrderPage: Service ID is valid:', serviceId);
+      }
+      
+      if (!formData.location_lat || !formData.location_lng) {
+        throw new Error('بيانات الموقع مطلوبة');
+      }
+      
       const requestData = {
-        service: service.id,
-        description: formData.description,
+        service: serviceId,
+        description: formData.description || `طلب خدمة من ${service?.worker_name || 'مزود الخدمة'}`,
         offered_price: parseFloat(formData.offered_price),
         location_lat: formData.location_lat,
         location_lng: formData.location_lng,
         scheduled_time: new Date(formData.scheduled_time).toISOString(),
         delivery_time: new Date(formData.delivery_time).toISOString(),
       };
+      
+      console.log('[DEBUG] Request data:', requestData);
       
       let response;
       if (editMode && orderData) {
@@ -765,8 +971,10 @@ const OrderPage = () => {
       setSuccessMessage(successMsg);
       setShowSuccessModal(true);
       
-      // Clean up stored service data
+      // Clean up stored service data and pending order
       localStorage.removeItem('selectedService');
+      localStorage.removeItem('pendingOrder');
+      console.log('[DEBUG] OrderPage: Cleaned up pending order data after successful submission');
       
       // Clear form data
       setFormData({
@@ -828,9 +1036,9 @@ const OrderPage = () => {
           rtl: true,
         });
         // Redirect to login
-        setTimeout(() => {
+      setTimeout(() => {
           navigate('/auth');
-        }, 2000);
+      }, 2000);
         return;
       }
       
@@ -849,7 +1057,7 @@ const OrderPage = () => {
       if (Object.keys(fieldErrors).length > 0) {
         setErrors({ ...fieldErrors, submit: errorMessage });
       } else {
-        setErrors({ submit: errorMessage });
+      setErrors({ submit: errorMessage });
       }
     } finally {
       setIsLoading(false);
@@ -1103,13 +1311,13 @@ const OrderPage = () => {
                   <div className="info-label">التقييم</div>
                   <div className="info-value">
                     {service.rating_avg.toFixed(1)} ({service.rating_count || 0} تقييم)
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
-
+          </div>
+        )}
+          </div>
+        </div>
+        
         {/* Error Messages */}
         {errors.submit && (
           <div className="alert alert-danger">

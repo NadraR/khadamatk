@@ -62,6 +62,25 @@ const AuthPage = () => {
   const redirectAfterLogin = (userData) => {
     console.log("[DEBUG] AuthPage: redirectAfterLogin called with:", userData);
     
+    // Check if there's a pending redirect (from booking flow)
+    const pendingRedirect = localStorage.getItem('redirectAfterLogin');
+    const pendingOrder = localStorage.getItem('pendingOrder');
+    
+    if (pendingRedirect && pendingOrder) {
+      console.log("[DEBUG] AuthPage: Found pending redirect:", pendingRedirect);
+      console.log("[DEBUG] AuthPage: Found pending order data");
+      
+      // Clear the redirect flag
+      localStorage.removeItem('redirectAfterLogin');
+      
+      // For clients with pending orders, redirect to order page
+      if (userData.role === 'client' && pendingRedirect === '/order') {
+        console.log("[DEBUG] AuthPage: Redirecting client to complete pending order");
+        window.location.href = '/order';
+        return;
+      }
+    }
+    
     // Check if worker needs profile completion
     if (userData.role === 'worker' && !userData.profile_completed) {
       console.log("[DEBUG] AuthPage: Redirecting worker to profile completion");
@@ -69,7 +88,7 @@ const AuthPage = () => {
       return;
     }
     
-    // Redirect based on user role
+    // Default redirect based on user role
     switch (userData.role) {
       case 'worker':
         console.log("[DEBUG] AuthPage: Redirecting worker to provider home");

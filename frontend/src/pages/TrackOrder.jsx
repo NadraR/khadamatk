@@ -12,16 +12,21 @@ import {
   BsPersonFill,
   BsFilter,
   BsArrowLeft,
-  BsArrowRight
+  BsArrowRight,
+  BsPhone,
+  BsCheckLg,
+  BsHourglassSplit,
+  BsArrowClockwise
 } from "react-icons/bs";
-import { FaMapMarkerAlt, FaPhone, FaUser, FaComments } from "react-icons/fa";
+import { FaMapMarkerAlt, FaPhone, FaUser, FaComments, FaTools, FaFileInvoiceDollar } from "react-icons/fa";
 import { toast } from 'react-toastify';
+import InvoiceService from '../services/InvoiceService';
 import "./Orders.css";
 
 // Create ApiService instance outside component to avoid recreation
 const apiService = new ApiService();
 
-const Orders = () => {
+const TrackOrder = () => {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,13 +40,13 @@ const Orders = () => {
     totalCount: 0
   });
 
-  const fetchWorkerOrders = useCallback(async () => {
+  const fetchClientOrders = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
         page: pagination.page,
-        page_size: 10,
-        worker_only: 'true' // Filter for orders relevant to this worker
+        page_size: 10
+        // No worker_only parameter - this gets client's own orders
       });
 
       if (filterStatus !== 'all') {
@@ -64,7 +69,7 @@ const Orders = () => {
         }
       }
     } catch (err) {
-      console.error("Error fetching worker orders:", err);
+      console.error("Error fetching client orders:", err);
       toast.error("خطأ في تحميل الطلبات");
       setOrders([]);
     } finally {
@@ -74,43 +79,13 @@ const Orders = () => {
 
   useEffect(() => {
     const user = authService.getCurrentUser();
-    if (user) {
-      fetchWorkerOrders();
+    if (user && user.role === 'client') {
+      fetchClientOrders();
+    } else {
+      toast.error("هذه الصفحة مخصصة للعملاء فقط");
+      navigate('/');
     }
-  }, [fetchWorkerOrders]);
-
-  const handleOrderAction = async (orderId, action) => {
-    if (!orderId || !action) return;
-
-    setActionLoading(prev => ({ ...prev, [orderId]: action }));
-    
-    try {
-      const endpoint = action === 'accept' 
-        ? `/api/orders/${orderId}/accept/`
-        : `/api/orders/${orderId}/decline/`;
-      
-      const response = await apiService.post(endpoint, {});
-      
-      if (response) {
-        toast.success(
-          action === 'accept' 
-            ? 'تم قبول الطلب بنجاح!' 
-            : 'تم رفض الطلب بنجاح!'
-        );
-        
-        // Refresh orders list
-        fetchWorkerOrders();
-      }
-    } catch (error) {
-      console.error(`Error ${action}ing order:`, error);
-      toast.error(
-        error.response?.data?.detail || 
-        `خطأ في ${action === 'accept' ? 'قبول' : 'رفض'} الطلب`
-      );
-    } finally {
-      setActionLoading(prev => ({ ...prev, [orderId]: false }));
-    }
-  };
+  }, [fetchClientOrders, navigate]);
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -136,6 +111,18 @@ const Orders = () => {
     }
   };
 
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'pending': return <BsHourglassSplit className="me-1" />;
+      case 'accepted': return <BsCheckCircle className="me-1" />;
+      case 'declined': return <BsXCircle className="me-1" />;
+      case 'in_progress': return <FaTools className="me-1" />;
+      case 'completed': return <BsCheckLg className="me-1" />;
+      case 'cancelled': return <BsXCircle className="me-1" />;
+      default: return <BsClock className="me-1" />;
+    }
+  };
+
   const formatDate = (dateString) => {
     if (!dateString) return '';
     return new Date(dateString).toLocaleDateString('ar-EG', {
@@ -152,7 +139,6 @@ const Orders = () => {
     return `${price} ج.م`;
   };
 
-
   const openOrderModal = (order) => {
     setSelectedOrder(order);
     setShowOrderModal(true);
@@ -163,17 +149,113 @@ const Orders = () => {
     setShowOrderModal(false);
   };
 
-  const handleContactClient = (order) => {
-    // Navigate to messages page with specific order ID
-    navigate('/messages', { 
-      state: { 
-        orderId: order.id,
-        clientName: order.customer_first_name && order.customer_last_name 
-          ? `${order.customer_first_name} ${order.customer_last_name}`
-          : order.customer_name || 'عميل غير محدد',
-        serviceName: order.service?.title || order.service_name || 'خدمة غير محددة'
-      } 
-    });
+  const handleContactWorker = (order) => {
+    if (order.worker_name || order.worker) {
+      // Navigate to messages page with specific order ID
+      navigate('/messages', { 
+        state: { 
+          orderId: order.id,
+          workerName: order.worker_name || order.worker?.username || 'عامل غير محدد',
+          serviceName: order.service?.title || order.service_name || 'خدمة غير محددة'
+        } 
+      });
+    } else {
+      toast.info("لم يتم تعيين عامل لهذا الطلب بعد");
+    }
+  };
+
+  const handleCancelOrder = async (orderId) => {
+    if (!window.confirm('هل أنت متأكد من إلغاء هذا الطلب؟')) {
+      return;
+    }
+
+    try {
+      await apiService.delete(`/api/orders/${orderId}/`);
+      toast.success('تم إلغاء الطلب بنجاح');
+      fetchClientOrders(); // Refresh the list
+    } catch (error) {
+      console.error('Error cancelling order:', error);
+      toast.error('خطأ في إلغاء الطلب');
+    }
+  };
+
+  const handleCompleteOrder = async (orderId) => {
+    if (!window.confirm('هل أنت متأكد من تأكيد اكتمال هذا الطلب؟ سيتم إنشاء فاتورة تلقائياً.')) {
+      return;
+    }
+
+    setActionLoading(prev => ({ ...prev, [orderId]: 'completing' }));
+    
+    try {
+      const response = await apiService.post(`/api/orders/${orderId}/complete/`, {});
+      
+      if (response) {
+        toast.success('تم تأكيد اكتمال الطلب بنجاح! تم إنشاء الفاتورة تلقائياً.');
+        fetchClientOrders(); // Refresh the list
+      }
+    } catch (error) {
+      console.error('Error completing order:', error);
+      toast.error(
+        error.response?.data?.error || 'خطأ في تأكيد اكتمال الطلب'
+      );
+    } finally {
+      setActionLoading(prev => ({ ...prev, [orderId]: false }));
+    }
+  };
+
+  const handleViewInvoice = async (orderId) => {
+    try {
+      const result = await InvoiceService.getInvoiceByOrderId(orderId);
+      if (result.success) {
+        // Navigate to invoice details page with the actual invoice ID
+        navigate(`/invoice-details/${result.data.id}`);
+      } else {
+        toast.error(result.error || 'لم يتم العثور على فاتورة لهذا الطلب');
+      }
+    } catch (error) {
+      console.error('Error getting invoice:', error);
+      toast.error('خطأ في الوصول للفاتورة');
+    }
+  };
+
+  const handleReorder = (order) => {
+    try {
+      console.log('[DEBUG] Original order data for reorder:', order);
+      
+      // Prepare order data for reordering
+      const reorderData = {
+        service: {
+          id: order.service?.id || order.service_id,
+          title: order.service?.title || order.service_name,
+          price: order.service?.price || order.service_price,
+          category: order.service?.category,
+          description: order.service?.description,
+          provider: order.service?.provider
+        },
+        location: {
+          lat: order.location_lat,
+          lng: order.location_lng,
+          address: order.location_address
+        },
+        description: order.description,
+        offered_price: order.offered_price,
+        scheduled_time: order.scheduled_time,
+        delivery_time: order.delivery_time,
+        // Add any other relevant data
+        original_order_id: order.id
+      };
+
+      // Save to localStorage
+      localStorage.setItem('reorderData', JSON.stringify(reorderData));
+      
+      // Navigate to order page
+      navigate('/order');
+      
+      console.log('[DEBUG] Reorder data saved:', reorderData);
+    } catch (error) {
+      console.error('Error preparing reorder data:', error);
+      toast.error('حدث خطأ أثناء إعداد إعادة الطلب');
+    }
   };
 
   if (loading && orders.length === 0) {
@@ -183,7 +265,7 @@ const Orders = () => {
           <div className="spinner-border text-primary" role="status">
             <span className="visually-hidden">جاري التحميل...</span>
           </div>
-          <div className="mt-3">جاري تحميل الطلبات...</div>
+          <div className="mt-3">جاري تحميل طلباتك...</div>
         </div>
       </div>
     );
@@ -197,7 +279,7 @@ const Orders = () => {
           <div className="d-flex justify-content-between align-items-center">
             <h1 className="h3 mb-0">
               <BsClock className="me-2 text-primary" />
-              طلبات العمل
+              تتبع طلباتي
             </h1>
             
             {/* Filter */}
@@ -217,7 +299,7 @@ const Orders = () => {
               </select>
               <button 
                 className="btn btn-outline-primary btn-sm"
-                onClick={fetchWorkerOrders}
+                onClick={fetchClientOrders}
                 disabled={loading}
               >
                 تحديث
@@ -248,7 +330,8 @@ const Orders = () => {
                       {formatDate(order.created_at)}
                     </span>
                   </div>
-                  <span className={`badge bg-${getStatusColor(order.status)}`}>
+                  <span className={`badge bg-${getStatusColor(order.status)} d-flex align-items-center`}>
+                    {getStatusIcon(order.status)}
                     {getStatusText(order.status)}
                   </span>
                 </div>
@@ -271,45 +354,34 @@ const Orders = () => {
                     )}
                   </div>
 
-                  {/* Client Info - Enhanced */}
-                  <div className="mb-3 p-3 bg-light rounded">
-                    <h6 className="text-primary mb-2">
-                      <FaUser className="me-2" size={14} />
-                      معلومات العميل
-                    </h6>
-                    <div className="row">
-                      <div className="col-12">
-                        <div className="d-flex align-items-center mb-2">
-                          <span className="small text-muted me-2">الاسم:</span>
-                          <span className="small fw-bold">
-                            {order.customer_first_name && order.customer_last_name 
-                              ? `${order.customer_first_name} ${order.customer_last_name}`
-                              : order.customer_name || 'عميل غير محدد'
-                            }
-                          </span>
-                        </div>
-                        {order.customer_email && (
-                          <div className="d-flex align-items-center mb-2">
-                            <span className="small text-muted me-2">البريد:</span>
-                            <span className="small">{order.customer_email}</span>
-                          </div>
-                        )}
-                        {order.customer_phone && (
-                          <div className="d-flex align-items-center mb-2">
-                            <FaPhone className="text-muted me-2" size={12} />
-                            <span className="small">{order.customer_phone}</span>
-                            <a 
-                              href={`tel:${order.customer_phone}`} 
-                              className="btn btn-sm btn-outline-success ms-2"
-                              style={{ fontSize: '10px', padding: '2px 8px' }}
-                            >
-                              اتصال
-                            </a>
-                          </div>
-                        )}
+                  {/* Worker Info - Enhanced */}
+                  {(order.worker_name || order.worker) && (
+                    <div className="mb-3 p-3 bg-light rounded">
+                      <h6 className="text-primary mb-2">
+                        <FaUser className="me-2" size={14} />
+                        معلومات العامل
+                      </h6>
+                      <div className="d-flex align-items-center mb-2">
+                        <span className="small text-muted me-2">الاسم:</span>
+                        <span className="small fw-bold">
+                          {order.worker_name || order.worker?.username || 'عامل غير محدد'}
+                        </span>
                       </div>
+                      {order.worker_phone && (
+                        <div className="d-flex align-items-center mb-2">
+                          <FaPhone className="text-muted me-2" size={12} />
+                          <span className="small">{order.worker_phone}</span>
+                          <a 
+                            href={`tel:${order.worker_phone}`} 
+                            className="btn btn-sm btn-outline-success ms-2"
+                            style={{ fontSize: '10px', padding: '2px 8px' }}
+                          >
+                            اتصال
+                          </a>
+                        </div>
+                      )}
                     </div>
-                  </div>
+                  )}
 
                   {/* Location - Enhanced */}
                   <div className="mb-3 p-3 bg-light rounded">
@@ -321,36 +393,6 @@ const Orders = () => {
                       <div className="mb-2">
                         <span className="small text-muted me-2">العنوان:</span>
                         <span className="small">{order.location_address}</span>
-                      </div>
-                    )}
-                    {order.building_number && (
-                      <div className="mb-2">
-                        <span className="small text-muted me-2">رقم العمارة:</span>
-                        <span className="small">{order.building_number}</span>
-                      </div>
-                    )}
-                    {order.apartment_number && (
-                      <div className="mb-2">
-                        <span className="small text-muted me-2">رقم الشقة:</span>
-                        <span className="small">{order.apartment_number}</span>
-                      </div>
-                    )}
-                    {order.floor_number && (
-                      <div className="mb-2">
-                        <span className="small text-muted me-2">الطابق:</span>
-                        <span className="small">{order.floor_number}</span>
-                      </div>
-                    )}
-                    {order.landmark && (
-                      <div className="mb-2">
-                        <span className="small text-muted me-2">علامة مميزة:</span>
-                        <span className="small">{order.landmark}</span>
-                      </div>
-                    )}
-                    {order.additional_details && (
-                      <div className="mb-2">
-                        <span className="small text-muted me-2">تفاصيل إضافية:</span>
-                        <span className="small">{order.additional_details}</span>
                       </div>
                     )}
                     {(order.location_lat && order.location_lng) && (
@@ -376,7 +418,7 @@ const Orders = () => {
                       تفاصيل السعر
                     </h6>
                     <div className="d-flex justify-content-between align-items-center mb-2">
-                      <span className="small text-muted">السعر المعروض من العميل:</span>
+                      <span className="small text-muted">السعر المعروض:</span>
                       <span className="fw-bold text-success fs-6">
                         {formatPrice(order.offered_price)}
                       </span>
@@ -387,12 +429,6 @@ const Orders = () => {
                         <span className="small text-info">
                           {formatPrice(order.service_price)}
                         </span>
-                      </div>
-                    )}
-                    {order.estimated_duration && (
-                      <div className="d-flex justify-content-between align-items-center">
-                        <span className="small text-muted">المدة المتوقعة:</span>
-                        <span className="small">{order.estimated_duration}</span>
                       </div>
                     )}
                   </div>
@@ -423,53 +459,16 @@ const Orders = () => {
                         </span>
                       </div>
                     )}
-                    {order.updated_at && order.updated_at !== order.created_at && (
-                      <div className="mb-2">
-                        <span className="small text-muted me-2">آخر تحديث:</span>
-                        <span className="small">{formatDate(order.updated_at)}</span>
-                      </div>
-                    )}
                   </div>
 
-                  {/* Additional Details */}
-                  {(order.special_requirements || order.materials_needed || order.tools_required) && (
-                    <div className="mb-3 p-3 bg-warning bg-opacity-10 rounded border border-warning border-opacity-25">
-                      <h6 className="text-warning mb-2">
-                        <BsEye className="me-2" size={14} />
-                        متطلبات خاصة
+                  {/* Decline Reason (if declined) */}
+                  {order.status === 'declined' && order.decline_reason && (
+                    <div className="mb-3 p-3 bg-danger bg-opacity-10 rounded border border-danger border-opacity-25">
+                      <h6 className="text-danger mb-2">
+                        <BsXCircle className="me-2" size={14} />
+                        سبب الرفض
                       </h6>
-                      {order.special_requirements && (
-                        <div className="mb-2">
-                          <span className="small text-muted me-2">متطلبات خاصة:</span>
-                          <span className="small">{order.special_requirements}</span>
-                        </div>
-                      )}
-                      {order.materials_needed && (
-                        <div className="mb-2">
-                          <span className="small text-muted me-2">مواد مطلوبة:</span>
-                          <span className="small">{order.materials_needed}</span>
-                        </div>
-                      )}
-                      {order.tools_required && (
-                        <div className="mb-2">
-                          <span className="small text-muted me-2">أدوات مطلوبة:</span>
-                          <span className="small">{order.tools_required}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Order Priority */}
-                  {order.priority && order.priority !== 'normal' && (
-                    <div className="mb-3">
-                      <span className={`badge ${
-                        order.priority === 'urgent' ? 'bg-danger' :
-                        order.priority === 'high' ? 'bg-warning' : 'bg-info'
-                      }`}>
-                        {order.priority === 'urgent' ? 'عاجل جداً' :
-                         order.priority === 'high' ? 'عاجل' : 
-                         order.priority === 'low' ? 'غير عاجل' : order.priority}
-                      </span>
+                      <p className="small mb-0">{order.decline_reason}</p>
                     </div>
                   )}
                 </div>
@@ -487,52 +486,72 @@ const Orders = () => {
                     </button>
                   </div>
                   
-                  {/* Accept/Decline Buttons for Pending Orders */}
-                  {order.status === 'pending' && (
-                    <div className="d-flex gap-2">
+                  {/* Contact Worker Button for Accepted/In Progress Orders */}
+                  {['accepted', 'in_progress'].includes(order.status) && (order.worker_name || order.worker) && (
+                    <div className="d-flex gap-2 mb-2">
                       <button
-                        className="btn btn-success btn-sm flex-fill"
-                        onClick={() => handleOrderAction(order.id, 'accept')}
-                        disabled={actionLoading[order.id]}
+                        className="btn btn-primary btn-sm flex-fill"
+                        onClick={() => handleContactWorker(order)}
                       >
-                        {actionLoading[order.id] === 'accept' ? (
-                          <div className="spinner-border spinner-border-sm me-1" role="status" />
-                        ) : (
-                          <BsCheckCircle className="me-1" />
-                        )}
-                        قبول
-                      </button>
-                      <button
-                        className="btn btn-danger btn-sm flex-fill"
-                        onClick={() => handleOrderAction(order.id, 'decline')}
-                        disabled={actionLoading[order.id]}
-                      >
-                        {actionLoading[order.id] === 'decline' ? (
-                          <div className="spinner-border spinner-border-sm me-1" role="status" />
-                        ) : (
-                          <BsXCircle className="me-1" />
-                        )}
-                        رفض
+                        <FaComments className="me-1" />
+                        تواصل مع العامل
                       </button>
                     </div>
                   )}
                   
-                  {/* Additional Actions for Accepted Orders */}
-                  {order.status === 'accepted' && (
-                    <div className="d-flex gap-2">
+                  {/* Complete Order Button for In Progress Orders */}
+                  {order.status === 'in_progress' && (
+                    <div className="d-flex gap-2 mb-2">
                       <button
-                        className="btn btn-primary btn-sm flex-fill"
-                        onClick={() => handleContactClient(order)}
-                      >
-                        <FaComments className="me-1" />
-                        تواصل مع العميل
-                      </button>
-                      <button
-                        className="btn btn-warning btn-sm flex-fill"
-                        onClick={() => handleOrderAction(order.id, 'start')}
+                        className="btn btn-success btn-sm flex-fill"
+                        onClick={() => handleCompleteOrder(order.id)}
                         disabled={actionLoading[order.id]}
                       >
-                        بدء العمل
+                        {actionLoading[order.id] === 'completing' ? (
+                          <div className="spinner-border spinner-border-sm me-1" role="status" />
+                        ) : (
+                          <BsCheckLg className="me-1" />
+                        )}
+                        تأكيد الاكتمال
+                      </button>
+                    </div>
+                  )}
+                  
+                  {/* View Invoice Button for Completed Orders */}
+                  {order.status === 'completed' && (
+                    <div className="d-flex gap-2 mb-2">
+                      <button
+                        className="btn btn-info btn-sm flex-fill"
+                        onClick={() => handleViewInvoice(order.id)}
+                      >
+                        <FaFileInvoiceDollar className="me-1" />
+                        عرض الفاتورة
+                      </button>
+                    </div>
+                  )}
+                  
+                  {/* Reorder Button for Completed and Declined Orders */}
+                  {['completed', 'declined'].includes(order.status) && (
+                    <div className="d-flex gap-2 mb-2">
+                      <button
+                        className="btn btn-warning btn-sm flex-fill"
+                        onClick={() => handleReorder(order)}
+                      >
+                        <BsArrowClockwise className="me-1" />
+                        إعادة الطلب
+                      </button>
+                    </div>
+                  )}
+                  
+                  {/* Cancel Order Button for Pending Orders */}
+                  {order.status === 'pending' && (
+                    <div className="d-flex gap-2">
+                      <button
+                        className="btn btn-outline-danger btn-sm flex-fill"
+                        onClick={() => handleCancelOrder(order.id)}
+                      >
+                        <BsXCircle className="me-1" />
+                        إلغاء الطلب
                       </button>
                     </div>
                   )}
@@ -626,7 +645,8 @@ const Orders = () => {
                   <div className="col-12">
                     <div className="d-flex justify-content-between align-items-center">
                       <h6>حالة الطلب:</h6>
-                      <span className={`badge bg-${getStatusColor(selectedOrder.status)} fs-6 px-3 py-2`}>
+                      <span className={`badge bg-${getStatusColor(selectedOrder.status)} fs-6 px-3 py-2 d-flex align-items-center`}>
+                        {getStatusIcon(selectedOrder.status)}
                         {getStatusText(selectedOrder.status)}
                       </span>
                     </div>
@@ -664,43 +684,41 @@ const Orders = () => {
                   </div>
                 </div>
 
-                {/* Client Information */}
-                <div className="card mb-4">
-                  <div className="card-header bg-light">
-                    <h6 className="mb-0 text-primary">
-                      <FaUser className="me-2" />
-                      معلومات العميل
-                    </h6>
-                  </div>
-                  <div className="card-body">
-                    <div className="row">
-                      <div className="col-md-6">
-                        <p><strong>الاسم:</strong> {
-                          selectedOrder.customer?.first_name && selectedOrder.customer?.last_name 
-                            ? `${selectedOrder.customer.first_name} ${selectedOrder.customer.last_name}`
-                            : selectedOrder.customer?.name || selectedOrder.customer?.username || 'غير محدد'
-                        }</p>
-                        {selectedOrder.customer?.email && (
-                          <p><strong>البريد الإلكتروني:</strong> {selectedOrder.customer.email}</p>
-                        )}
-                      </div>
-                      <div className="col-md-6">
-                        {selectedOrder.customer?.phone && (
-                          <div>
-                            <p><strong>رقم الهاتف:</strong> {selectedOrder.customer.phone}</p>
-                            <a 
-                              href={`tel:${selectedOrder.customer.phone}`} 
-                              className="btn btn-outline-success btn-sm"
-                            >
-                              <FaPhone className="me-1" />
-                              اتصال مباشر
-                            </a>
-                          </div>
-                        )}
+                {/* Worker Information (if assigned) */}
+                {(selectedOrder.worker_name || selectedOrder.worker) && (
+                  <div className="card mb-4">
+                    <div className="card-header bg-light">
+                      <h6 className="mb-0 text-primary">
+                        <FaUser className="me-2" />
+                        معلومات العامل
+                      </h6>
+                    </div>
+                    <div className="card-body">
+                      <div className="row">
+                        <div className="col-md-6">
+                          <p><strong>الاسم:</strong> {selectedOrder.worker_name || selectedOrder.worker?.username || 'غير محدد'}</p>
+                          {selectedOrder.worker?.email && (
+                            <p><strong>البريد الإلكتروني:</strong> {selectedOrder.worker.email}</p>
+                          )}
+                        </div>
+                        <div className="col-md-6">
+                          {selectedOrder.worker_phone && (
+                            <div>
+                              <p><strong>رقم الهاتف:</strong> {selectedOrder.worker_phone}</p>
+                              <a 
+                                href={`tel:${selectedOrder.worker_phone}`} 
+                                className="btn btn-outline-success btn-sm"
+                              >
+                                <FaPhone className="me-1" />
+                                اتصال مباشر
+                              </a>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 {/* Location Details */}
                 <div className="card mb-4">
@@ -762,14 +780,11 @@ const Orders = () => {
                         </h6>
                       </div>
                       <div className="card-body">
-                        <p><strong>السعر المعروض من العميل:</strong> 
+                        <p><strong>السعر المعروض:</strong> 
                           <span className="text-success fs-5 fw-bold"> {formatPrice(selectedOrder.offered_price)}</span>
                         </p>
                         {selectedOrder.service_price && (
                           <p><strong>سعر الخدمة الأساسي:</strong> {formatPrice(selectedOrder.service_price)}</p>
-                        )}
-                        {selectedOrder.estimated_duration && (
-                          <p><strong>المدة المتوقعة:</strong> {selectedOrder.estimated_duration}</p>
                         )}
                       </div>
                     </div>
@@ -800,84 +815,98 @@ const Orders = () => {
                   </div>
                 </div>
 
-                {/* Special Requirements */}
-                {(selectedOrder.special_requirements || selectedOrder.materials_needed || selectedOrder.tools_required) && (
+                {/* Decline Reason (if declined) */}
+                {selectedOrder.status === 'declined' && selectedOrder.decline_reason && (
                   <div className="card mb-4">
-                    <div className="card-header bg-warning bg-opacity-10">
-                      <h6 className="mb-0 text-warning">
-                        <BsEye className="me-2" />
-                        متطلبات خاصة
+                    <div className="card-header bg-danger bg-opacity-10">
+                      <h6 className="mb-0 text-danger">
+                        <BsXCircle className="me-2" />
+                        سبب الرفض
                       </h6>
                     </div>
                     <div className="card-body">
-                      {selectedOrder.special_requirements && (
-                        <p><strong>متطلبات خاصة:</strong> {selectedOrder.special_requirements}</p>
-                      )}
-                      {selectedOrder.materials_needed && (
-                        <p><strong>مواد مطلوبة:</strong> {selectedOrder.materials_needed}</p>
-                      )}
-                      {selectedOrder.tools_required && (
-                        <p><strong>أدوات مطلوبة:</strong> {selectedOrder.tools_required}</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Priority */}
-                {selectedOrder.priority && selectedOrder.priority !== 'normal' && (
-                  <div className="card mb-4">
-                    <div className="card-header bg-light">
-                      <h6 className="mb-0 text-primary">أولوية الطلب</h6>
-                    </div>
-                    <div className="card-body">
-                      <span className={`badge fs-6 px-3 py-2 ${
-                        selectedOrder.priority === 'urgent' ? 'bg-danger' :
-                        selectedOrder.priority === 'high' ? 'bg-warning' : 'bg-info'
-                      }`}>
-                        {selectedOrder.priority === 'urgent' ? 'عاجل جداً' :
-                         selectedOrder.priority === 'high' ? 'عاجل' : 
-                         selectedOrder.priority === 'low' ? 'غير عاجل' : selectedOrder.priority}
-                      </span>
+                      <p className="mb-0">{selectedOrder.decline_reason}</p>
                     </div>
                   </div>
                 )}
               </div>
               
               <div className="modal-footer">
-                {selectedOrder.status === 'pending' && (
-                  <>
-                    <button
-                      className="btn btn-success"
-                      onClick={() => {
-                        handleOrderAction(selectedOrder.id, 'accept');
-                        closeOrderModal();
-                      }}
-                      disabled={actionLoading[selectedOrder.id]}
-                    >
-                      {actionLoading[selectedOrder.id] === 'accept' ? (
-                        <div className="spinner-border spinner-border-sm me-1" role="status" />
-                      ) : (
-                        <BsCheckCircle className="me-1" />
-                      )}
-                      قبول الطلب
-                    </button>
-                    <button
-                      className="btn btn-danger"
-                      onClick={() => {
-                        handleOrderAction(selectedOrder.id, 'decline');
-                        closeOrderModal();
-                      }}
-                      disabled={actionLoading[selectedOrder.id]}
-                    >
-                      {actionLoading[selectedOrder.id] === 'decline' ? (
-                        <div className="spinner-border spinner-border-sm me-1" role="status" />
-                      ) : (
-                        <BsXCircle className="me-1" />
-                      )}
-                      رفض الطلب
-                    </button>
-                  </>
+                {/* Contact Worker Button */}
+                {['accepted', 'in_progress'].includes(selectedOrder.status) && (selectedOrder.worker_name || selectedOrder.worker) && (
+                  <button
+                    className="btn btn-primary"
+                    onClick={() => {
+                      handleContactWorker(selectedOrder);
+                      closeOrderModal();
+                    }}
+                  >
+                    <FaComments className="me-1" />
+                    تواصل مع العامل
+                  </button>
                 )}
+                
+                {/* Complete Order Button */}
+                {selectedOrder.status === 'in_progress' && (
+                  <button
+                    className="btn btn-success"
+                    onClick={() => {
+                      handleCompleteOrder(selectedOrder.id);
+                      closeOrderModal();
+                    }}
+                    disabled={actionLoading[selectedOrder.id]}
+                  >
+                    {actionLoading[selectedOrder.id] === 'completing' ? (
+                      <div className="spinner-border spinner-border-sm me-1" role="status" />
+                    ) : (
+                      <BsCheckLg className="me-1" />
+                    )}
+                    تأكيد الاكتمال
+                  </button>
+                )}
+                
+                {/* View Invoice Button */}
+                {selectedOrder.status === 'completed' && (
+                  <button
+                    className="btn btn-info"
+                    onClick={() => {
+                      handleViewInvoice(selectedOrder.id);
+                      closeOrderModal();
+                    }}
+                  >
+                    <FaFileInvoiceDollar className="me-1" />
+                    عرض الفاتورة
+                  </button>
+                )}
+                
+                {/* Reorder Button */}
+                {['completed', 'declined'].includes(selectedOrder.status) && (
+                  <button
+                    className="btn btn-warning"
+                    onClick={() => {
+                      handleReorder(selectedOrder);
+                      closeOrderModal();
+                    }}
+                  >
+                    <BsArrowClockwise className="me-1" />
+                    إعادة الطلب
+                  </button>
+                )}
+                
+                {/* Cancel Order Button */}
+                {selectedOrder.status === 'pending' && (
+                  <button
+                    className="btn btn-danger"
+                    onClick={() => {
+                      handleCancelOrder(selectedOrder.id);
+                      closeOrderModal();
+                    }}
+                  >
+                    <BsXCircle className="me-1" />
+                    إلغاء الطلب
+                  </button>
+                )}
+                
                 <button type="button" className="btn btn-secondary" onClick={closeOrderModal}>
                   إغلاق
                 </button>
@@ -890,4 +919,4 @@ const Orders = () => {
   );
 };
 
-export default Orders;
+export default TrackOrder;

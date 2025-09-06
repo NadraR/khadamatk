@@ -11,7 +11,7 @@ class IsOwnerOrAdmin(permissions.BasePermission):
     صلاحية للتحقق إذا كان المستخدم هو صاحب الفاتورة أو مدير
     """
     def has_object_permission(self, request, view, obj):
-        return obj.booking.customer == request.user or request.user.is_staff
+        return obj.order.customer == request.user or request.user.is_staff
 
 class InvoiceViewSet(viewsets.ModelViewSet):
     queryset = Invoice.objects.all()
@@ -21,7 +21,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         if self.request.user.is_staff:
             return Invoice.objects.all()
-        return Invoice.objects.filter(booking__customer=self.request.user)
+        return Invoice.objects.filter(order__customer=self.request.user)
     
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
@@ -45,7 +45,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
         """
         الحصول على فواتير المستخدم الحالي فقط
         """
-        invoices = Invoice.objects.filter(booking__customer=request.user)
+        invoices = Invoice.objects.filter(order__customer=request.user)
         page = self.paginate_queryset(invoices)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
@@ -63,7 +63,7 @@ def total_revenue(request):
 @permission_classes([permissions.IsAuthenticated])
 def invoice_stats(request):
     """Get invoice statistics for the current user"""
-    user_invoices = Invoice.objects.filter(booking__customer=request.user)
+    user_invoices = Invoice.objects.filter(order__customer=request.user)
     
     stats = {
         'total_invoices': user_invoices.count(),
@@ -84,7 +84,7 @@ def overdue_invoices(request):
     from django.utils import timezone
     
     overdue = Invoice.objects.filter(
-        booking__customer=request.user,
+        order__customer=request.user,
         due_date__lt=timezone.now(),
         status__in=[Invoice.STATUS_UNPAID, Invoice.STATUS_PENDING]
     )

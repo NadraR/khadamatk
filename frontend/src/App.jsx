@@ -19,6 +19,7 @@ import ServiceDetails from './pages/ServiceDetails';
 import Services from './pages/Services';
 import Orders from './pages/Orders';
 import OrderPage from './pages/OrderPage';
+import TrackOrder from './pages/TrackOrder';
 import Reviews from './pages/Reviews';
 import Ratings from './pages/Ratings';
 
@@ -103,6 +104,9 @@ function App() {
         <Route path="/order" element={<Layout><OrderPage /></Layout>} />
         <Route path="/order-page" element={<Layout><OrderPage /></Layout>} />
         <Route path="/orders" element={<Layout><Orders /></Layout>} />
+        <Route path="/orders/:id" element={<Layout><Orders /></Layout>} />
+        <Route path="/track-order" element={<Layout><TrackOrder /></Layout>} />
+        <Route path="/track-orders" element={<Layout><TrackOrder /></Layout>} />
         <Route path="/reviews/:serviceId" element={<Layout><Reviews /></Layout>} />
         <Route path="/ratings/:serviceId" element={<Layout><Ratings /></Layout>} />
 
@@ -129,6 +133,7 @@ function App() {
 
         {/* Invoice Details */}
         <Route path="/invoice/:id" element={<Layout><InvoiceDetails /></Layout>} />
+        <Route path="/invoice-details/:id" element={<Layout><InvoiceDetails /></Layout>} />
 
         {/* Font Test (Development) */}
         <Route path="/font-test" element={<Layout><FontTest /></Layout>} />

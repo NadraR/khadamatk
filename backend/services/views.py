@@ -1,4 +1,5 @@
 from django.db.models import Avg, Count, Q
+from django.db import models
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
@@ -144,8 +145,16 @@ def service_search(request):
     radius_km = float(request.GET.get("radius_km", 10))
     service_type = request.GET.get("service_type") 
     q = request.GET.get("q", "")
+    max_results = int(request.GET.get("max_results", 50))  # Increase default limit
     
-    # Start with basic filtering
+    from django.contrib.gis.geos import Point
+    from django.contrib.gis.db.models.functions import Distance
+    from django.contrib.gis.measure import D
+    
+    # Create point for the search location
+    search_point = Point(lng, lat, srid=4326)
+    
+    # Start with basic service filtering
     qs = Service.objects.filter(
         is_deleted=False, 
         is_active=True,
@@ -155,17 +164,81 @@ def service_search(request):
         rating_count=Count("reviews")
     )
     
+    # Filter by service type if provided
     if service_type:
-        qs = qs.filter(category_id=service_type)
+        try:
+            service_type_int = int(service_type)
+            qs = qs.filter(category_id=service_type_int)
+        except (ValueError, TypeError):
+            # If service_type is not a valid integer, try to match by name
+            qs = qs.filter(category__name__icontains=service_type)
     
+    # Filter by search query if provided
     if q:
-        qs = qs.filter(Q(title__icontains=q) | Q(description__icontains=q))
+        qs = qs.filter(
+            Q(title__icontains=q) | 
+            Q(description__icontains=q) |
+            Q(category__name__icontains=q)
+        )
     
-    # For now, return all services without location filtering
-    # This ensures the API works even without location data
-    from django.db.models import Value
-    qs = qs.annotate(distance_km=Value(0.0))  # Set distance to 0 for all services
-    qs = qs.order_by('?')  # Random order since we don't have location data
+    # Now filter by location using provider's locations
+    # Join with UserLocation to find services from providers within radius
+    from location.models import UserLocation
+    
+    # Get providers within radius
+    nearby_providers = UserLocation.objects.filter(
+        user__role='worker',
+        location__isnull=False
+    ).annotate(
+        distance=Distance('location', search_point)
+    ).filter(
+        location__distance_lte=(search_point, D(km=radius_km))
+    ).values_list('user_id', flat=True)
+    
+    # Filter services by nearby providers
+    qs = qs.filter(provider_id__in=nearby_providers)
+    
+    # Add distance calculation to services based on provider's location
+    qs = qs.annotate(
+        provider_location=UserLocation.objects.filter(
+            user_id=models.OuterRef('provider_id')
+        ).values('location')[:1]
+    ).annotate(
+        distance_km=Distance('provider_location', search_point)
+    ).filter(
+        distance_km__lte=D(km=radius_km)
+    ).order_by('distance_km', '-rating_avg')[:max_results]
+    
+    # Fallback: if no location-based results, return services without location filtering
+    if not qs.exists():
+        print(f"No location-based results found, falling back to general search")
+        qs = Service.objects.filter(
+            is_deleted=False, 
+            is_active=True,
+            provider__isnull=False
+        ).annotate(
+            rating_avg=Avg("reviews__score"),
+            rating_count=Count("reviews")
+        )
+        
+        if service_type:
+            try:
+                service_type_int = int(service_type)
+                qs = qs.filter(category_id=service_type_int)
+            except (ValueError, TypeError):
+                qs = qs.filter(category__name__icontains=service_type)
+        
+        if q:
+            qs = qs.filter(
+                Q(title__icontains=q) | 
+                Q(description__icontains=q) |
+                Q(category__name__icontains=q)
+            )
+        
+        # Add a default distance for fallback results
+        from django.db.models import Value, FloatField
+        qs = qs.annotate(distance_km=Value(radius_km + 1, output_field=FloatField()))
+        qs = qs.order_by('-rating_avg', 'id')[:max_results]
     
     serializer = ServiceSearchSerializer(qs, many=True, context={"request": request})
     return Response(serializer.data)
@@ -210,3 +283,73 @@ def favorite_remove(request, service_id):
         return Response({"status": "removed from favorites"})
     else:
         return Response({"error": "Favorite not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def create_service_for_worker(request):
+    """
+    Create a service for a worker automatically based on their profile
+    """
+    from accounts.models import User
+    
+    worker_id = request.data.get('worker_id')
+    if not worker_id:
+        return Response({"error": "worker_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        worker = User.objects.get(id=worker_id, role='worker')
+    except User.DoesNotExist:
+        return Response({"error": "Worker not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    # Check if worker already has services
+    existing_services = Service.objects.filter(provider=worker, is_deleted=False)
+    if existing_services.exists():
+        # Return the first existing service
+        service = existing_services.first()
+        serializer = ServiceDetailSerializer(service)
+        return Response({
+            "message": "Service already exists",
+            "service": serializer.data
+        })
+    
+    # Create a service for this worker
+    try:
+        worker_profile = worker.worker_profile
+        
+        # Get or create appropriate category
+        category_name = 'خدمات عامة'
+        if worker_profile.job_title:
+            if 'كهربائي' in worker_profile.job_title or 'electrical' in worker_profile.job_title.lower():
+                category_name = 'Electricians'
+            elif 'سباك' in worker_profile.job_title or 'plumb' in worker_profile.job_title.lower():
+                category_name = 'Plumbers'
+            elif 'نظافة' in worker_profile.job_title or 'clean' in worker_profile.job_title.lower():
+                category_name = 'تنظيف'
+        
+        category, created = ServiceCategory.objects.get_or_create(
+            name=category_name,
+            defaults={'is_deleted': False}
+        )
+        
+        # Create the service
+        service = Service.objects.create(
+            provider=worker,
+            category=category,
+            title=f'{worker_profile.job_title or "خدمات عامة"} - {worker.username}',
+            description=f'خدمات {worker_profile.job_title or "متنوعة"}: {worker_profile.skills or "خدمات عامة"}',
+            price=worker_profile.hourly_rate or 100.00,
+            is_active=True,
+            is_deleted=False
+        )
+        
+        serializer = ServiceDetailSerializer(service)
+        return Response({
+            "message": "Service created successfully",
+            "service": serializer.data
+        }, status=status.HTTP_201_CREATED)
+        
+    except Exception as e:
+        return Response({
+            "error": f"Failed to create service: {str(e)}"
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

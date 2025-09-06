@@ -12,21 +12,43 @@ const SearchBar = () => {
   const searchRef = useRef(null);
   const suggestionsRef = useRef(null);
 
-  // قائمة الخدمات المتاحة
-  const services = [
-    { id: 1, name: { ar: "سباكة", en: "Plumbing" }, category: "home" },
-    { id: 2, name: { ar: "كهرباء", en: "Electrical" }, category: "home" },
-    { id: 3, name: { ar: "دهان", en: "Painting" }, category: "home" },
-    { id: 4, name: { ar: "نجارة", en: "Carpentry" }, category: "home" },
-    { id: 5, name: { ar: "تنظيف", en: "Cleaning" }, category: "home" },
-    { id: 6, name: { ar: "تكييف", en: "Air Conditioning" }, category: "home" },
-    { id: 7, name: { ar: "صيانة أجهزة", en: "Appliance Repair" }, category: "home" },
-    { id: 8, name: { ar: "تركيب أثاث", en: "Furniture Assembly" }, category: "home" },
-    { id: 9, name: { ar: "نقل أثاث", en: "Moving" }, category: "home" },
-    { id: 10, name: { ar: "حدادة", en: "Welding" }, category: "home" },
-    { id: 11, name: { ar: "بلاط", en: "Tiling" }, category: "home" },
-    { id: 12, name: { ar: "جص", en: "Plastering" }, category: "home" }
-  ];
+  // قائمة الخدمات المتاحة - سيتم جلبها من API
+  const [services, setServices] = useState([]);
+
+  // جلب أنواع الخدمات من API
+  useEffect(() => {
+    const fetchServiceTypes = async () => {
+      try {
+        const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+        const response = await fetch(`${baseURL}/api/services/types/`);
+        if (response.ok) {
+          const data = await response.json();
+          // تحويل البيانات لتتوافق مع التنسيق المطلوب
+          const formattedServices = data.map(service => ({
+            id: service.id,
+            name: { 
+              ar: service.name, 
+              en: service.name 
+            },
+            category: "home"
+          }));
+          setServices(formattedServices);
+        }
+      } catch (err) {
+        console.error("فشل في تحميل أنواع الخدمات", err);
+        // fallback للخدمات الافتراضية في حالة فشل API
+        setServices([
+          { id: 1, name: { ar: "سباكة", en: "Plumbing" }, category: "home" },
+          { id: 2, name: { ar: "كهرباء", en: "Electrical" }, category: "home" },
+          { id: 3, name: { ar: "دهان", en: "Painting" }, category: "home" },
+          { id: 4, name: { ar: "نجارة", en: "Carpentry" }, category: "home" },
+          { id: 5, name: { ar: "تنظيف", en: "Cleaning" }, category: "home" }
+        ]);
+      }
+    };
+    
+    fetchServiceTypes();
+  }, []);
 
   const handleSearch = (e) => {
     e.preventDefault();

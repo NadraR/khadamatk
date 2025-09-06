@@ -106,9 +106,9 @@ const Reports = () => {
     const fetchReports = async () => {
       try {
         const [ordersRes, invoicesRes, servicesRes] = await Promise.all([
-          apiService.get(`/admin/orders/`),
-          apiService.get(`/admin/invoices/`),
-          apiService.get(`/admin/services/`),
+          apiService.get(`/api/admin/orders/`),
+          apiService.get(`/api/admin/invoices/`),
+          apiService.get(`/api/admin/services/`),
         ]);
 
         setOrders(ordersRes.data || []);
