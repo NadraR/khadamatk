@@ -100,8 +100,7 @@ class WorkerProfileSerializer(serializers.ModelSerializer):
         model = WorkerProfile
         fields = [
             "id", "user", "job_title", "hourly_rate",
-            "experience_years", "skills",
-
+            "experience_years", "skills", "services_provided", "estimated_price",
             "created_at", "updated_at"
         ]
         read_only_fields = ["user", "created_at", "updated_at"]

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
-import api from "../api";
-import { ACCESS_TOKEN } from "../constants";
+import { ApiService } from "../services/ApiService";
 import "./Services.css";
 
 const Services = () => {
@@ -17,15 +16,13 @@ const Services = () => {
     category_id: "",
   });
 
-  const token = localStorage.getItem(ACCESS_TOKEN);
+  const apiService = new ApiService();
   const baseURL = `${import.meta.env.VITE_API_URL}/services/`;
 
   const fetchServices = async () => {
     setLoading(true);
     try {
-      const response = await api.get(baseURL, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await apiService.get(`/services/`);
 
       if (Array.isArray(response.data)) {
         setServices(response.data);
@@ -67,13 +64,9 @@ const Services = () => {
       };
 
       if (editId) {
-        await api.put(`${baseURL}${editId}/`, dataToSend, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await apiService.put(`/services/${editId}/`, dataToSend);
       } else {
-        await api.post(baseURL, dataToSend, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await apiService.post(`/services/`, dataToSend);
       }
 
       setFormData({ title: "", description: "", price: "", city: "Cairo", is_active: true, category_id: "" });
@@ -89,9 +82,7 @@ const Services = () => {
   const handleDelete = async (id) => {
     if (window.confirm("هل تريد حذف هذه الخدمة؟")) {
       try {
-        await api.delete(`${baseURL}${id}/`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await apiService.delete(`/services/${id}/`);
         fetchServices();
       } catch (err) {
         console.error("Error deleting service:", err.response?.data || err);

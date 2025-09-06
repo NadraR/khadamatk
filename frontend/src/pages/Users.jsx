@@ -1,15 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import api from "../api";
-import { ACCESS_TOKEN } from "../constants";
+import { ApiService } from "../services/ApiService";
 import { FaUsers, FaCheckCircle, FaTimesCircle } from "react-icons/fa";
 
 const Users = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const token = localStorage.getItem(ACCESS_TOKEN);
-  const headers = { Authorization: `Bearer ${token}` };
+  const apiService = new ApiService();
 
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -17,7 +15,7 @@ const Users = () => {
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const res = await api.get("/admin/users/", { headers });
+        const res = await apiService.get("/admin/users/");
         setUsers(res.data || []);
       } catch (err) {
         console.error("Error fetching users:", err.response?.data || err);

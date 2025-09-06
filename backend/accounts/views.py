@@ -1,7 +1,7 @@
 from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework import status
-from rest_framework.exceptions import NotFound
+from rest_framework.exceptions import NotFound, PermissionDenied
 from .models import User, WorkerProfile, ClientProfile
 from .serializers import CustomUserCreateSerializer, WorkerProfileSerializer, ClientProfileSerializer, UserSerializer, LoginSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
@@ -55,9 +55,25 @@ class WorkerProfileCreateView(generics.CreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def perform_create(self, serializer):
+        # Allow any authenticated user to create a worker profile
+        # Update user role to worker if they're creating a worker profile
         if self.request.user.role != 'worker':
-            raise PermissionError("Only workers can create a worker profile.")
-        serializer.save(user=self.request.user)
+            self.request.user.role = 'worker'
+            self.request.user.save()
+            print(f"Updated user {self.request.user.id} role from {self.request.user.role} to worker")
+        
+        # Check if user already has a worker profile
+        if hasattr(self.request.user, 'worker_profile'):
+            # Update existing profile
+            existing_profile = self.request.user.worker_profile
+            for field, value in serializer.validated_data.items():
+                setattr(existing_profile, field, value)
+            existing_profile.save()
+            print(f"Updated existing worker profile for user {self.request.user.id}")
+        else:
+            # Create new profile
+            serializer.save(user=self.request.user)
+            print(f"Created new worker profile for user {self.request.user.id}")
 
 
 class ClientProfileCreateView(generics.CreateAPIView):
@@ -66,7 +82,7 @@ class ClientProfileCreateView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         if self.request.user.role != 'client':
-            raise PermissionError("Only clients can create a client profile.")
+            raise PermissionDenied("Only clients can create a client profile.")
         serializer.save(user=self.request.user) 
 
 class ClientProfileView(generics.RetrieveUpdateAPIView):
@@ -171,6 +187,14 @@ class GoogleLoginView(APIView):
         try:
             # ✅ Step 1: Verify the ID Token
             logger.info("[GoogleLogin DEBUG] Verifying ID token...")
+            
+            # Check if GOOGLE_CLIENT_ID is configured
+            if not settings.GOOGLE_CLIENT_ID:
+                logger.error("[GoogleLogin DEBUG] GOOGLE_CLIENT_ID not configured")
+                return Response({
+                    "error": "Google OAuth not configured. Please contact administrator."
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
             idinfo = id_token.verify_oauth2_token(
                 token,
                 google_requests.Request(),

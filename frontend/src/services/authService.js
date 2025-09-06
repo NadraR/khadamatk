@@ -45,17 +45,24 @@ class AuthService {
       
       // حفظ بيانات المستخدم
       const userData = {
-        id: responseData.id || responseData.user?.id,
+        id: responseData.user_id || responseData.id || responseData.user?.id,
         email: responseData.email || responseData.user?.email,
         role: responseData.role || responseData.user?.role || 'client',
         auth_provider: responseData.auth_provider || 'email',
         hasLocation: responseData.has_location || responseData.hasLocation || false,
-        name: responseData.name || responseData.user?.name || '',
+        name: responseData.name || responseData.user?.name || responseData.username || 'User',
+        first_name: responseData.first_name || responseData.user?.first_name || '',
+        last_name: responseData.last_name || responseData.user?.last_name || '',
+        username: responseData.username || responseData.user?.username || '',
         profile_completed: responseData.profile_completed || false
       };
       
       console.log('[DEBUG] handleLoginSuccess: Created user data:', userData);
       this.saveUserToStorage(userData);
+      
+      // Dispatch custom event to notify navbar of login
+      window.dispatchEvent(new CustomEvent('userLogin', { detail: userData }));
+      
       return userData;
     }
     
@@ -68,19 +75,40 @@ class AuthService {
   // تسجيل الدخول بالبريد الإلكتروني وكلمة المرور
   async login(email, password) {
     try {
+      console.log('[DEBUG] AuthService: Starting login process for:', email);
       const data = await apiService.post('/api/accounts/login/', { email, password });
       const userData = this.handleLoginSuccess(data);
       
+      console.log('[DEBUG] AuthService: Login successful for:', email);
       return {
         success: true,
         data: userData
       };
     } catch (error) {
       console.error('خطأ في تسجيل الدخول:', error);
-      const errorMessage = error.data?.message || 
-                          error.data?.detail || 
-                          error.message || 
-                          'فشل في تسجيل الدخول';
+      
+      // معالجة أفضل للأخطاء
+      let errorMessage = 'فشل في تسجيل الدخول';
+      
+      if (error.code === 'ECONNABORTED') {
+        errorMessage = 'انتهت مهلة الاتصال. يرجى التحقق من اتصال الإنترنت أو المحاولة مرة أخرى.';
+      } else if (error.code === 'ECONNREFUSED') {
+        errorMessage = 'الخادم غير متاح. يرجى التحقق من أن الخادم الخلفي يعمل.';
+      } else if (error.code === 'NETWORK_ERROR') {
+        errorMessage = 'مشكلة في الاتصال بالشبكة. يرجى التحقق من اتصال الإنترنت.';
+      } else if (error.response?.status === 401) {
+        errorMessage = 'البريد الإلكتروني أو كلمة المرور غير صحيحة';
+      } else if (error.response?.status === 400) {
+        errorMessage = 'بيانات الدخول غير صحيحة';
+      } else if (error.response?.status === 500) {
+        errorMessage = 'خطأ في الخادم، يرجى المحاولة لاحقاً';
+      } else {
+        errorMessage = error.data?.message || 
+                      error.data?.detail || 
+                      error.message || 
+                      'فشل في تسجيل الدخول';
+      }
+      
       throw new Error(errorMessage);
     }
   }
@@ -224,10 +252,37 @@ class AuthService {
 
   // مسح بيانات المصادقة
   clearAuth() {
+    // Clear all possible token keys for consistency
     localStorage.removeItem('access');
     localStorage.removeItem('refresh');
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
     localStorage.removeItem('user');
+    localStorage.removeItem('user_id');
+    localStorage.removeItem('user_role');
     this.user = null;
+  }
+
+  // Debug function to test login with sample data
+  async testLogin() {
+    console.log('[DEBUG] AuthService: Testing login with sample data');
+    try {
+      const testData = {
+        access: 'test-access-token',
+        refresh: 'test-refresh-token',
+        user_id: 1,
+        username: 'testuser',
+        email: 'test@example.com',
+        role: 'client'
+      };
+      
+      const userData = this.handleLoginSuccess(testData);
+      console.log('[DEBUG] AuthService: Test login successful:', userData);
+      return userData;
+    } catch (error) {
+      console.error('[DEBUG] AuthService: Test login failed:', error);
+      throw error;
+    }
   }
 
   // محاولة تجديد التوكن تلقائيًا
@@ -236,7 +291,7 @@ class AuthService {
     if (!refreshToken) return false;
 
     try {
-      const data = await apiService.post('/api/auth/jwt/refresh/', { 
+      const data = await apiService.post('/api/accounts/token/refresh/', { 
         refresh: refreshToken 
       });
 
@@ -257,8 +312,14 @@ class AuthService {
 
   // التحقق من حالة المصادقة مع إمكانية التجديد
   async isAuthenticated() {
-    const token = localStorage.getItem('access_token') || localStorage.getItem('access');
-    if (!token) return false;
+    const token = localStorage.getItem('access');
+    console.log('[DEBUG] isAuthenticated: Checking token:', token ? 'FOUND' : 'NOT FOUND');
+    console.log('[DEBUG] isAuthenticated: All localStorage keys:', Object.keys(localStorage));
+    
+    if (!token) {
+      console.log('[DEBUG] isAuthenticated: No access token found');
+      return false;
+    }
 
     try {
       // التحقق من صلاحية التوكن
@@ -340,25 +401,20 @@ class AuthService {
 
   // الحصول على التوكن
   getToken() {
-    return localStorage.getItem('access_token') || localStorage.getItem('access');
+    return localStorage.getItem('access');
   }
 
   // تحديد صفحة إعادة التوجيه بناءً على حالة المستخدم
   getRedirectPath() {
     if (!this.user) return '/';
     
-    // إذا كان مزود خدمة، يوجه إلى Dashboard الخدمات
-    if (this.user.role === 'worker' || this.user.role === 'provider') {
-      return '/homeProvider';
+    // إذا لم يكن لديه موقع، يوجه إلى صفحة الموقع
+    if (!this.user.hasLocation) {
+      return '/location';
     }
     
-    // إذا كان عميل، يوجه إلى Dashboard الرئيسي
-    if (this.user.role === 'client') {
-      return '/homeClient';
-    }
-    
-    // إذا لم يكن لديه دور محدد، يوجه إلى صفحة العميل
-    return '/homeClient';
+    // جميع المستخدمين يوجهون إلى الصفحة الرئيسية بعد تسجيل الدخول
+    return '/';
   }
 
   // دوال إضافية
@@ -408,6 +464,31 @@ class AuthService {
     }
   }
 
+  // Debug function to check authentication status
+  debugAuthStatus() {
+    const status = {
+      // Check all possible token keys
+      accessToken: localStorage.getItem('access'),
+      refreshToken: localStorage.getItem('refresh'),
+      accessTokenAlt: localStorage.getItem('access_token'),
+      refreshTokenAlt: localStorage.getItem('refresh_token'),
+      
+      // Check user data
+      user: localStorage.getItem('user'),
+      userId: localStorage.getItem('user_id'),
+      userRole: localStorage.getItem('user_role'),
+      
+      // Check current user object
+      currentUser: this.user,
+      
+      // All localStorage keys
+      allKeys: Object.keys(localStorage)
+    };
+    
+    console.log('[AUTH DEBUG] Current authentication status:', status);
+    return status;
+  }
+
   // طلب إعادة تعيين كلمة المرور
   async requestPasswordReset(email) {
     try {
@@ -433,8 +514,63 @@ class AuthService {
       throw new Error('فشل في إعادة تعيين كلمة المرور');
     }
   }
+
+  // إكمال الملف الشخصي للعامل
+  async completeWorkerProfile(profileData) {
+    try {
+      if (!this.user) throw new Error('لا يوجد مستخدم مسجل');
+      
+      const response = await apiService.post('/api/accounts/worker/profile/', profileData);
+      
+      // تحديث بيانات المستخدم المحلية
+      if (this.user) {
+        this.user.profile_completed = true;
+        this.saveUserToStorage(this.user);
+      }
+      
+      return {
+        success: true,
+        data: response
+      };
+    } catch (error) {
+      console.error('خطأ في إكمال الملف الشخصي:', error);
+      return {
+        success: false,
+        message: error.response?.data?.detail || error.message || 'فشل في إكمال الملف الشخصي'
+      };
+    }
+  }
+
+  // التحقق من اكتمال الملف الشخصي
+  async checkProfileCompletion() {
+    try {
+      const user = this.getCurrentUser();
+      if (!user) return false;
+      
+      if (user.role === 'worker') {
+        // محاولة جلب بيانات الملف الشخصي من الخادم
+        try {
+          const response = await apiService.get(`/api/accounts/user/${user.id}/profile/`);
+          return response.profile_completed || false;
+        } catch {
+          console.log('Using local profile completion status');
+          return user.profile_completed || false;
+        }
+      }
+      return true; // العملاء لا يحتاجون ملف شخصي
+    } catch (error) {
+      console.error('Error checking profile completion:', error);
+      return this.user?.profile_completed || false;
+    }
+  }
 }
 
 // تصدير instance واحدة لاستخدامها في التطبيق
-export const authService = new AuthService();
+const authService = new AuthService();
+
+// Make test functions available globally for debugging
+window.testLogin = () => authService.testLogin();
+window.clearAuth = () => authService.clearAuth();
+
+export { authService };
 export default authService;

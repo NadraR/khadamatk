@@ -75,6 +75,8 @@
   "clients": "العملاء",
   "settings": "الإعدادات",
   "logout": "تسجيل الخروج",
+  "logoutSuccess": "تم تسجيل الخروج بنجاح",
+  "logoutError": "حدث خطأ أثناء تسجيل الخروج",
   "chatbot": "المساعد الذكي"
 },
 "chatbot": {
@@ -188,5 +190,70 @@
   "searchSubtitle": "اختر من بين آلاف الخدمات المتاحة",
   "searchPlaceholder": "ابحث عن الخدمة...",
   "servicesTitle": "خدماتنا المتاحة",
-  "servicesSubtitle": "اكتشف مجموعة واسعة من الخدمات المهنية"
+  "servicesSubtitle": "اكتشف مجموعة واسعة من الخدمات المهنية",
+  "joinBannerText": "انضم إلى شبكة مزودي الخدمات لدينا",
+  "joinNowButton": "انضم الآن",
+  "buttons": {
+    "lightMode": "الوضع المضيء",
+    "darkMode": "وضع الظلام"
+  },
+  "about": {
+  "bios": {
+    "mohamed": "مطور ويب كامل متخصص في Python وDjango مع خبرة في تطوير تطبيقات ويب قابلة للتطوير.",
+    "sara": "مطورة ويب كاملة شغوفة بإنشاء واجهات مستخدم تفاعلية باستخدام React وتقنيات الويب الحديثة.",
+    "reem": "مطورة ويب كاملة متخصصة في حلول قواعد البيانات وتصميم واجهات برمجة التطبيقات باستخدام Django REST Framework.",
+    "rowan": "مطورة ويب كاملة تركز على تجربة المستخدم وتصميم واجهات مستخدم جذابة وسهلة الاستخدام.",
+    "nadra": "مطورة ويب كاملة متخصصة في تطوير تطبيقات الويب سريعة الاستجابة وتجربة المستخدم المحسنة.",
+    "samer": "مطور ويب كامل متخصص في هندسة الواجهة الخلفية وقواعد البيانات باستخدام Python وPostgreSQL."
+  },
+  "team": {
+    "title": "فريقنا المتميز",
+    "subtitle": "تعرف على الموهوبين الذين يجعلون منصة خدماتك ممكنة",
+    "ourTeam": "فريقنا",
+    "graduates": "خريجو ITI 2025",
+    "teamPhoto": "صورة فريق الخريجين"
+  },
+  "values": {
+    "title": "قيمنا الأساسية",
+    "subtitle": "المبادئ التي توجه عملنا وعلاقاتنا"
+  },
+  "tech": {
+    "python": "قوة وقابلية التوسع مع Python وDjango لتطبيقات ويب قوية.",
+    "react": "واجهات مستخدم تفاعلية وديناميكية مع مكتبة React.",
+    "postgresql": "نظام إدارة قواعد البيانات العلائقية المتقدم والموثوق.",
+    "javascript": "لغة برمجة متعددة الاستخدامات لتطوير الويب من جانب العميل والخادم.",
+    "html": "هيكل وتنظيم محتوى الويب باستخدام HTML5.",
+    "css": "تصميم وتنسيق جذاب لمواقع الويب باستخدام CSS3."
+  }
+},
+"Welcome to": "مرحباً بك في",
+"We are a team of web developers dedicated to providing the best digital services for our clients.": "نحن فريق من مطوري الويب مخصصون لتقديم أفضل الخدمات الرقمية لعملائنا.",
+"Developers": "مطورين",
+"graduates": "خريجين",
+"batch": "دفعة",
+"Our Story": "قصتنا",
+"We started our journey in 2025 as a team of ITI graduates, aiming to provide top-notch digital solutions.": "بدأنا رحلتنا في عام 2025 كفريق من خريجي معهد تكنولوجيا المعلومات، بهدف تقديم حلول رقمية من الطراز الأول.",
+"All of us are Full-Stack developers focused on quality, innovation, and client satisfaction.": "جميعنا مطورون كاملون للويب نركز على الجودة والابتكار ورضا العملاء.",
+"When we started, we noticed a big challenge: clients had difficulty finding reliable service providers who offered fair prices, were nearby, and had trustworthy ratings. Our goal with this website is to bridge that gap—connecting clients with the best providers based on location, reviews, and quality, making the process simple, transparent, and efficient.": "عندما بدأنا، لاحظنا تحدياً كبيراً: واجه العملاء صعوبة في العثور على مزودي خدمات موثوقين يقدمون أسعاراً عادلة، وكانوا قريبين، وكانت لديهم تقييمات موثوقة. هدفنا من خلال هذا الموقع هو سد تلك الفجوة - ربط العملاء بأفضل المزودين بناءً على الموقع والتقييمات والجودة، مما يجعل العملية بسيطة وشفافة وفعالة.",
+"Founded": "تأسست",
+"Information Technology Institute": "معهد تكنولوجيا المعلومات",
+"Team Members": "أعضاء الفريق",
+"Our Achievements in Numbers": "إنجازاتنا في أرقام",
+"Real impact, real growth — thanks to our clients and partners.": "تأثير حقيقي، نمو حقيقي — بفضل عملائنا وشركائنا.",
+"Satisfied Clients": "عملاء راضون",
+"Service Providers": "مزودو الخدمات",
+"Available Services": "خدمات متاحة",
+"Positive Ratings": "تقييمات إيجابية",
+"Our Technologies": "تقنياتنا",
+"We leverage modern technologies to build high-quality, scalable, and user-friendly applications. Our stack includes Python and Django for powerful backend solutions, React for interactive frontends, and PostgreSQL for reliable data management. By combining these tools with best practices, we ensure our platform is fast, secure, and adaptable to your needs.": "نستفيد من التقنيات الحديثة لبناء تطبيقات عالية الجودة وقابلة للتطوير وسهلة الاستخدام. تشمل مجموعة أدواتنا Python وDjango لحلول الواجهة الخلفية القوية، وReact للواجهات الأمامية التفاعلية، وPostgreSQL لإدارة البيانات الموثوقة. من خلال الجمع بين هذه الأدوات وأفضل الممارسات، نضمن أن منصتنا سريعة وآمنة وقابلة للتكيف مع احتياجاتك.",
+"Customer Satisfaction": "رضا العملاء",
+"We aim to achieve the highest level of client satisfaction through exceptional services.": "نهدف إلى تحقيق أعلى مستوى من رضا العملاء من خلال خدمات استثنائية.",
+"Innovation": "الابتكار",
+"We develop creative solutions to make our clients’ daily lives easier.": "نطور حلولاً إبداعية لتسهيل الحياة اليومية لعملائنا.",
+"Quality": "الجودة",
+"We commit to the highest quality standards in everything we deliver.": "نلتزم بأعلى معايير الجودة في كل ما نقدمه.",
+"Join Our Community!": "انضم إلى مجتمعنا!",
+"Sign Up Now! and be part of our family": "اشترك الآن! وكن جزءًا من عائلتنا",
+"join As Provider": "انضم كمزود خدمة",
+"explore Services": "استكشف الخدمات"
 }

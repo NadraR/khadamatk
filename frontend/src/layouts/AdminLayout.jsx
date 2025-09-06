@@ -84,7 +84,7 @@ const AdminLayout = () => {
             edge="start"
             sx={{ mr: 2, background: '#fff2', borderRadius: 2, '&:hover': { background: '#fff4' } }}
           >
-            <MenuIcon sx={{ fontSize: 28 }} />
+            {/* <MenuIcon sx={{ fontSize: 24 }} /> */}
           </IconButton>
           <Typography
             variant="h6"
@@ -128,7 +128,7 @@ const AdminLayout = () => {
               onClose={handleProfileMenuClose}
             >
               <MenuItem onClick={handleLogout}>
-                <LogoutIcon sx={{ mr: 1 }} />
+                <LogoutIcon sx={{ mr: 1 , fontWeight: 700, color: 'error.main', textAlign: 'right', fontSize: 17 }}/>
                 تسجيل الخروج
               </MenuItem>
             </Menu>

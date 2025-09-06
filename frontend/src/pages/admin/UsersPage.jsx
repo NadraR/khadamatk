@@ -177,8 +177,8 @@ const UsersPage = () => {
   return (
     <Box sx={{ p: { xs: 1, md: 3 }, pr: { xs: 1, md: 0 } }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
-        <Typography variant="h4" sx={{ fontWeight: 700, color: '#1976d2' }}>إدارة المستخدمين</Typography>
-        <Button
+        <Typography variant="h4" sx={{ fontWeight: 700, color: '#1976d2'}}>إدارة المستخدمين</Typography>
+        {/* <Button
           variant="contained"
           startIcon={<PersonAddIcon />}
           onClick={() => setDialogOpen(true)}
@@ -198,7 +198,7 @@ const UsersPage = () => {
           }}
         >
           إضافة مستخدم جديد
-        </Button>
+        </Button> */}
       </Box>
 
       {/* Advanced Search Bar */}
@@ -287,7 +287,7 @@ const UsersPage = () => {
           }}
         >
           <option value="">الكل</option>
-          <option value="worker">عامل</option>
+          <option value="worker">مقدم خدمة</option>
           <option value="client">عميل</option>
         </TextField>
       </Paper>
@@ -334,9 +334,9 @@ const UsersPage = () => {
                 </Box>
               </Box>
               <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1 }}>
-                <Chip label={user.role === 'worker' ? 'عامل' : 'عميل'} color={user.role === 'worker' ? 'primary' : 'secondary'} size="medium" sx={{ fontWeight: 700, fontSize: 15 }} />
+                <Chip label={user.role === 'worker' ? 'مقدم خدمة' : 'عميل'} color={user.role === 'worker' ? 'primary' : 'secondary'} size="medium" sx={{ fontWeight: 700, fontSize: 15 }} />
                 <Chip label={user.is_active ? 'نشط' : 'معطل'} color={user.is_active ? 'success' : 'error'} size="medium" sx={{ fontWeight: 700, fontSize: 15 }} />
-                <Chip label={user.is_staff ? 'موظف' : 'عادي'} color={user.is_staff ? 'warning' : 'default'} size="medium" sx={{ fontWeight: 700, fontSize: 15 }} />
+                <Chip label={user.is_staff ? 'ادمن' : 'مستخدم'} color={user.is_staff ? 'warning' : 'default'} size="medium" sx={{ fontWeight: 700, fontSize: 15 }} />
               </Box>
               <Box sx={{ display: 'flex', gap: 1.5, mt: 'auto', justifyContent: 'flex-end' }}>
                 <Button

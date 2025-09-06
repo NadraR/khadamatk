@@ -1,0 +1,285 @@
+
+:root {
+    /* نظام الألوان المحسن */
+    --primary-color: #2c3e50;        /* أزرق-رمادي داكن */
+    --primary-light: #34495e;
+    --primary-dark: #1a252f;
+    --success-color: #27ae60;        /* أخضر احترافي */
+    --warning-color: #e67e22;        /* برتقالي احترافي */
+    --error-color: #c0392b;          /* أحمر احترافي */
+    --info-color: #2980b9;           /* أزرق احترافي */
+    --secondary-color: #8e44ad;      /* بنفسجي احترافي */
+    --accent-color: #f39c12;         /* ذهبي احترافي */
+    --background-light: #f8f9fa;
+    --text-primary: #2c3e50;
+    --text-secondary: #7f8c8d;
+    --border-color: #ecf0f1;
+    
+    /* نظام الظلال المحسن */
+    --shadow-light: 0 2px 4px rgba(44, 62, 80, 0.1);
+    --shadow-medium: 0 4px 8px rgba(44, 62, 80, 0.12);
+    --shadow-heavy: 0 8px 16px rgba(44, 62, 80, 0.15);
+    
+    /* نظام التدرجات المحسن */
+    --gradient-primary: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+    --gradient-success: linear-gradient(135deg, var(--success-color) 0%, #2ecc71 100%);
+    --gradient-warning: linear-gradient(135deg, var(--warning-color) 0%, var(--accent-color) 100%);
+    --gradient-error: linear-gradient(135deg, var(--error-color) 0%, #e74c3c 100%);
+    --gradient-info: linear-gradient(135deg, var(--info-color) 0%, #3498db 100%);
+    --gradient-secondary: linear-gradient(135deg, var(--secondary-color) 0%, #9b59b6 100%);
+    
+    /* أنيميشن متغيرات */
+    --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* تحسينات الحركات والأنيميشن */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translate3d(0, 30px, 0);
+    }
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translate3d(30px, 0, 0);
+    }
+    to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(25, 118, 210, 0.2);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(25, 118, 210, 0.05);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(25, 118, 210, 0);
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200px 0;
+    }
+    100% {
+        background-position: calc(200px + 100%) 0;
+    }
+}
+
+@keyframes cardHoverShine {
+    0% {
+        left: -100%;
+    }
+    100% {
+        left: 100%;
+    }
+}
+
+/* تأثيرات البطاقات المحسنة */
+.dashboard-card {
+    transition: all var(--transition-normal);
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--shadow-light);
+    border-radius: 8px;
+    background: white;
+}
+
+.dashboard-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        transparent,
+        rgba(255, 255, 255, 0.3),
+        transparent
+    );
+    transition: var(--transition-slow);
+}
+
+.dashboard-card:hover::before {
+    animation: cardHoverShine 0.8s ease;
+}
+
+.dashboard-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-heavy);
+}
+
+/* هيكل الهيكل العظمي للتحميل */
+.skeleton-shimmer {
+    background: linear-gradient(
+        90deg,
+        #f0f0f0 25%,
+        #e0e0e0 50%,
+        #f0f0f0 75%
+    );
+    background-size: 200px 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+}
+
+/* تحسينات حاوية الرسم البياني */
+.chart-container {
+    position: relative;
+    background: white;
+    border-radius: 8px;
+    box-shadow: var(--shadow-light);
+    overflow: hidden;
+    transition: all var(--transition-normal);
+}
+
+.chart-container:hover {
+    box-shadow: var(--shadow-medium);
+}
+
+.chart-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--info-color), #42a5f5, var(--info-color));
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite linear;
+}
+
+/* تحسينات الطباعة */
+.dashboard-title {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 700;
+    margin-bottom: 1rem;
+}
+
+/* تحسينات الاستجابة */
+@media (max-width: 768px) {
+    .dashboard-card {
+        margin-bottom: 16px;
+    }
+    
+    .chart-container {
+        margin-bottom: 16px;
+    }
+    
+    .dashboard-title {
+        font-size: 1.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    :root {
+        font-size: 14px;
+    }
+    
+    .dashboard-title {
+        font-size: 1.25rem;
+    }
+}
+
+/* تحسينات RTL */
+[dir="rtl"] .dashboard-card {
+    text-align: right;
+}
+
+[dir="rtl"] .chart-container {
+    direction: rtl;
+}
+
+/* تحسينات إمكانية الوصول */
+.dashboard-card:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+.dashboard-card:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* أنماط الطباعة */
+@media print {
+    .dashboard-card {
+        break-inside: avoid;
+        box-shadow: none;
+        border: 1px solid #ccc;
+    }
+    
+    .chart-container {
+        break-inside: avoid;
+    }
+    
+    .dashboard-card::before,
+    .chart-container::before {
+        display: none;
+    }
+}
+
+/* تأثيرات إضافية للبطاقات حسب النوع */
+.dashboard-card.primary {
+    border-top: 4px solid var(--primary-color);
+}
+
+.dashboard-card.success {
+    border-top: 4px solid var(--success-color);
+}
+
+.dashboard-card.warning {
+    border-top: 4px solid var(--warning-color);
+}
+
+.dashboard-card.error {
+    border-top: 4px solid var(--error-color);
+}
+
+.dashboard-card.info {
+    border-top: 4px solid var(--info-color);
+}
+
+.dashboard-card.secondary {
+    border-top: 4px solid var(--secondary-color);
+}
+
+/* تأثيرات تحميل متقدمة */
+.loading-pulse {
+    animation: pulse 2s infinite;
+}
+
+/* تحسينات الأداء */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* تأثيرات الظل للنصوص لتحسين إمكانية القراءة */
+.text-shadow {
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.text-shadow-heavy {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}

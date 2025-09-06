@@ -1,0 +1,462 @@
+/* LocationPicker.css */
+.location-picker {
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.location-picker-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+  border: 2px dashed #e53e3e;
+  border-radius: 16px;
+  color: #e53e3e;
+  margin: 20px 0;
+}
+
+.error-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  color: #dc3545;
+}
+
+.location-picker-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+  border-radius: 16px;
+  margin: 20px 0;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+.spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #007bff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Search Container */
+.search-container {
+  position: relative;
+  margin: 20px;
+  margin-bottom: 16px;
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  color: #6b7280;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.location-search-input {
+  width: 100%;
+  padding: 16px 50px 16px 20px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 16px;
+  transition: all 0.3s ease;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.location-search-input:focus {
+  outline: none;
+  border-color: #3182ce;
+  box-shadow: 0 0 0 3px rgba(49, 130, 206, 0.1), 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+}
+
+.search-spinner {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+/* Search Results */
+.search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 4px;
+}
+
+.search-result-item {
+  padding: 14px 18px;
+  cursor: pointer;
+  border-bottom: 1px solid #f1f3f4;
+  transition: all 0.2s ease;
+}
+
+.search-result-item:hover {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  transform: translateX(4px);
+}
+
+.search-result-item:last-child {
+  border-bottom: none;
+}
+
+.result-name {
+  font-size: 14px;
+  color: #333;
+  line-height: 1.4;
+}
+
+/* Current Location Button */
+.current-location-button-container {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.current-location-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.current-location-button:hover:not(:disabled) {
+  background: #218838;
+}
+
+.current-location-button:disabled {
+  background: #6c757d;
+  cursor: not-allowed;
+}
+
+.current-location-button i {
+  font-size: 16px;
+}
+
+/* Map Container */
+.map-container {
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 16px;
+}
+
+/* Coordinates Display */
+.coordinates-display {
+  background: #f8f9fa;
+  border: 1px solid #e1e5e9;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+.coordinate-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.coordinate-item:last-child {
+  margin-bottom: 0;
+}
+
+.coordinate-label {
+  font-weight: 600;
+  color: #495057;
+}
+
+.coordinate-value {
+  color: #6c757d;
+  font-family: 'Courier New', monospace;
+  background: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #e1e5e9;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .location-picker {
+    padding: 0 10px;
+  }
+  
+  .location-search-input {
+    font-size: 16px; /* Prevent zoom on iOS */
+  }
+  
+  .current-location-button {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .coordinate-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+  
+  .coordinate-value {
+    width: 100%;
+    text-align: left;
+  }
+}
+
+/* Location Info Enhancements */
+.location-info {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  border: 1px solid #cbd5e0;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 16px 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.location-info-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.location-type {
+  font-weight: 600;
+  color: #2d3748;
+}
+
+.location-details .address {
+  margin: 0;
+  color: #4a5568;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.location-details .accuracy {
+  color: #718096;
+  font-size: 12px;
+}
+
+/* Instructions */
+.location-instructions {
+  margin: 16px 20px 0;
+  padding: 12px 16px;
+  background: #ebf8ff;
+  border: 1px solid #bee3f8;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.location-instructions p {
+  margin: 0;
+  color: #2b6cb0;
+  font-size: 14px;
+}
+
+/* Info Window */
+.info-window-content {
+  padding: 8px;
+  min-width: 200px;
+}
+
+.info-window-content h4 {
+  margin: 0 0 8px 0;
+  color: #2d3748;
+  font-size: 16px;
+}
+
+.info-window-content p {
+  margin: 4px 0;
+  color: #4a5568;
+  font-size: 14px;
+}
+
+.coordinates {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.coordinates small {
+  color: #718096;
+  font-family: 'Courier New', monospace;
+}
+
+/* Enhanced Error States */
+.location-picker-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+  border: 2px dashed #e53e3e;
+  border-radius: 16px;
+  color: #e53e3e;
+  margin: 20px;
+}
+
+.location-picker-error h3 {
+  margin: 8px 0;
+  font-size: 18px;
+}
+
+.location-picker-error p {
+  margin: 8px 0 16px 0;
+  color: #c53030;
+}
+
+/* Enhanced Loading State */
+.location-picker-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  text-align: center;
+  background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+  border-radius: 16px;
+  margin: 20px;
+}
+
+.location-picker-loading p {
+  margin: 8px 0 4px 0;
+  color: #4a5568;
+  font-size: 16px;
+}
+
+.location-picker-loading small {
+  color: #718096;
+  font-size: 14px;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .location-picker-error {
+    background: linear-gradient(135deg, #2d1b1b 0%, #3c1f1f 100%);
+    color: #f56565;
+    border-color: #e53e3e;
+  }
+  
+  .location-picker-loading {
+    background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+    color: #e2e8f0;
+  }
+  
+  .location-search-input {
+    background: #4a5568;
+    border-color: #718096;
+    color: #e2e8f0;
+  }
+  
+  .location-search-input:focus {
+    border-color: #63b3ed;
+  }
+  
+  .search-results {
+    background: #4a5568;
+    border-color: #718096;
+  }
+  
+  .search-result-item {
+    border-color: #718096;
+    color: #e2e8f0;
+  }
+  
+  .search-result-item:hover {
+    background-color: #2d3748;
+  }
+  
+  .location-info {
+    background: linear-gradient(135deg, #2d3748 0%, #4a5568 100%);
+    border-color: #718096;
+  }
+  
+  .location-type {
+    color: #e2e8f0;
+  }
+  
+  .location-details .address {
+    color: #cbd5e0;
+  }
+  
+  .location-instructions {
+    background: #2a4365;
+    border-color: #3182ce;
+  }
+  
+  .location-instructions p {
+    color: #90cdf4;
+  }
+  
+  .coordinates-display {
+    background: #2d3748;
+    border-color: #718096;
+  }
+  
+  .coordinate-label {
+    color: #e2e8f0;
+  }
+  
+  .coordinate-value {
+    background: #4a5568;
+    border-color: #718096;
+    color: #e2e8f0;
+  }
+}

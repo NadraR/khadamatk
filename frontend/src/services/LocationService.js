@@ -2,22 +2,31 @@ import apiService from './ApiService';
 
 class LocationService {
   constructor() {
-    this.baseEndpoint = '/location/locations/';
+    this.baseEndpoint = '/api/location/locations/';
   }
 
   async saveLocation(locationData) {
     try {
-      const response = await apiService.post(`${this.baseEndpoint}save-location/`, locationData);
+      // Use the specialized save-location endpoint
+      const payload = {
+        lat: locationData.lat,
+        lng: locationData.lng,
+        address: locationData.address || '',
+        city: locationData.city || '',
+        country: locationData.country || 'مصر'
+      };
+      
+      const response = await apiService.post(`${this.baseEndpoint}save-location/`, payload);
       return {
         success: true,
-        data: response,
-        message: 'تم حفظ الموقع بنجاح'
+        data: response.data,
+        message: response.message || 'تم حفظ الموقع بنجاح'
       };
     } catch (error) {
       return {
         success: false,
-        error: error.message || 'فشل في حفظ الموقع',
-        status: error.status
+        error: error.response?.data?.error || error.message || 'فشل في حفظ الموقع',
+        status: error.response?.status || error.status
       };
     }
   }
@@ -41,6 +50,16 @@ class LocationService {
 
   async getLatestLocation() {
     try {
+      // التحقق من وجود token قبل إجراء الطلب
+      const token = localStorage.getItem('access');
+      if (!token) {
+        return {
+          success: false,
+          error: 'User not authenticated',
+          status: 401
+        };
+      }
+
       const response = await apiService.get(`${this.baseEndpoint}latest-location/`);
       return {
         success: true,
@@ -48,30 +67,53 @@ class LocationService {
         message: 'تم جلب آخر موقع بنجاح'
       };
     } catch (error) {
+      // إرجاع خطأ صامت بدلاً من إظهار رسالة خطأ
       return {
         success: false,
-        error: error.message || 'فشل في جلب الموقع',
+        error: null, // لا نعرض رسالة خطأ
         status: error.status
       };
     }
   }
 
-  async searchNearbyLocations(lat, lng, radius = 10, maxResults = 20) {
+  async searchNearbyLocations(lat, lng, radius = 10, serviceType = null) {
     try {
-      const response = await apiService.get(
-        `${this.baseEndpoint}nearby/?lat=${lat}&lng=${lng}&radius=${radius}&max_results=${maxResults}`
-      );
+      // Use the service nearby API for better filtering
+      let url = `/api/services/nearby/?lat=${lat}&lng=${lng}&radius_km=${radius}`;
+      
+      if (serviceType) {
+        url += `&service_type=${serviceType}`;
+      }
+      
+      console.log('Calling API:', url);
+      const response = await apiService.get(url);
       return {
         success: true,
         data: response,
         message: 'تم البحث بنجاح'
       };
     } catch (error) {
-      return {
-        success: false,
-        error: error.message || 'فشل في البحث عن مواقع قريبة',
-        status: error.status
-      };
+      console.error('Service API Error:', error);
+      
+      // Fallback to location API if service API fails
+      try {
+        console.log('Falling back to location API...');
+        const fallbackUrl = `${this.baseEndpoint}nearby/?lat=${lat}&lng=${lng}&radius=${radius}&max_results=20`;
+        const fallbackResponse = await apiService.get(fallbackUrl);
+        
+        return {
+          success: true,
+          data: fallbackResponse,
+          message: 'تم البحث بنجاح (استخدام API بديل)'
+        };
+      } catch (fallbackError) {
+        console.error('Fallback API Error:', fallbackError);
+        return {
+          success: false,
+          error: error.message || 'فشل في البحث عن خدمات قريبة',
+          status: error.status
+        };
+      }
     }
   }
 

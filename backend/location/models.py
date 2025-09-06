@@ -55,7 +55,9 @@ class UserLocation(models.Model):
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='locations',
-        verbose_name=_("المستخدم")
+        verbose_name=_("المستخدم"),
+        null=True,
+        blank=True
     )
     
     name = models.CharField(
@@ -87,6 +89,50 @@ class UserLocation(models.Model):
         blank=True,
         null=True,
         verbose_name=_("العنوان المفصل")
+    )
+    
+    # تفاصيل إضافية للموقع
+    building_number = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        verbose_name=_("رقم العمارة")
+    )
+    
+    apartment_number = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        verbose_name=_("رقم الشقة")
+    )
+    
+    floor_number = models.CharField(
+        max_length=10,
+        blank=True,
+        null=True,
+        verbose_name=_("رقم الطابق")
+    )
+    
+    neighborhood = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name=_("الحي")
+    )
+    
+    landmark = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True,
+        verbose_name=_("معلم مميز"),
+        help_text=_("مثل: بجوار مدرسة، أمام مسجد، قرب محطة")
+    )
+    
+    additional_details = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name=_("تفاصيل إضافية"),
+        help_text=_("أي تفاصيل إضافية تساعد في الوصول للموقع")
     )
     
     city = models.CharField(
@@ -130,11 +176,12 @@ class UserLocation(models.Model):
     
     def __str__(self):
         location_name = self.name or self.get_location_type_display()
-        return f"{self.user.username} - {location_name} - {self.city or 'غير محدد'}"
+        user_name = self.user.username if self.user else "مستخدم غير مسجل"
+        return f"{user_name} - {location_name} - {self.city or 'غير محدد'}"
     
     def save(self, *args, **kwargs):
         # إذا تم تعيين هذا الموقع كموقع رئيسي، إلغاء تعيين أي مواقع رئيسية أخرى للمستخدم
-        if self.is_primary:
+        if self.is_primary and self.user:
             UserLocation.objects.filter(user=self.user, is_primary=True).update(is_primary=False)
         super().save(*args, **kwargs)
     

@@ -1,23 +1,19 @@
 import React, { useEffect, useState } from "react";
-import api from "../api";
-import { ACCESS_TOKEN } from "../constants";
+import { ApiService } from "../services/ApiService";
 import "./Ratings.css";
 
 const Ratings = ({ serviceId = 1 }) => {
   const [ratings, setRatings] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const token = localStorage.getItem(ACCESS_TOKEN);
+  const apiService = new ApiService();
   // لو الـ endpoint الأساسي بتاع الـ ratings هو /ratings/ جرب كده:
-  const baseURL = `${import.meta.env.VITE_API_URL}/ratings/`;
+  const baseURL = `/ratings/`;
 
   const fetchRatings = async () => {
     setLoading(true);
     try {
-      const response = await api.get(baseURL, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const response = await apiService.get(baseURL, {
         params: { service: serviceId }, // ✨ كده بنبعت serviceId كـ query parameter
       });
 

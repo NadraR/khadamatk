@@ -39,8 +39,8 @@ const AdminSidebar = ({ open, onClose }) => {
     { text: 'المستخدمين', icon: <PeopleIcon />, path: '/admin/users', color: '#388e3c', show: true },
     { text: 'الخدمات', icon: <BusinessIcon />, path: '/admin/services', color: '#0288d1', show: true },
     { text: 'الطلبات', icon: <AssignmentIcon />, path: '/admin/orders', color: '#fbc02d', show: true },
-    { text: 'التقييمات النصية', icon: <StarIcon />, path: '/admin/reviews', color: '#8e24aa', show: true },
-    { text: 'التقييمات الرقمية', icon: <StarIcon />, path: '/admin/ratings', color: '#ffb300', show: true },
+    // { text: 'التقييمات النصية', icon: <StarIcon />, path: '/admin/reviews', color: '#8e24aa', show: true },
+    // { text: 'التقييمات الرقمية', icon: <StarIcon />, path: '/admin/ratings', color: '#ffb300', show: true },
     { text: 'الفواتير', icon: <ReceiptIcon />, path: '/admin/invoices', color: '#e53935', show: true },
     { text: 'الإشعارات', icon: <NotificationsIcon />, path: '/admin/notifications', color: '#1976d2', show: true },
     { text: 'الإعدادات', icon: <SettingsIcon />, path: '/admin/settings', color: '#455a64', show: true },
@@ -72,7 +72,7 @@ const AdminSidebar = ({ open, onClose }) => {
         <Typography variant="h5" color="primary" sx={{ fontWeight: 'bold', letterSpacing: 1 }}>
           خدماتك
         </Typography>
-        <Typography variant="body2" color="textSecondary" sx={{ fontSize: 15, mt: 0.5 }}>
+        <Typography variant="body2" color="textSecondary" sx={{ fontSize: 16, mt: 0.5 }} bgcolor={'#f5f5f5'} p={0.5} borderRadius={1}>
           لوحة التحكم الإدارية
         </Typography>
       </Box>
@@ -116,7 +116,7 @@ const AdminSidebar = ({ open, onClose }) => {
 
       <Divider sx={{ my: 1 }} />
       {/* Logout */}
-  <Box sx={{ p: 2, mt: 'auto', mb: 2 }}>
+  <Box sx={{ p: 2, mt: -5, mb: 2 }}>
         <ListItemButton onClick={handleLogout} sx={{
           borderRadius: 3,
           background: 'linear-gradient(90deg, #fff 60%, #f8d7da 100%)',

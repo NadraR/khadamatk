@@ -18,14 +18,20 @@ def handle_booking_status_change(sender, instance, created, **kwargs):
         
         if not invoice_exists:
             try:
-                service_price = instance.service.base_price
-                amount = service_price * 1.15  
+                # استخدام السعر المعروض من العميل أو السعر الأساسي للخدمة
+                amount = instance.offered_price or instance.service.base_price
+                
+                # تحديد تاريخ الاستحقاق (7 أيام من تاريخ الاكتمال)
+                due_date = timezone.now() + timezone.timedelta(days=7)
+                
                 Invoice.objects.create(
                     booking=instance,
                     amount=amount,
-                    status=Invoice.STATUS_UNPAID
+                    status=Invoice.STATUS_UNPAID,
+                    due_date=due_date,
+                    notes=f"فاتورة للخدمة: {instance.service.title}"
                 )
-                logger.info(f"تم إنشاء فاتورة جديدة للحجز #{instance.id}")
+                logger.info(f"تم إنشاء فاتورة جديدة للحجز #{instance.id} بمبلغ {amount}")
                 
             except AttributeError as e:
                 logger.error(f"خطأ في إنشاء الفاتورة: {e}")
