@@ -398,7 +398,7 @@ const NotificationDropdown = ({ isLoggedIn }) => {
       )}
       
       {/* Custom CSS Animations */}
-      <style jsx>{`
+      <style>{`
         @keyframes slideDown {
           from {
             opacity: 0;

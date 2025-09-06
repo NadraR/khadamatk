@@ -37,4 +37,6 @@ urlpatterns = [
 
     # Notifications
     path('api/notifications/', include('notifications.urls')),
+    path('api/favorites/', include('favorites.urls')),
+
 ]

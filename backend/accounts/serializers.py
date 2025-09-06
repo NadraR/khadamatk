@@ -130,15 +130,12 @@ class ClientProfileSerializer(serializers.ModelSerializer):
         model = ClientProfile
         fields = [
             "id", "user", "preferred_contact_method",
-            "address", "notes", "location",
+            "address", "notes",
             "created_at", "updated_at",
             # User fields
             "username", "first_name", "last_name", 
             "email", "phone", "bio", "joined_date"
         ]
-        widgets = {
-            'location': forms.TextInput(attrs={'placeholder': 'lat, lng'})
-        }
         read_only_fields = ["user", "created_at", "updated_at", "username", "first_name", "last_name", "email", "phone", "bio", "joined_date"]
 
 

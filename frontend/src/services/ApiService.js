@@ -135,6 +135,14 @@ class ApiService {
 
   // معالجة أخطاء الطلبات
   handleRequestError(error, method, endpoint) {
+    // Don't log 404 errors for endpoints that are not implemented yet
+    if (error.response?.status === 404 && 
+        (endpoint.includes('/favorites/') || 
+         endpoint.includes('/reviews/my-reviews/') || 
+         endpoint.includes('/ratings/my-ratings/'))) {
+      return; // Silent handling for unimplemented endpoints
+    }
+    
     console.error(`[API Error] ${method} ${endpoint}:`, error);
     
     if (error.code === 'ECONNABORTED') {
