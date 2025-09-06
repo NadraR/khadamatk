@@ -8,4 +8,5 @@ urlpatterns = [
     path('stats/', views.notification_stats, name='notification-stats'),
     path('<int:pk>/mark-read/', views.mark_read, name='mark-read'),
     path('mark-all-read/', views.mark_all_read, name='mark-all-read'),
+    path('<int:notification_id>/action/', views.notification_action, name='notification-action'),
 ]

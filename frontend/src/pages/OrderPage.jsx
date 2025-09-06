@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import apiService from "../services/ApiService";
 import Navbar from "../components/Navbar";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -12,36 +13,73 @@ const OrderPage = () => {
   const navigate = useNavigate();
 
   // Get service data from localStorage or location.state
-  const getServiceData = () => {
+  // Check if we're in edit mode
+  const editMode = location.state?.editMode || false;
+  const orderData = location.state?.orderData || null;
+  
+  const service = useMemo(() => {
+    // If in edit mode, use service data from orderData
+    if (editMode && orderData) {
+      return location.state?.service || {
+        id: orderData.service_id,
+        title: orderData.service_name,
+        base_price: orderData.offered_price
+      };
+    }
+    
     const storedService = localStorage.getItem('selectedService');
+    let data = null;
+    
     if (storedService) {
       try {
-        return JSON.parse(storedService);
+        data = JSON.parse(storedService);
       } catch (error) {
         console.error('Error parsing stored service:', error);
-        return null;
+        data = null;
       }
     }
-    return location.state?.service || null;
-  };
+    
+    if (!data) {
+      data = location.state?.service || null;
+    }
+    
+    console.log('[DEBUG] OrderPage: Service data:', data);
+    console.log('[DEBUG] OrderPage: Edit mode:', editMode);
+    return data;
+  }, [location.state, editMode, orderData]);
 
-  const service = getServiceData();
-  console.log('[DEBUG] OrderPage: Service data:', service);
-
-  const [formData, setFormData] = useState({
-    description: "",
-    offered_price: "",
-    location_lat: null,
-    location_lng: null,
-    scheduled_time: "",
+  const [formData, setFormData] = useState(() => {
+    // If in edit mode, populate form with existing order data
+    if (editMode && orderData) {
+      return {
+        description: orderData.description || "",
+        offered_price: orderData.offered_price || "",
+        location_lat: orderData.location_lat || null,
+        location_lng: orderData.location_lng || null,
+        scheduled_time: orderData.scheduled_time ? 
+          new Date(orderData.scheduled_time).toISOString().slice(0, 16) : "",
+        delivery_time: orderData.delivery_time ? 
+          new Date(orderData.delivery_time).toISOString().slice(0, 16) : "",
+      };
+    }
+    
+    // Default empty form for new orders
+    return {
+      description: "",
+      offered_price: "",
+      location_lat: null,
+      location_lng: null,
+      scheduled_time: "",
+      delivery_time: "",
+    };
   });
 
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-  const [successMessage, setSuccessMessage] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
-  const [redirectCountdown, setRedirectCountdown] = useState(0);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   // Check authentication status
   useEffect(() => {
@@ -125,12 +163,13 @@ const OrderPage = () => {
       }));
     }
     
-    // Set default scheduled time to tomorrow
+    // Set default scheduled time to tomorrow at 9 AM
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(9, 0, 0, 0); // Set to 9:00 AM
     setFormData(prev => ({
       ...prev,
-      scheduled_time: tomorrow.toISOString().split('T')[0],
+      scheduled_time: tomorrow.toISOString().slice(0, 16),
     }));
   }, [service]);
 
@@ -155,12 +194,14 @@ const OrderPage = () => {
 
     /* Order Banner */
     .order-banner {
-      background: var(--gradient);
+      background: linear-gradient(135deg, #0077ff 0%, #4da6ff 50%, #80c7ff 100%);
       color: white;
-      padding: 3rem 0;
-      margin-bottom: 2rem;
+      padding: 1rem 0;
+      margin-bottom: 1.5rem;
       position: relative;
       overflow: hidden;
+      border-radius: 0 0 24px 24px;
+      box-shadow: 0 8px 32px rgba(0, 119, 255, 0.3);
     }
     .order-banner::before {
       content: '';
@@ -169,20 +210,38 @@ const OrderPage = () => {
       left: 0;
       right: 0;
       bottom: 0;
-      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="50" cy="10" r="0.5" fill="rgba(255,255,255,0.05)"/><circle cx="10" cy="60" r="0.5" fill="rgba(255,255,255,0.05)"/><circle cx="90" cy="40" r="0.5" fill="rgba(255,255,255,0.05)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-      opacity: 0.3;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><defs><pattern id="hexagons" width="50" height="43.4" patternUnits="userSpaceOnUse"><polygon points="25,0 50,14.43 50,28.87 25,43.3 0,28.87 0,14.43" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.08)"/></pattern></defs><rect width="100%25" height="100%25" fill="url(%23hexagons)"/><rect width="100%25" height="100%25" fill="url(%23dots)"/></svg>');
+      opacity: 0.4;
+    }
+    .order-banner::after {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -10%;
+      width: 40%;
+      height: 200%;
+      background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 70%);
+      transform: rotate(15deg);
+      pointer-events: none;
     }
     .banner-title {
-      font-size: 2.5rem;
-      font-weight: 700;
-      margin-bottom: 0.5rem;
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      font-size: 1.75rem;
+      font-weight: 800;
+      margin-bottom: 0.2rem;
+      text-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+      background: linear-gradient(135deg, #ffffff, #f0f8ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.1;
     }
     .banner-subtitle {
-      font-size: 1.2rem;
-      opacity: 0.9;
+      font-size: 0.9rem;
+      opacity: 0.95;
       margin: 0;
-      font-weight: 400;
+      font-weight: 500;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      letter-spacing: 0.3px;
     }
     .step-indicator {
       display: flex;
@@ -547,6 +606,14 @@ const OrderPage = () => {
     }
   };
 
+  const handleSuccessModalClose = () => {
+    setShowSuccessModal(false);
+    setSuccessMessage("");
+    // Redirect to HomeClient
+    console.log('[DEBUG] Redirecting to /home-client from success modal');
+    navigate("/home-client", { replace: true });
+  };
+
   const validateForm = () => {
     const newErrors = {};
     
@@ -570,14 +637,28 @@ const OrderPage = () => {
     
     // Scheduled time validation (required in backend)
     if (!formData.scheduled_time) {
-      newErrors.scheduled_time = "يرجى اختيار موعد للخدمة";
+      newErrors.scheduled_time = "يرجى تحديد تاريخ ووقت بدء العمل";
     } else {
-      const selectedDate = new Date(formData.scheduled_time);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const selectedDateTime = new Date(formData.scheduled_time);
+      const now = new Date();
       
-      if (selectedDate < today) {
-        newErrors.scheduled_time = "لا يمكن اختيار تاريخ في الماضي";
+      if (selectedDateTime <= now) {
+        newErrors.scheduled_time = "يجب أن يكون وقت بدء العمل في المستقبل";
+      }
+    }
+
+    // Delivery time validation (required)
+    if (!formData.delivery_time) {
+      newErrors.delivery_time = "يرجى تحديد تاريخ ووقت إنجاز العمل";
+    } else {
+      const deliveryDateTime = new Date(formData.delivery_time);
+      const scheduledDateTime = new Date(formData.scheduled_time);
+      const now = new Date();
+      
+      if (deliveryDateTime <= now) {
+        newErrors.delivery_time = "يجب أن يكون وقت إنجاز العمل في المستقبل";
+      } else if (formData.scheduled_time && deliveryDateTime <= scheduledDateTime) {
+        newErrors.delivery_time = "يجب أن يكون وقت إنجاز العمل بعد وقت بدء العمل";
       }
     }
     
@@ -595,7 +676,17 @@ const OrderPage = () => {
     
     // Double-check authentication before submission
     if (!isAuthenticated || !user || !user.id) {
-      setErrors({ submit: "يجب عليك تسجيل الدخول أولاً لإنشاء طلب" });
+      const errorMsg = "يجب عليك تسجيل الدخول أولاً لإنشاء طلب";
+      setErrors({ submit: errorMsg });
+      toast.error(errorMsg, {
+        position: "top-right",
+        autoClose: 4000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        rtl: true,
+      });
       setTimeout(() => {
         navigate('/auth');
       }, 2000);
@@ -604,38 +695,75 @@ const OrderPage = () => {
     
     // Verify user role (only clients can create orders)
     if (user.role !== 'client') {
-      setErrors({ submit: "يمكن للعملاء فقط إنشاء الطلبات" });
+      const errorMsg = "يمكن للعملاء فقط إنشاء الطلبات";
+      setErrors({ submit: errorMsg });
+      toast.error(errorMsg, {
+        position: "top-right",
+        autoClose: 4000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        rtl: true,
+      });
       return;
     }
     
     if (!validateForm()) {
+      // Show validation error toast
+      toast.error("يرجى تصحيح الأخطاء في النموذج", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        rtl: true,
+      });
       return;
     }
     
     setIsLoading(true);
-    setSuccessMessage("");
+    setErrors({}); // Clear any previous errors
     
     try {
-      const orderData = {
+      const requestData = {
         service: service.id,
         description: formData.description,
         offered_price: parseFloat(formData.offered_price),
         location_lat: formData.location_lat,
         location_lng: formData.location_lng,
         scheduled_time: new Date(formData.scheduled_time).toISOString(),
+        delivery_time: new Date(formData.delivery_time).toISOString(),
       };
       
-      const response = await apiService.post(`/api/orders/`, orderData);
+      let response;
+      if (editMode && orderData) {
+        // Update existing order
+        response = await apiService.put(`/api/orders/${orderData.id}/`, requestData);
+      } else {
+        // Create new order
+        response = await apiService.post(`/api/orders/`, requestData);
+      }
       
-      console.log('Order created successfully:', response);
+      console.log(editMode ? 'Order updated successfully:' : 'Order created successfully:', response);
       
       // Display success message with order details
-      const orderId = response.order?.id || response.id;
-      const successMsg = orderId 
-        ? `تم تأكيد الطلب بنجاح! رقم الطلب: #${orderId}. سيتم التواصل معك قريباً.`
-        : "تم تأكيد الطلب بنجاح! سيتم التواصل معك قريباً.";
+      const orderId = response.order?.id || response.id || orderData?.id;
+      let successMsg;
+      if (editMode) {
+        successMsg = orderId 
+          ? `تم تحديث الطلب بنجاح! رقم الطلب: #${orderId}.`
+          : "تم تحديث الطلب بنجاح!";
+      } else {
+        successMsg = orderId 
+          ? `تم تأكيد الطلب بنجاح! رقم الطلب: #${orderId}. سيتم التواصل معك قريباً.`
+          : "تم تأكيد الطلب بنجاح! سيتم التواصل معك قريباً.";
+      }
       
+      // Show success modal with OK button
       setSuccessMessage(successMsg);
+      setShowSuccessModal(true);
       
       // Clean up stored service data
       localStorage.removeItem('selectedService');
@@ -647,27 +775,14 @@ const OrderPage = () => {
         location_lat: null,
         location_lng: null,
         scheduled_time: "",
+        delivery_time: "",
       });
       
-      // Start countdown for redirect
-      setRedirectCountdown(3);
-      const countdownInterval = setInterval(() => {
-        setRedirectCountdown(prev => {
-          if (prev <= 1) {
-            clearInterval(countdownInterval);
-            // Try to navigate to orders page if it exists, otherwise go to home
-            navigate("/orders", { replace: true });
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      
     } catch (err) {
-      console.error("Error creating order:", err.response?.data || err);
+      console.error("Error creating/updating order:", err.response?.data || err);
       
       // Handle different types of errors
-      let errorMessage = "حصل خطأ أثناء تأكيد الطلب";
+      let errorMessage = editMode ? "حصل خطأ أثناء تحديث الطلب" : "حصل خطأ أثناء تأكيد الطلب";
       let fieldErrors = {};
       
       if (err.response?.data) {
@@ -702,13 +817,35 @@ const OrderPage = () => {
       // Handle authentication errors
       if (err.response?.status === 401) {
         errorMessage = "انتهت صلاحية جلسة العمل. يرجى تسجيل الدخول مرة أخرى";
+        // Show error toast
+        toast.error(errorMessage, {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          rtl: true,
+        });
         // Redirect to login
         setTimeout(() => {
           navigate('/auth');
         }, 2000);
+        return;
       }
       
-      // Set errors
+      // Show error toast notification
+      toast.error(errorMessage, {
+        position: "top-right",
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        rtl: true,
+      });
+      
+      // Set errors for form validation display
       if (Object.keys(fieldErrors).length > 0) {
         setErrors({ ...fieldErrors, submit: errorMessage });
       } else {
@@ -874,8 +1011,12 @@ const OrderPage = () => {
         <div className="container">
           <div className="row align-items-center">
             <div className="col-md-8">
-              <h1 className="banner-title">تأكيد حجز الخدمة</h1>
-              <p className="banner-subtitle">أكمل بياناتك لتأكيد طلب الخدمة</p>
+              <h1 className="banner-title">
+                {editMode ? 'تعديل الطلب' : 'تأكيد حجز الخدمة'}
+              </h1>
+              <p className="banner-subtitle">
+                {editMode ? 'قم بتعديل بيانات طلبك' : 'أكمل بياناتك لتأكيد طلب الخدمة'}
+              </p>
             </div>
             <div className="col-md-4">
               <div className="step-indicator">
@@ -969,20 +1110,7 @@ const OrderPage = () => {
           </div>
         </div>
 
-        {/* Success/Error Messages */}
-        {successMessage && (
-          <div className="alert alert-success">
-            <i className="fas fa-check-circle me-2"></i>
-            {successMessage}
-            {redirectCountdown > 0 && (
-              <div className="success-redirect-info">
-                <i className="fas fa-clock me-2"></i>
-                سيتم توجيهك إلى صفحة الطلبات خلال <span className="countdown">{redirectCountdown}</span> ثواني
-              </div>
-            )}
-          </div>
-        )}
-        
+        {/* Error Messages */}
         {errors.submit && (
           <div className="alert alert-danger">
             <i className="fas fa-exclamation-circle me-2"></i>
@@ -1070,19 +1198,43 @@ const OrderPage = () => {
                 
                 <div className="col-md-6">
                   <div className="form-group">
-                    <label className="form-label">موعد الخدمة *</label>
+                    <label className="form-label">تاريخ ووقت بدء العمل *</label>
                     <input
-                      type="date"
+                      type="datetime-local"
                       name="scheduled_time"
                       className={`form-control ${errors.scheduled_time ? 'is-invalid' : ''}`}
                       value={formData.scheduled_time}
                       onChange={handleChange}
-                      min={new Date().toISOString().split('T')[0]}
+                      min={new Date().toISOString().slice(0, 16)}
                       required
                     />
                     {errors.scheduled_time && (
                       <div className="invalid-feedback">{errors.scheduled_time}</div>
                     )}
+                    <small className="form-text text-muted">
+                      متى تريد أن يبدأ مزود الخدمة العمل؟
+                    </small>
+                  </div>
+                </div>
+                
+                <div className="col-md-6">
+                  <div className="form-group">
+                    <label className="form-label">تاريخ ووقت إنجاز العمل *</label>
+                    <input
+                      type="datetime-local"
+                      name="delivery_time"
+                      className={`form-control ${errors.delivery_time ? 'is-invalid' : ''}`}
+                      value={formData.delivery_time}
+                      onChange={handleChange}
+                      min={formData.scheduled_time ? new Date(formData.scheduled_time).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16)}
+                      required
+                    />
+                    {errors.delivery_time && (
+                      <div className="invalid-feedback">{errors.delivery_time}</div>
+                    )}
+                    <small className="form-text text-muted">
+                      متى تتوقع أن يكتمل العمل ويتم تسليمه؟
+                    </small>
                   </div>
                 </div>
               </div>
@@ -1121,7 +1273,7 @@ const OrderPage = () => {
                   ) : (
                     <>
                       <i className="fas fa-check me-2"></i>
-                      تأكيد الطلب
+                      {editMode ? 'حفظ التعديلات' : 'تأكيد الطلب'}
                     </>
                   )}
                 </button>
@@ -1130,6 +1282,88 @@ const OrderPage = () => {
           </form>
         </div>
       </div>
+
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999 }}>
+          <div className="modal-dialog modal-dialog-centered">
+            <div className="modal-content" style={{ borderRadius: '15px', border: 'none', boxShadow: '0 10px 40px rgba(0,0,0,0.2)' }}>
+              <div className="modal-header" style={{ 
+                background: 'linear-gradient(135deg, #28a745, #20c997)', 
+                color: 'white', 
+                borderRadius: '15px 15px 0 0',
+                border: 'none',
+                padding: '1.5rem'
+              }}>
+                <h5 className="modal-title d-flex align-items-center" style={{ fontSize: '1.3rem', fontWeight: '600' }}>
+                  <i className="fas fa-check-circle me-3" style={{ fontSize: '1.5rem' }}></i>
+                  {editMode ? 'تم تحديث الطلب بنجاح!' : 'تم تأكيد الطلب بنجاح!'}
+                </h5>
+              </div>
+              <div className="modal-body" style={{ padding: '2rem', textAlign: 'center' }}>
+                <div className="success-icon mb-4">
+                  <i className="fas fa-check-circle" style={{ 
+                    fontSize: '4rem', 
+                    color: '#28a745',
+                    textShadow: '0 2px 10px rgba(40,167,69,0.3)'
+                  }}></i>
+                </div>
+                <p style={{ 
+                  fontSize: '1.1rem', 
+                  color: '#495057', 
+                  lineHeight: '1.6',
+                  marginBottom: '1.5rem'
+                }}>
+                  {successMessage}
+                </p>
+                <div className="success-details" style={{
+                  background: '#f8f9fa',
+                  padding: '1rem',
+                  borderRadius: '10px',
+                  marginBottom: '1.5rem'
+                }}>
+                  <small className="text-muted">
+                    <i className="fas fa-info-circle me-2"></i>
+                    يمكنك متابعة حالة طلبك من صفحة "طلباتي" في لوحة التحكم
+                  </small>
+                </div>
+              </div>
+              <div className="modal-footer" style={{ 
+                border: 'none', 
+                padding: '1rem 2rem 2rem 2rem',
+                justifyContent: 'center'
+              }}>
+                <button 
+                  type="button" 
+                  className="btn btn-success btn-lg"
+                  onClick={handleSuccessModalClose}
+                  style={{
+                    borderRadius: '50px',
+                    padding: '0.8rem 3rem',
+                    fontSize: '1.1rem',
+                    fontWeight: '600',
+                    boxShadow: '0 4px 15px rgba(40,167,69,0.3)',
+                    border: 'none',
+                    background: 'linear-gradient(135deg, #28a745, #20c997)',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseOver={(e) => {
+                    e.target.style.transform = 'translateY(-2px)';
+                    e.target.style.boxShadow = '0 6px 20px rgba(40,167,69,0.4)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.target.style.transform = 'translateY(0)';
+                    e.target.style.boxShadow = '0 4px 15px rgba(40,167,69,0.3)';
+                  }}
+                >
+                  <i className="fas fa-home me-2"></i>
+                  انتقل إلى لوحة التحكم
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

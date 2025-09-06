@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, useNavigate } from 'react-router-dom';
+import { Routes, Route } from 'react-router-dom';
 import FontProvider from './components/FontProvider';
 
 // Auth & Layout
@@ -38,11 +38,11 @@ import ErrorBoundary from './components/ErrorBoundary';
 // import ChatBox from './components/ChatBox';
 import MessagesPage from "./pages/MessagesPage";
 import NotificationsPage from "./pages/NotificationsPage";
+import InvoiceDetails from "./pages/InvoiceDetails";
 import WorkerProfileCompletion from "./pages/WorkerProfileCompletion";
 import FontTest from "./components/FontTest";
 
 function App() {
-  const navigate = useNavigate();
   console.log('[DEBUG] App component rendering, current path:', window.location.pathname);
   
   // Prevent redirects to auth page only for authenticated users
@@ -86,11 +86,13 @@ function App() {
         {/* Auth */}
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/worker" element={<WorkerProfileCompletion />} />
+        <Route path="/worker-profile-completion" element={<WorkerProfileCompletion />} />
 
         {/* Home */}
         <Route path="/" element={<Layout><Home /></Layout>} />
         <Route path="/home" element={<Layout><Home /></Layout>} />
         <Route path="/homeClient" element={<Layout><HomeClient /></Layout>} />
+        <Route path="/home-client" element={<Layout><HomeClient /></Layout>} />
         <Route path="/homeProvider" element={<Layout><HomeProvider /></Layout>} />
         <Route path="/adminDashboard" element={<Layout><AdminDashboard /></Layout>} />
         <Route path="/about" element={<Layout><About /></Layout>} />
@@ -99,6 +101,7 @@ function App() {
         <Route path="/service/:id" element={<Layout><ServiceDetails /></Layout>} />
         <Route path="/services" element={<Layout><Services /></Layout>} />
         <Route path="/order" element={<Layout><OrderPage /></Layout>} />
+        <Route path="/order-page" element={<Layout><OrderPage /></Layout>} />
         <Route path="/orders" element={<Layout><Orders /></Layout>} />
         <Route path="/reviews/:serviceId" element={<Layout><Reviews /></Layout>} />
         <Route path="/ratings/:serviceId" element={<Layout><Ratings /></Layout>} />
@@ -123,6 +126,9 @@ function App() {
 
         {/* Notifications */}
         <Route path="/notifications" element={<Layout><NotificationsPage /></Layout>} />
+
+        {/* Invoice Details */}
+        <Route path="/invoice/:id" element={<Layout><InvoiceDetails /></Layout>} />
 
         {/* Font Test (Development) */}
         <Route path="/font-test" element={<Layout><FontTest /></Layout>} />

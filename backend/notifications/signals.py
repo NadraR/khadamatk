@@ -1,4 +1,4 @@
-from django.db.models.signals import post_save
+from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
 from django.contrib.contenttypes.models import ContentType
 from orders.models import Order
@@ -10,61 +10,97 @@ def order_created_or_updated(sender, instance: Order, created, **kwargs):
         return
     
     provider = getattr(instance.service, 'provider', None)
-    customer_profile = getattr(instance.customer, 'client_profile', None)
-    provider_profile = getattr(provider, 'worker_profile', None) if provider else None
+    customer = instance.customer
     
     order_content_type = ContentType.objects.get_for_model(Order)
     order_url = f"/orders/{instance.id}/"
 
     if created:
-        if provider_profile:
+        # Notify the worker/provider about new order
+        if provider:
+            # Create location address from coordinates if available
+            location_address = ""
+            if instance.location_lat and instance.location_lng:
+                location_address = f"الموقع: {instance.location_lat:.4f}, {instance.location_lng:.4f}"
+            
             _create_notification(
-                recipient=provider_profile,
-                actor=instance.customer,
+                recipient=provider,
+                actor=customer,
                 verb='order_created',
-                message=f"طلب جديد رقم #{instance.id} من {instance.customer.username}",
+                message=f"طلب جديد لخدمة '{instance.service.name}' من {customer.get_full_name() or customer.username}",
                 target=instance,
-                url=order_url
+                url=order_url,
+                level='info',
+                offered_price=instance.offered_price,
+                service_name=instance.service.name,
+                job_description=instance.description,  # The specific work details from the client
+                location_lat=instance.location_lat,
+                location_lng=instance.location_lng,
+                location_address=location_address,
+                requires_action=True  # Workers can accept/decline new orders
             )
         
-        if customer_profile:
-            _create_notification(
-                recipient=customer_profile,
-                actor=None,
-                verb='order_created_confirm',
-                message=f"تم إنشاء طلبك رقم #{instance.id} بنجاح",
-                target=instance,
-                url=order_url
-            )
+        # Notify the customer that their order was created
+        _create_notification(
+            recipient=customer,
+            actor=None,
+            verb='order_created_confirm',
+            message=f"تم إنشاء طلبك رقم #{instance.id} بنجاح",
+            target=instance,
+            url=order_url,
+            level='success',
+            offered_price=instance.offered_price,
+            service_price=instance.service.price if hasattr(instance.service, 'price') else None,
+            requires_action=False  # Customers don't need to take action on confirmation
+        )
     
     else:
-        old_status = None
-        if hasattr(instance, '_old_status'):
-            old_status = instance._old_status
+        # Handle status changes
+        old_status = getattr(instance, '_old_status', None)
         
-        if old_status != instance.status:
-            if customer_profile:
+        if old_status and old_status != instance.status:
+            # Notify customer about status changes
+            status_messages = {
+                'accepted': f"تم قبول طلبك رقم #{instance.id}! سيتم التواصل معك قريباً لتنسيق الموعد",
+                'cancelled': f"تم إلغاء طلبك رقم #{instance.id}",
+                'completed': f"تم إكمال طلبك رقم #{instance.id} بنجاح!",
+                'in_progress': f"بدأ العمل على طلبك رقم #{instance.id}",
+            }
+            
+            if instance.status in status_messages:
+                level = 'success' if instance.status in ['accepted', 'completed'] else 'warning' if instance.status == 'cancelled' else 'info'
+                
                 _create_notification(
-                    recipient=customer_profile,
+                    recipient=customer,
                     actor=provider,
-                    verb='order_status_changed',
-                    message=f"تم تغيير حالة طلبك #{instance.id} إلى {_get_status_display(instance.status)}",
+                    verb=f'order_{instance.status}',
+                    message=status_messages[instance.status],
                     target=instance,
-                    url=order_url
+                    url=order_url,
+                    level=level
                 )
             
-            if provider_profile:
+            # Notify provider about status changes (except when they're the ones changing it)
+            if provider and instance.status in ['cancelled']:
+                provider_messages = {
+                    'cancelled': f"تم إلغاء الطلب رقم #{instance.id} من قبل العميل",
+                }
+                
                 _create_notification(
-                    recipient=provider_profile,
-                    actor=instance.customer,
-                    verb='order_status_changed_provider',
-                    message=f"تم تغيير حالة الطلب #{instance.id} إلى {_get_status_display(instance.status)}",
+                    recipient=provider,
+                    actor=customer,
+                    verb=f'order_{instance.status}_provider',
+                    message=provider_messages.get(instance.status, f"تم تغيير حالة الطلب #{instance.id} إلى {_get_status_display(instance.status)}"),
                     target=instance,
-                    url=order_url
+                    url=order_url,
+                    level='warning' if instance.status == 'cancelled' else 'info'
                 )
 
 
-def _create_notification(recipient, actor, verb, message, target, url):
+def _create_notification(recipient, actor, verb, message, target, url, level=None, offered_price=None, service_price=None, service_name=None, job_description=None, location_lat=None, location_lng=None, location_address=None, requires_action=False):
+    if not level:
+        level = _get_notification_level(verb)
+    
     Notification.objects.create(
         recipient=recipient,
         actor=actor,
@@ -73,7 +109,15 @@ def _create_notification(recipient, actor, verb, message, target, url):
         short_message=message[:100],
         target=target,
         url=url,
-        level=_get_notification_level(verb)
+        level=level,
+        offered_price=offered_price,
+        service_price=service_price,
+        service_name=service_name,
+        job_description=job_description,
+        location_lat=location_lat,
+        location_lng=location_lng,
+        location_address=location_address,
+        requires_action=requires_action
     )
 
 
@@ -81,10 +125,13 @@ def _get_notification_level(verb):
     level_mapping = {
         'order_created': 'info',
         'order_created_confirm': 'success',
-        'order_status_changed': 'info',
-        'order_status_changed_provider': 'info',
+        'order_accepted': 'success',
         'order_cancelled': 'warning',
         'order_completed': 'success',
+        'order_in_progress': 'info',
+        'order_cancelled_provider': 'warning',
+        'order_status_changed': 'info',
+        'order_status_changed_provider': 'info',
         'order_payment_failed': 'error',
     }
     return level_mapping.get(verb, 'info')
@@ -102,7 +149,7 @@ def _get_status_display(status):
     return status_display.get(status, status)
 
 
-@receiver(post_save, sender=Order)
+@receiver(pre_save, sender=Order)
 def save_old_status(sender, instance, **kwargs):
     if instance.pk:
         try:
@@ -110,3 +157,5 @@ def save_old_status(sender, instance, **kwargs):
             instance._old_status = old_instance.status
         except Order.DoesNotExist:
             instance._old_status = None
+    else:
+        instance._old_status = None

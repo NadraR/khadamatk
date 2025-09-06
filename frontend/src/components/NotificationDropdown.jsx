@@ -125,11 +125,15 @@ const NotificationDropdown = ({ isLoggedIn }) => {
     <div className="notification-dropdown position-relative" ref={dropdownRef}>
       {/* Notification Bell Icon */}
       <button
-        className="control-button notification-button"
+        className={`control-button notification-button ${unreadCount > 0 ? 'has-unread' : ''} ${isOpen ? 'active' : ''}`}
         onClick={handleDropdownToggle}
         title="الإشعارات"
       >
-        <BsBell className="control-icon" />
+        {unreadCount > 0 ? (
+          <BsBellFill className="control-icon notification-icon-unread" />
+        ) : (
+          <BsBell className="control-icon notification-icon-read" />
+        )}
         {unreadCount > 0 && (
           <span className="notification-badge">
             {unreadCount > 99 ? '99+' : unreadCount}
@@ -146,9 +150,9 @@ const NotificationDropdown = ({ isLoggedIn }) => {
             maxHeight: '500px', 
             zIndex: 1050,
             background: 'linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%)',
-            border: '2px solid rgba(220, 53, 69, 0.2)',
+            border: '2px solid rgba(0, 123, 255, 0.2)',
             borderRadius: '16px',
-            boxShadow: '0 12px 35px rgba(220, 53, 69, 0.2), 0 4px 15px rgba(0, 0, 0, 0.1)',
+            boxShadow: '0 12px 35px rgba(0, 123, 255, 0.2), 0 4px 15px rgba(0, 0, 0, 0.1)',
             animation: 'slideDown 0.3s ease-out',
             transformOrigin: 'top right',
             backdropFilter: 'blur(10px)',
@@ -160,8 +164,8 @@ const NotificationDropdown = ({ isLoggedIn }) => {
             className="d-flex justify-content-between align-items-center"
             style={{
               padding: '20px 24px',
-              borderBottom: '2px solid rgba(220, 53, 69, 0.1)',
-              background: 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)',
+              borderBottom: '2px solid rgba(0, 123, 255, 0.1)',
+              background: 'linear-gradient(135deg, #007bff 0%, #0056b3 100%)',
               color: 'white',
               borderRadius: '16px 16px 0 0'
             }}
@@ -237,8 +241,8 @@ const NotificationDropdown = ({ isLoggedIn }) => {
                   style={{
                     width: '24px',
                     height: '24px',
-                    border: '3px solid rgba(220, 53, 69, 0.2)',
-                    borderTop: '3px solid #dc3545',
+                    border: '3px solid rgba(0, 123, 255, 0.2)',
+                    borderTop: '3px solid #007bff',
                     borderRadius: '50%',
                     margin: '0 auto 16px'
                   }}
@@ -249,13 +253,13 @@ const NotificationDropdown = ({ isLoggedIn }) => {
               </div>
             ) : error ? (
               <div className="text-center" style={{ padding: '40px 24px' }}>
-                <BsXCircle className="mb-2" style={{ color: '#dc3545', fontSize: '36px' }} />
-                <div className="small" style={{ color: '#dc3545', fontWeight: '500' }}>{error}</div>
+                <BsXCircle className="mb-2" style={{ color: '#007bff', fontSize: '36px' }} />
+                <div className="small" style={{ color: '#007bff', fontWeight: '500' }}>{error}</div>
                 <button 
                   className="btn btn-sm mt-3"
                   onClick={fetchNotifications}
                   style={{
-                    background: 'linear-gradient(135deg, #dc3545 0%, #c82333 100%)',
+                    background: 'linear-gradient(135deg, #007bff 0%, #0056b3 100%)',
                     color: 'white',
                     border: 'none',
                     borderRadius: '8px',
@@ -265,7 +269,7 @@ const NotificationDropdown = ({ isLoggedIn }) => {
                   }}
                   onMouseEnter={(e) => {
                     e.target.style.transform = 'translateY(-1px)';
-                    e.target.style.boxShadow = '0 4px 12px rgba(220, 53, 69, 0.3)';
+                    e.target.style.boxShadow = '0 4px 12px rgba(0, 123, 255, 0.3)';
                   }}
                   onMouseLeave={(e) => {
                     e.target.style.transform = 'translateY(0)';
@@ -277,7 +281,7 @@ const NotificationDropdown = ({ isLoggedIn }) => {
               </div>
             ) : notifications.length === 0 ? (
               <div className="text-center" style={{ padding: '40px 24px', color: '#6c757d' }}>
-                <BsBell className="mb-3" style={{ fontSize: '36px', color: '#dc3545', opacity: '0.7' }} />
+                <BsBell className="mb-3" style={{ fontSize: '36px', color: '#007bff', opacity: '0.7' }} />
                 <div className="small" style={{ fontSize: '15px', fontWeight: '500', color: '#495057' }}>لا توجد إشعارات</div>
               </div>
             ) : (
@@ -288,21 +292,21 @@ const NotificationDropdown = ({ isLoggedIn }) => {
                   onClick={() => handleNotificationClick(notification)}
                   style={{ 
                     padding: '16px 24px',
-                    borderBottom: '1px solid rgba(220, 53, 69, 0.1)',
+                    borderBottom: '1px solid rgba(0, 123, 255, 0.1)',
                     cursor: 'pointer',
                     transition: 'all 0.3s ease',
                     position: 'relative',
                     overflow: 'hidden',
-                    backgroundColor: !notification.is_read ? 'rgba(220, 53, 69, 0.05)' : 'transparent'
+                    backgroundColor: !notification.is_read ? 'rgba(0, 123, 255, 0.05)' : 'transparent'
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(220, 53, 69, 0.05) 0%, rgba(200, 35, 51, 0.05) 100%)';
+                    e.currentTarget.style.background = 'linear-gradient(135deg, rgba(0, 123, 255, 0.05) 0%, rgba(0, 86, 179, 0.05) 100%)';
                     e.currentTarget.style.transform = 'translateX(4px)';
-                    e.currentTarget.style.borderLeft = '3px solid #dc3545';
+                    e.currentTarget.style.borderLeft = '3px solid #007bff';
                     e.currentTarget.style.paddingLeft = '21px';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = !notification.is_read ? 'rgba(220, 53, 69, 0.05)' : 'transparent';
+                    e.currentTarget.style.background = !notification.is_read ? 'rgba(0, 123, 255, 0.05)' : 'transparent';
                     e.currentTarget.style.transform = 'translateX(0)';
                     e.currentTarget.style.borderLeft = 'none';
                     e.currentTarget.style.paddingLeft = '24px';
@@ -398,7 +402,7 @@ const NotificationDropdown = ({ isLoggedIn }) => {
       )}
       
       {/* Custom CSS Animations */}
-      <style jsx>{`
+      <style>{`
         @keyframes slideDown {
           from {
             opacity: 0;

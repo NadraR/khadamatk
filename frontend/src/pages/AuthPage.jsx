@@ -62,9 +62,27 @@ const AuthPage = () => {
   const redirectAfterLogin = (userData) => {
     console.log("[DEBUG] AuthPage: redirectAfterLogin called with:", userData);
     
-    // Always redirect to Home page after successful login
-    console.log("[DEBUG] AuthPage: Redirecting to Home page");
-    window.location.href = "/";
+    // Check if worker needs profile completion
+    if (userData.role === 'worker' && !userData.profile_completed) {
+      console.log("[DEBUG] AuthPage: Redirecting worker to profile completion");
+      window.location.href = "/worker-profile-completion";
+      return;
+    }
+    
+    // Redirect based on user role
+    switch (userData.role) {
+      case 'worker':
+        console.log("[DEBUG] AuthPage: Redirecting worker to provider home");
+        window.location.href = "/homeProvider";
+        break;
+      case 'client':
+        console.log("[DEBUG] AuthPage: Redirecting client to home");
+        window.location.href = "/";
+        break;
+      default:
+        console.log("[DEBUG] AuthPage: Redirecting to default home page");
+        window.location.href = "/";
+    }
   };
 
   // Google Login handlers
@@ -110,13 +128,8 @@ const handleGoogleSuccess = (googleData) => {
       "تم تسجيل الدخول بنجاح!" : 
       "Logged in successfully!", "success");
     
-    // Redirect based on role and profile completion
-    if (userData.role === 'worker' && !userData.profile_completed) {
-      console.log("[DEBUG] AuthPage: Redirecting worker to profile completion");
-      window.location.href = "/worker";
-    } else {
-      redirectAfterLogin(userData);
-    }
+    // Redirect using the unified redirect logic
+    redirectAfterLogin(userData);
   } else {
     console.error("[DEBUG] AuthPage: Invalid Google response data:", googleData);
     showNotification(language === "ar" ? 

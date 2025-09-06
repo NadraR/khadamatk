@@ -15,6 +15,7 @@ import { locationService } from '../services/LocationService';
 import LocationPicker from '../components/LocationPicker';
 import Navbar from '../components/Navbar';
 import "bootstrap/dist/css/bootstrap.min.css";
+import './LocationPage.css';
 
 export default function LocationPage() {
   
@@ -22,6 +23,15 @@ export default function LocationPage() {
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [citySearch, setCitySearch] = useState("");
   const [searchSuggestions, setSearchSuggestions] = useState([]);
+  
+  // تفاصيل الموقع الإضافية للعملاء
+  const [locationDetails, setLocationDetails] = useState({
+    building_number: '',
+    apartment_number: '',
+    floor_number: '',
+    landmark: '',
+    additional_details: ''
+  });
 
   // نتائج الخدمات
   const [results, setResults] = useState([]);
@@ -61,8 +71,13 @@ export default function LocationPage() {
     // الانتقال إلى صفحة الطلب
     const serviceId = service.id;
     if (serviceId) {
-      // Store service data in localStorage for the order page
-      localStorage.setItem('selectedService', JSON.stringify(service));
+      // Store service data and location details in localStorage for the order page
+      const serviceData = {
+        ...service,
+        selectedLocation: selectedLocation,
+        locationDetails: locationDetails
+      };
+      localStorage.setItem('selectedService', JSON.stringify(serviceData));
       // Navigate to order page
       window.location.href = '/order';
     } else {
@@ -361,6 +376,15 @@ export default function LocationPage() {
     setSearchSuggestions([]);
   };
 
+  // التعامل مع تغيير تفاصيل الموقع
+  const handleLocationDetailsChange = (e) => {
+    const { name, value } = e.target;
+    setLocationDetails(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   // تطبيق الفلاتر
   const applyFilters = (services) => {
     return services.filter(service => {
@@ -418,27 +442,35 @@ export default function LocationPage() {
       <Navbar />
       
       {/* Header Section */}
-      <div className="container-fluid py-4" style={{ background: 'linear-gradient(135deg, #0077ff, #4da6ff)' }}>
-        <div className="container">
-          <div className="row align-items-center">
-            <div className="col-md-8">
-              <h1 className="text-white mb-2" style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>
-                ابحث عن مزودي الخدمة
-              </h1>
-              <p className="text-white-50 mb-0" style={{ fontSize: '1.1rem' }}>
-                اختر موقعك وابحث عن أفضل مزودي الخدمة في منطقتك
-              </p>
-            </div>
-            <div className="col-md-4 text-end">
-              <div className="d-flex align-items-center justify-content-end">
-                <div className="me-3">
-                  <div className="text-white fw-bold">الخطوة 1 من 3</div>
-                  <div className="text-white-50 small">اختيار الموقع والخدمة</div>
+      <div className="feature-section location-banner">
+        <div className="feature-content">
+          <div className="container">
+            <div className="row align-items-center">
+              <div className="col-md-7">
+                <div className="header-content">
+                  <h1 className="header-title">
+                    <SearchIcon className="header-icon" />
+                    ابحث عن مزودي الخدمة
+                  </h1>
+                  <p className="header-subtitle">
+                    حدد موقعك واختر الخدمة المناسبة لك من أفضل مقدمي الخدمات
+                  </p>
                 </div>
+              </div>
+              <div className="col-md-4">
                 <div className="step-indicator">
-                  <div className="step active">1</div>
-                  <div className="step">2</div>
-                  <div className="step">3</div>
+                  <div className="step-text">
+                    <span className="step-number">الخطوة 1 من 2</span>
+                    <span className="step-description">تحديد الموقع والخدمة</span>
+                  </div>
+                  <div className="step-circles">
+                    <div className="step-circle active">
+                      <span>1</span>
+                    </div>
+                    <div className="step-circle">
+                      <span>2</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -568,6 +600,75 @@ export default function LocationPage() {
               </CardContent>
             </Card>
 
+            {/* Location Details Card */}
+            <Card className="mb-4" style={{ borderRadius: '16px', boxShadow: '0 6px 18px rgba(0,0,0,0.05)' }}>
+              <CardContent className="p-4">
+                <div className="d-flex align-items-center mb-3">
+                  <LocationIcon className="text-primary me-2" />
+                  <h5 className="mb-0 fw-bold">تفاصيل الموقع</h5>
+                </div>
+                <p className="text-muted small mb-3">أضف تفاصيل إضافية لمساعدة مزود الخدمة في الوصول إليك</p>
+                
+                <div className="row g-3">
+                  <div className="col-6">
+                    <label className="form-label small fw-bold">رقم العمارة</label>
+                    <input
+                      type="text"
+                      name="building_number"
+                      value={locationDetails.building_number}
+                      onChange={handleLocationDetailsChange}
+                      className="form-control"
+                      placeholder="مثال: 15"
+                    />
+                  </div>
+                  <div className="col-6">
+                    <label className="form-label small fw-bold">رقم الشقة</label>
+                    <input
+                      type="text"
+                      name="apartment_number"
+                      value={locationDetails.apartment_number}
+                      onChange={handleLocationDetailsChange}
+                      className="form-control"
+                      placeholder="مثال: 3أ"
+                    />
+                  </div>
+                  <div className="col-12">
+                    <label className="form-label small fw-bold">الطابق</label>
+                    <input
+                      type="text"
+                      name="floor_number"
+                      value={locationDetails.floor_number}
+                      onChange={handleLocationDetailsChange}
+                      className="form-control"
+                      placeholder="مثال: الثالث"
+                    />
+                  </div>
+                  <div className="col-12">
+                    <label className="form-label small fw-bold">معلم مميز</label>
+                    <input
+                      type="text"
+                      name="landmark"
+                      value={locationDetails.landmark}
+                      onChange={handleLocationDetailsChange}
+                      className="form-control"
+                      placeholder="مثال: بجوار مدرسة الأمل، أمام محطة البنزين"
+                    />
+                  </div>
+                  <div className="col-12">
+                    <label className="form-label small fw-bold">تفاصيل إضافية</label>
+                    <textarea
+                      name="additional_details"
+                      value={locationDetails.additional_details}
+                      onChange={handleLocationDetailsChange}
+                      className="form-control"
+                      rows="2"
+                      placeholder="أي تفاصيل أخرى تساعد في الوصول..."
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Filters Card */}
             <Card className="mb-4" style={{ borderRadius: '16px', boxShadow: '0 6px 18px rgba(0,0,0,0.05)' }}>
               <CardContent className="p-4">
@@ -644,16 +745,27 @@ export default function LocationPage() {
           <div className="col-lg-8">
             
             {/* Results Header */}
-            <div className="d-flex justify-content-between align-items-center mb-4">
-              <div>
-                <h4 className="fw-bold mb-1">أقرب مزودي الخدمة</h4>
-                <p className="text-muted mb-0">
-                  {results.length > 0 ? `تم العثور على ${results.length} مزود خدمة` : 'لم يتم العثور على نتائج'}
-                </p>
+            <div className="results-header mb-4">
+              <div className="results-info">
+                <h4 className="results-title">أقرب مزودي الخدمة</h4>
+                <div className="results-count">
+                  {loading ? (
+                    <span className="loading-text">جاري البحث...</span>
+                  ) : (
+                    <span className={`count-badge ${results.length > 0 ? 'success' : 'empty'}`}>
+                      {results.length > 0 ? `${results.length} مزود خدمة` : 'لا توجد نتائج'}
+                    </span>
+                  )}
+                </div>
               </div>
-              <IconButton onClick={handleRefresh} disabled={loading || !selectedService}>
+              <button 
+                className="refresh-btn"
+                onClick={handleRefresh} 
+                disabled={loading || !selectedService}
+                title="تحديث النتائج"
+              >
                 <RefreshIcon />
-              </IconButton>
+              </button>
             </div>
 
             {/* Results List */}
@@ -774,11 +886,21 @@ export default function LocationPage() {
                 <CardContent className="p-0">
                   <div className="p-3 border-bottom">
                     <h6 className="fw-bold mb-0">الخريطة التفاعلية</h6>
-                    <small className="text-muted">انقر على الخريطة لتحديد موقعك</small>
+                    <small className="text-muted">انقر على الخريطة لتحديد موقعك أو ابحث عن مكان</small>
                   </div>
                   <LocationPicker 
-                    onLocationSelect={(loc) => setSelectedLocation(loc)}
+                    onLocationSelect={(loc) => {
+                      setSelectedLocation(loc);
+                      // Auto-trigger search when location is selected
+                      if (selectedService && !isSearching) {
+                        hasSearchedRef.current = false;
+                        fetchNearbyServices(loc);
+                      }
+                    }}
+                    initialLocation={selectedLocation}
                     height={400}
+                    showSaveButton={true}
+                    showSearchBox={true}
                   />
                 </CardContent>
               </Card>
@@ -787,55 +909,6 @@ export default function LocationPage() {
         </div>
       </Container>
 
-      {/* Custom Styles */}
-      <style jsx="true">{`
-        .step-indicator {
-          display: flex;
-          gap: 8px;
-        }
-        .step {
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: bold;
-          font-size: 14px;
-          background: rgba(255,255,255,0.3);
-          color: white;
-        }
-        .step.active {
-          background: white;
-          color: #0077ff;
-        }
-        .suggestions-dropdown {
-          position: absolute;
-          top: 100%;
-          left: 0;
-          right: 0;
-          background: white;
-          border: 1px solid #e5e7eb;
-          border-radius: 8px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-          z-index: 1000;
-          max-height: 200px;
-          overflow-y: auto;
-        }
-        .suggestion-item {
-          padding: 12px 16px;
-          cursor: pointer;
-          border-bottom: 1px solid #f3f4f6;
-          display: flex;
-          align-items: center;
-        }
-        .suggestion-item:hover {
-          background: #f9fafb;
-        }
-        .suggestion-item:last-child {
-          border-bottom: none;
-        }
-      `}</style>
     </div>
   );
 }

@@ -77,3 +77,27 @@ def review_detail(request, review_id):
         review.is_deleted = True
         review.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def my_reviews(request):
+    """Get all reviews by the current user"""
+    reviews = Review.objects.filter(
+        customer=request.user, 
+        is_deleted=False
+    ).select_related('service').order_by('-created_at')
+    
+    reviews_data = []
+    for review in reviews:
+        reviews_data.append({
+            'id': review.id,
+            'service_name': review.service.title,
+            'service_id': review.service.id,
+            'rating': review.rating,
+            'comment': review.comment,
+            'created_at': review.created_at,
+            'updated_at': review.updated_at,
+        })
+    
+    return Response(reviews_data)

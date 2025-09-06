@@ -552,7 +552,7 @@ class AuthService {
         try {
           const response = await apiService.get(`/api/accounts/user/${user.id}/profile/`);
           return response.profile_completed || false;
-        } catch (error) {
+        } catch {
           console.log('Using local profile completion status');
           return user.profile_completed || false;
         }

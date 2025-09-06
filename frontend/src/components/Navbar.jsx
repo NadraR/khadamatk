@@ -972,28 +972,30 @@ const Navbar = () => {
                 {darkMode ? <FaSun className="control-icon" /> : <FaMoon className="control-icon" />}
               </button>
 
-              {/* Enhanced Messages Icon with Dropdown */}
-              <div className="message-dropdown-container">
-                <button
-                  className={`control-button message-button ${unreadMessages ? 'has-unread' : ''} ${showMessageDropdown ? 'active' : ''}`}
-                  title={i18n.language === "ar" ? "الرسائل" : "Messages"}
-                  onClick={toggleMessageDropdown}
-                >
-                  {unreadMessages ? (
-                    <FaEnvelopeOpen className="control-icon message-icon-unread" />
-                  ) : (
-                    <FaEnvelope className="control-icon message-icon-read" />
-                  )}
-                  {messageCount > 0 && (
-                    <span className="notification-badge message-badge">
-                      {formatNotificationCount(messageCount)}
-                    </span>
-                  )}
-                </button>
-                
-                {/* Message Dropdown */}
-                {showMessageDropdown && isLoggedIn && <MessageDropdown />}
-              </div>
+              {/* Enhanced Messages Icon with Dropdown - Only show when logged in */}
+              {isLoggedIn && (
+                <div className="message-dropdown-container">
+                  <button
+                    className={`control-button message-button ${unreadMessages ? 'has-unread' : ''} ${showMessageDropdown ? 'active' : ''}`}
+                    title={i18n.language === "ar" ? "الرسائل" : "Messages"}
+                    onClick={toggleMessageDropdown}
+                  >
+                    {unreadMessages ? (
+                      <FaEnvelopeOpen className="control-icon message-icon-unread" />
+                    ) : (
+                      <FaEnvelope className="control-icon message-icon-read" />
+                    )}
+                    {messageCount > 0 && (
+                      <span className="notification-badge message-badge">
+                        {formatNotificationCount(messageCount)}
+                      </span>
+                    )}
+                  </button>
+                  
+                  {/* Message Dropdown */}
+                  {showMessageDropdown && <MessageDropdown />}
+                </div>
+              )}
 
               {/* Notifications Dropdown */}
               <NotificationDropdown isLoggedIn={isLoggedIn} />

@@ -6,9 +6,9 @@ from invoices.models import Invoice
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
-# 1️⃣ إنشاء فاتورة لما الطلب يكتمل
-@receiver(post_save, sender=Order)
-def create_invoice_when_completed(sender, instance, created, **kwargs):
+# 1️⃣ إنشاء فاتورة لما الطلب يكتمل - Temporarily disabled
+# @receiver(post_save, sender=Order)
+def create_invoice_when_completed_disabled(sender, instance, created, **kwargs):
     if not created and instance.status == 'completed':
         if not Invoice.objects.filter(order=instance).exists():
             Invoice.objects.create(

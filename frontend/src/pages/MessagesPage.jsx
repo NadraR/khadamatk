@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useLocation } from "react-router-dom";
 import { FaPaperPlane, FaSpinner } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import { toast } from "react-toastify";
@@ -7,6 +8,7 @@ import "./MessagesPage.css";
 
 const MessagesPage = () => {
   const { i18n } = useTranslation();
+  const location = useLocation();
   const [conversations, setConversations] = useState([]);
   const [activeConversation, setActiveConversation] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -23,20 +25,32 @@ const MessagesPage = () => {
       setError(null);
       const orders = await chatService.getUserOrders();
       
-      // Transform orders into conversation format
-      const conversationsData = orders.map(order => ({
-        id: order.id,
-        orderId: order.id,
-        name: order.worker ? `${order.worker.first_name || order.worker.username} (Worker)` : 
-              order.client ? `${order.client.first_name || order.client.username} (Client)` : 
-              'Unknown User',
-        lastMessage: order.status || 'No messages yet',
-        unread: 0, // TODO: Implement unread count
-        status: order.status,
-        service: order.service?.name || 'Unknown Service'
-      }));
+      // Filter out cancelled orders and transform into conversation format
+      const conversationsData = orders
+        .filter(order => order.status !== 'cancelled') // Don't show cancelled orders
+        .filter(order => ['accepted', 'completed', 'in_progress'].includes(order.status)) // Only show active orders
+        .map(order => ({
+          id: order.id,
+          orderId: order.id,
+          name: order.worker ? `${order.worker.first_name || order.worker.username} (Worker)` : 
+                order.client ? `${order.client.first_name || order.client.username} (Client)` : 
+                'Unknown User',
+          lastMessage: order.status || 'No messages yet',
+          unread: 0, // TODO: Implement unread count
+          status: order.status,
+          service: order.service?.name || 'Unknown Service'
+        }));
       
       setConversations(conversationsData);
+      
+      // Auto-select conversation if orderId is provided in location state
+      const targetOrderId = location.state?.orderId;
+      if (targetOrderId && conversationsData.length > 0) {
+        const targetConversation = conversationsData.find(conv => conv.orderId === targetOrderId);
+        if (targetConversation) {
+          setActiveConversation(targetConversation);
+        }
+      }
       
       if (conversationsData.length === 0) {
         toast.info(i18n.language === 'ar' ? 'لا توجد محادثات متاحة' : 'No conversations available');

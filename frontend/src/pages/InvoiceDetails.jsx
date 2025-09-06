@@ -27,12 +27,32 @@ const InvoiceDetails = () => {
   const [paymentLoading, setPaymentLoading] = useState(false);
 
   useEffect(() => {
-    if (id) {
-      loadInvoice();
-    }
+    const loadInvoiceData = async () => {
+      if (id) {
+        try {
+          setLoading(true);
+          const result = await invoiceService.getInvoice(id);
+          if (result.success) {
+            setInvoice(result.data);
+            setError('');
+          } else {
+            setError(result.error);
+          }
+        } catch (error) {
+          console.error('Error loading invoice:', error);
+          setError('حدث خطأ في تحميل الفاتورة');
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadInvoiceData();
   }, [id]);
 
   const loadInvoice = async () => {
+    if (!id) return;
+    
     try {
       setLoading(true);
       const result = await invoiceService.getInvoice(id);

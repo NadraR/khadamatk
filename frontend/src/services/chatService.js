@@ -26,6 +26,16 @@ class ChatService {
   // Get unread message count for the current user
   async getUnreadMessageCount() {
     try {
+      // Check if user is authenticated
+      const accessToken = localStorage.getItem('access');
+      if (!accessToken) {
+        return {
+          success: false,
+          error: 'User not authenticated',
+          data: { unread_count: 0, has_unread: false }
+        };
+      }
+
       const response = await apiService.get(`${this.baseEndpoint}/messages/unread-count/`);
       return {
         success: true,
@@ -33,6 +43,16 @@ class ChatService {
       };
     } catch (error) {
       console.error('Error fetching unread message count:', error);
+      
+      // Handle authentication errors specifically
+      if (error.response?.status === 401) {
+        return {
+          success: false,
+          error: 'Authentication failed',
+          data: { unread_count: 0, has_unread: false }
+        };
+      }
+      
       return {
         success: false,
         error: error.response?.data?.detail || error.message || 'Failed to fetch unread count',
@@ -44,6 +64,16 @@ class ChatService {
   // Get recent messages preview for the current user
   async getRecentMessages(limit = 5) {
     try {
+      // Check if user is authenticated
+      const accessToken = localStorage.getItem('access');
+      if (!accessToken) {
+        return {
+          success: false,
+          error: 'User not authenticated',
+          data: { recent_messages: [], count: 0 }
+        };
+      }
+
       const response = await apiService.get(`${this.baseEndpoint}/messages/recent/?limit=${limit}`);
       return {
         success: true,
@@ -51,6 +81,16 @@ class ChatService {
       };
     } catch (error) {
       console.error('Error fetching recent messages:', error);
+      
+      // Handle authentication errors specifically
+      if (error.response?.status === 401) {
+        return {
+          success: false,
+          error: 'Authentication failed',
+          data: { recent_messages: [], count: 0 }
+        };
+      }
+      
       return {
         success: false,
         error: error.response?.data?.detail || error.message || 'Failed to fetch recent messages',

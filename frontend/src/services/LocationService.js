@@ -7,17 +7,26 @@ class LocationService {
 
   async saveLocation(locationData) {
     try {
-      const response = await apiService.post(this.baseEndpoint, locationData);
+      // Use the specialized save-location endpoint
+      const payload = {
+        lat: locationData.lat,
+        lng: locationData.lng,
+        address: locationData.address || '',
+        city: locationData.city || '',
+        country: locationData.country || 'مصر'
+      };
+      
+      const response = await apiService.post(`${this.baseEndpoint}save-location/`, payload);
       return {
         success: true,
-        data: response,
-        message: 'تم حفظ الموقع بنجاح'
+        data: response.data,
+        message: response.message || 'تم حفظ الموقع بنجاح'
       };
     } catch (error) {
       return {
         success: false,
-        error: error.message || 'فشل في حفظ الموقع',
-        status: error.status
+        error: error.response?.data?.error || error.message || 'فشل في حفظ الموقع',
+        status: error.response?.status || error.status
       };
     }
   }
