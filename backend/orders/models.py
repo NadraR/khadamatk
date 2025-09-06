@@ -12,6 +12,7 @@ class Order(models.Model):
     location_lat = models.FloatField(null=True, blank=True)
     location_lng = models.FloatField(null=True, blank=True)
     scheduled_time = models.DateTimeField(default=timezone.now)
+    delivery_time = models.DateTimeField(null=True, blank=True, help_text="Expected delivery/completion time")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     is_deleted = models.BooleanField(default=False)
     date_created = models.DateTimeField(auto_now_add=True)

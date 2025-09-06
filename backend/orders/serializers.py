@@ -3,10 +3,12 @@ from .models import Order, Offer, Negotiation
 
 class OrderSerializer(serializers.ModelSerializer):
     service_name = serializers.CharField(source="service.title", read_only=True)
+    service_id = serializers.IntegerField(source="service.id", read_only=True)
     customer_name = serializers.CharField(source="customer.username", read_only=True)
     class Meta:
         model = Order
         fields = "__all__"
+        read_only_fields = ['customer', 'date_created']
 
 class OfferSerializer(serializers.ModelSerializer):
     provider_name = serializers.CharField(source="provider.username", read_only=True)

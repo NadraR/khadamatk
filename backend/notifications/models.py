@@ -47,6 +47,22 @@ class Notification(models.Model):
     target = GenericForeignKey('target_content_type', 'target_object_id')
     
     url = models.CharField(max_length=512, blank=True, verbose_name="رابط")
+    
+    # معلومات السعر والموقع المرتبطة بالطلب
+    offered_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="السعر المعروض من العميل")
+    service_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="سعر الخدمة")
+    service_name = models.CharField(max_length=200, blank=True, verbose_name="اسم الخدمة")
+    job_description = models.TextField(blank=True, verbose_name="وصف العمل المطلوب")
+    location_lat = models.FloatField(null=True, blank=True, verbose_name="خط العرض")
+    location_lng = models.FloatField(null=True, blank=True, verbose_name="خط الطول")
+    location_address = models.TextField(blank=True, verbose_name="عنوان الموقع")
+    
+    # إجراءات الإشعار (للعمال)
+    requires_action = models.BooleanField(default=False, verbose_name="يتطلب إجراءً")
+    action_taken = models.BooleanField(default=False, verbose_name="تم اتخاذ إجراء")
+    action_type = models.CharField(max_length=20, blank=True, verbose_name="نوع الإجراء")  # 'accepted', 'declined'
+    action_taken_at = models.DateTimeField(null=True, blank=True, verbose_name="وقت اتخاذ الإجراء")
+    
     read_at = models.DateTimeField(null=True, blank=True, verbose_name="وقت القراءة")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="وقت الإنشاء")
 
@@ -71,3 +87,13 @@ class Notification(models.Model):
         if self.read_at:
             self.read_at = None
             self.save()
+    
+    def take_action(self, action_type):
+        """Mark notification action as taken"""
+        if not self.action_taken:
+            self.action_taken = True
+            self.action_type = action_type
+            self.action_taken_at = timezone.now()
+            self.save()
+            return True
+        return False

@@ -34,6 +34,16 @@
     align-items: center;
     gap: 15px;
   }
+
+  /* RTL Support for navbar-left - move to right side */
+  [dir="rtl"] .navbar-left {
+    margin-right: 0;
+    margin-left: auto;
+    left: auto;
+    right: 0;
+    order: 3; /* Move to right side in RTL */
+    flex-direction: row-reverse; /* Reverse burger menu and logo order */
+  }
   
   /* Burger Menu Button */
   .navbar .navbar-left .burger-menu-button {
@@ -64,6 +74,13 @@
     gap: 12px;
     position: relative;
     left: 0;
+  }
+
+  /* RTL Support for logo-section */
+  [dir="rtl"] .logo-section {
+    left: auto;
+    right: 0;
+    flex-direction: row-reverse; /* Reverse order of logo and title in RTL */
   }
   
   .logo-icon {
@@ -110,6 +127,11 @@
     display: flex;
     justify-content: center;
     margin: 0 24px;
+  }
+
+  /* RTL Support for navbar-center - keep in middle */
+  [dir="rtl"] .navbar-center {
+    order: 2; /* Keep in middle for RTL */
   }
   
   .navbar-nav {
@@ -198,11 +220,24 @@
     flex-shrink: 0;
     margin-left: auto;
   }
+
+  /* RTL Support for navbar-right - move to left side */
+  [dir="rtl"] .navbar-right {
+    margin-left: 0;
+    margin-right: auto;
+    order: 1; /* Move to left side in RTL */
+    flex-direction: row-reverse; /* Reverse order of controls in RTL */
+  }
   
   .navbar-controls {
     display: flex;
     align-items: center;
     gap: 8px;
+  }
+
+  /* RTL Support for navbar-controls */
+  [dir="rtl"] .navbar-controls {
+    flex-direction: row-reverse; /* Reverse order of control buttons */
   }
   
   /* تحسين تصميم أزرار التحكم */
@@ -297,10 +332,10 @@
     color: #ffc107;
   }
   
-  /* Notification Button with Badge - تصميم محسن */
+  /* Notification Button with Badge - تصميم محسن - Blue Theme */
   .notification-button {
-    background: rgba(220, 53, 69, 0.1);
-    border: 1px solid rgba(220, 53, 69, 0.2);
+    background: rgba(0, 123, 255, 0.1) !important;
+    border: 1px solid rgba(0, 123, 255, 0.2) !important;
     position: relative;
     width: 44px;
     height: 44px;
@@ -310,13 +345,38 @@
   }
   
   .notification-button:hover {
-    background: rgba(220, 53, 69, 0.2);
-    border-color: rgba(220, 53, 69, 0.4);
+    background: rgba(0, 123, 255, 0.2) !important;
+    border-color: rgba(0, 123, 255, 0.4) !important;
   }
   
   .notification-button:hover .control-icon {
-    color: #dc3545;
+    color: #007bff !important;
     transform: scale(1.1);
+  }
+
+  .notification-button.has-unread {
+    background: linear-gradient(135deg, #007bff, #0056b3) !important;
+    border-color: rgba(0, 123, 255, 0.4) !important;
+    animation: pulse-notification 2s infinite;
+  }
+
+  .notification-button.has-unread .control-icon {
+    color: white !important;
+  }
+
+  .notification-button.active {
+    background: rgba(0, 123, 255, 0.25) !important;
+    border-color: rgba(0, 123, 255, 0.5) !important;
+    color: white;
+  }
+
+  .notification-icon-unread {
+    color: #fff;
+    animation: shake 0.5s ease-in-out;
+  }
+
+  .notification-icon-read {
+    color: var(--text-color);
   }
   
   .notification-badge {

@@ -27,6 +27,8 @@ class UserLocationSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'user', 'username', 'user_email', 'user_role',
             'location', 'address', 'city', 'country',
+            'building_number', 'apartment_number', 'floor_number', 
+            'neighborhood', 'landmark', 'additional_details',
             'lat', 'lng', 'created_at', 'updated_at'
         ]
         read_only_fields = ['user', 'created_at', 'updated_at']

@@ -9,13 +9,14 @@ from services.models import Service
 from orders.models import Order
 from reviews.models import Review
 from ratings.models import Rating
-from invoices.models import Invoice
+# from invoices.models import Invoice  # Temporarily disabled - invoices app incomplete
 from .models import AdminActionLog
 from rest_framework.views import APIView
 
 from .serializers import (
     AdminUserSerializer, AdminServiceSerializer, AdminOrderSerializer,
-    AdminReviewSerializer, AdminRatingSerializer, AdminInvoiceSerializer, AdminActionLogSerializer
+    AdminReviewSerializer, AdminRatingSerializer, AdminActionLogSerializer
+    # AdminInvoiceSerializer,  # Temporarily disabled - invoices app incomplete
 )
 
 User = get_user_model()
@@ -200,41 +201,41 @@ def admin_rating_detail(request, pk):
         rating.delete()
         return Response({'message': 'User deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
 
-# ---------- Invoices ----------
-@api_view(['GET', 'POST'])
-@permission_classes([IsAdminUser])
-def admin_invoices(request):
-    if request.method == 'GET':
-        invoices = Invoice.objects.all().order_by('id')
-        serializer = AdminInvoiceSerializer(invoices, many=True)
-        return Response(serializer.data)
-    elif request.method == 'POST':
-        serializer = AdminInvoiceSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+# ---------- Invoices - Temporarily disabled ----------
+# @api_view(['GET', 'POST'])
+# @permission_classes([IsAdminUser])
+# def admin_invoices(request):
+#     if request.method == 'GET':
+#         invoices = Invoice.objects.all().order_by('id')
+#         serializer = AdminInvoiceSerializer(invoices, many=True)
+#         return Response(serializer.data)
+#     elif request.method == 'POST':
+#         serializer = AdminInvoiceSerializer(data=request.data)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data, status=status.HTTP_201_CREATED)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-@api_view(['GET', 'PUT', 'DELETE'])
-@permission_classes([IsAdminUser])
-def admin_invoice_detail(request, pk):
-    try:
-        invoice = Invoice.objects.get(pk=pk)
-    except Invoice.DoesNotExist:
-        return Response({'error': 'Invoice not found'}, status=status.HTTP_404_NOT_FOUND)
+# @api_view(['GET', 'PUT', 'DELETE'])
+# @permission_classes([IsAdminUser])
+# def admin_invoice_detail(request, pk):
+#     try:
+#         invoice = Invoice.objects.get(pk=pk)
+#     except Invoice.DoesNotExist:
+#         return Response({'error': 'Invoice not found'}, status=status.HTTP_404_NOT_FOUND)
 
-    if request.method == 'GET':
-        serializer = AdminInvoiceSerializer(invoice)
-        return Response(serializer.data)
-    elif request.method == 'PUT':
-        serializer = AdminInvoiceSerializer(invoice, data=request.data, partial=True)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    elif request.method == 'DELETE':
-        invoice.delete()
-        return Response({'message': 'User deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
+#     if request.method == 'GET':
+#         serializer = AdminInvoiceSerializer(invoice)
+#         return Response(serializer.data)
+#     elif request.method == 'PUT':
+#         serializer = AdminInvoiceSerializer(invoice, data=request.data, partial=True)
+#         if serializer.is_valid():
+#             serializer.save()
+#             return Response(serializer.data)
+#         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+#     elif request.method == 'DELETE':
+#         invoice.delete()
+#         return Response({'message': 'User deleted successfully'}, status=status.HTTP_204_NO_CONTENT)
 
 # ---------- Stats ----------
 @api_view(['GET'])
@@ -254,7 +255,7 @@ def admin_stats(request):
         "orders_count": Order.objects.count(),
         "reviews_count": Review.objects.count(),
         "ratings_count": Rating.objects.count(),
-        "invoices_count": Invoice.objects.count(),
+        # "invoices_count": Invoice.objects.count(),  # Temporarily disabled
     })
 
 @api_view(["GET"])

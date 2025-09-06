@@ -24,9 +24,9 @@ urlpatterns = [
     path('ratings/', admin_ratings, name='admin-ratings-list'),
     path('ratings/<int:pk>/', admin_rating_detail, name='admin-rating-detail'),
 
-    # Invoices
-    path('invoices/', admin_invoices, name='admin-invoices-list'),
-    path('invoices/<int:pk>/', admin_invoice_detail, name='admin-invoice-detail'),
+    # Invoices - Temporarily disabled
+    # path('invoices/', admin_invoices, name='admin-invoices-list'),
+    # path('invoices/<int:pk>/', admin_invoice_detail, name='admin-invoice-detail'),
 
     path("me/",AdminMeView.as_view(), name="admin-me"),
     path("logs/", admin_logs_view),

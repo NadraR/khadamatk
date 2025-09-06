@@ -5,7 +5,7 @@ from services.models import Service
 from orders.models import Order
 from reviews.models import Review
 from ratings.models import Rating
-from invoices.models import Invoice
+# from invoices.models import Invoice  # Temporarily disabled - invoices app incomplete
 from .models import AdminActionLog
 
 User = get_user_model()
@@ -46,12 +46,12 @@ class AdminRatingSerializer(serializers.ModelSerializer):
         model = Rating
         fields = '__all__'
 
-# ---------------- Invoices ----------------
-class AdminInvoiceSerializer(serializers.ModelSerializer):
-    order_id = serializers.IntegerField(source='order.id', read_only=True)
-    class Meta:
-        model = Invoice
-        fields = '__all__'
+# ---------------- Invoices - Temporarily disabled ----------------
+# class AdminInvoiceSerializer(serializers.ModelSerializer):
+#     order_id = serializers.IntegerField(source='order.id', read_only=True)
+#     class Meta:
+#         model = Invoice
+#         fields = '__all__'
 class AdminActionLogSerializer(serializers.ModelSerializer):
     admin_username = serializers.CharField(source="admin.username", read_only=True)
 

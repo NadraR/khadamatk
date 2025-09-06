@@ -19,8 +19,8 @@ urlpatterns = [
     # Orders
     path('api/orders/', include('orders.urls')),
 
-    # Invoices
-    path('api/invoices/', include('invoices.urls')),
+    # Invoices - Temporarily disabled
+    # path('api/invoices/', include('invoices.urls')),
 
     # Ratings
     path('api/ratings/', include('ratings.urls')),
@@ -37,6 +37,7 @@ urlpatterns = [
 
     # Notifications
     path('api/notifications/', include('notifications.urls')),
-    path('api/favorites/', include('favorites.urls')),
+    # Favorites are handled in services app
+    # path('api/favorites/', include('favorites.urls')),
 
 ]

@@ -91,6 +91,50 @@ class UserLocation(models.Model):
         verbose_name=_("العنوان المفصل")
     )
     
+    # تفاصيل إضافية للموقع
+    building_number = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        verbose_name=_("رقم العمارة")
+    )
+    
+    apartment_number = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        verbose_name=_("رقم الشقة")
+    )
+    
+    floor_number = models.CharField(
+        max_length=10,
+        blank=True,
+        null=True,
+        verbose_name=_("رقم الطابق")
+    )
+    
+    neighborhood = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name=_("الحي")
+    )
+    
+    landmark = models.CharField(
+        max_length=200,
+        blank=True,
+        null=True,
+        verbose_name=_("معلم مميز"),
+        help_text=_("مثل: بجوار مدرسة، أمام مسجد، قرب محطة")
+    )
+    
+    additional_details = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name=_("تفاصيل إضافية"),
+        help_text=_("أي تفاصيل إضافية تساعد في الوصول للموقع")
+    )
+    
     city = models.CharField(
         max_length=100,
         blank=True,

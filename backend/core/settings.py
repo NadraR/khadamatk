@@ -56,13 +56,14 @@ INSTALLED_APPS = [
     
     # Local apps
     'accounts',
-    'invoices.apps.InvoicesConfig',
+    # 'invoices.apps.InvoicesConfig',  # Temporarily disabled - app incomplete
     'orders.apps.OrdersConfig',
     'ratings.apps.RatingsConfig',
     'reviews',
     'services.apps.ServicesConfig',
     'admin_api',
     'location',
+    # 'favorites.apps.FavoritesConfig',  # Using services.Favorite instead
     # 'chat',  # Temporarily disabled
     'notifications.apps.NotificationsConfig',
     # 'channels',  # Temporarily disabled

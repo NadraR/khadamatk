@@ -164,7 +164,7 @@
 //   const loadFavorites = async () => {
 //     try {
 //       // Assuming there's a favorites endpoint
-//       const response = await apiService.get('/api/favorites/');
+//       const response = await apiService.get('/api/services/favorites/');
 //       setFavorites(response || []);
 //     } catch (error) {
 //       // Silently handle 404 - endpoint not implemented yet
@@ -273,7 +273,7 @@
 
 //   const removeFavorite = async (favoriteId) => {
 //     try {
-//       await apiService.delete(`/api/favorites/${favoriteId}/`);
+//       await apiService.delete(`/api/services/favorites/remove/${favoriteId}/`);
 //       setFavorites(prev => prev.filter(fav => fav.id !== favoriteId));
 //     } catch (error) {
 //       console.error('Error removing favorite:', error);
@@ -1338,7 +1338,13 @@ const HomeClient = () => {
 
   const checkAuthentication = () => {
     const userData = localStorage.getItem('user');
-    if (!userData) {
+    const accessToken = localStorage.getItem('access');
+    
+    console.log('[DEBUG] checkAuthentication - userData:', userData);
+    console.log('[DEBUG] checkAuthentication - accessToken:', accessToken);
+    
+    if (!userData || !accessToken) {
+      console.log('[DEBUG] No user data or access token, redirecting to auth');
       navigate('/auth');
       return;
     }
@@ -1346,10 +1352,12 @@ const HomeClient = () => {
     try {
       const parsedUser = JSON.parse(userData);
       if (parsedUser.role !== 'client') {
+        console.log('[DEBUG] User is not a client, redirecting to home');
         navigate('/');
         return;
       }
       setUser(parsedUser);
+      console.log('[DEBUG] User authenticated:', parsedUser);
     } catch (error) {
       console.error('Error parsing user data:', error);
       navigate('/auth');
@@ -1358,14 +1366,16 @@ const HomeClient = () => {
 
   const loadClientData = async () => {
     try {
+      console.log('[DEBUG] loadClientData - Starting to load client data...');
       setLoading(true);
       await Promise.all([
         loadOrders(),
         loadFavorites(),
-        loadInvoices(),
+        // loadInvoices(), // Temporarily disabled due to invoiceService not available
         loadReviews(),
         loadRatings()
       ]);
+      console.log('[DEBUG] loadClientData - All data loaded successfully');
     } catch (error) {
       console.error('Error loading client data:', error);
     } finally {
@@ -1375,8 +1385,11 @@ const HomeClient = () => {
 
   const loadOrders = async () => {
     try {
+      console.log('[DEBUG] loadOrders - Starting to fetch orders...');
       const response = await apiService.get('/api/orders/');
       console.log('[DEBUG] loadOrders response:', response);
+      console.log('[DEBUG] loadOrders response type:', typeof response);
+      console.log('[DEBUG] loadOrders response length:', response?.length);
       setOrders(response || []);
       
       // Calculate stats
@@ -1400,13 +1413,14 @@ const HomeClient = () => {
 
   const loadFavorites = async () => {
     try {
-      // Assuming there's a favorites endpoint
-      const response = await apiService.get('/api/favorites/');
+      console.log('[DEBUG] loadFavorites - Starting to fetch favorites...');
+      const response = await apiService.get('/api/services/favorites/');
+      console.log('[DEBUG] loadFavorites response:', response);
       setFavorites(response || []);
     } catch (error) {
-      // Silently handle 404 - endpoint not implemented yet
-      if (error.response?.status !== 404) {
-        console.error('Error loading favorites:', error);
+      console.error('Error loading favorites:', error);
+      if (error.response?.status === 404) {
+        console.log('[DEBUG] Favorites endpoint not found - backend might not be running or endpoint not implemented');
       }
       setFavorites([]);
     }
@@ -1414,27 +1428,38 @@ const HomeClient = () => {
 
   const loadInvoices = async () => {
     try {
-      const result = await invoiceService.getMyInvoices();
-      if (result.success) {
-        setInvoices(result.data || []);
+      // Temporarily disable invoices loading since invoiceService is not available
+      // const result = await invoiceService.getMyInvoices();
+      // if (result.success) {
+      //   setInvoices(result.data || []);
         
-        // Update statistics based on invoices
-        const totalInvoices = result.data?.length || 0;
-        const paidInvoices = result.data?.filter(inv => inv.status === 'paid')?.length || 0;
-        const unpaidInvoices = result.data?.filter(inv => inv.status === 'unpaid')?.length || 0;
-        const totalAmount = result.data?.reduce((sum, inv) => sum + parseFloat(inv.amount || 0), 0) || 0;
+      //   // Update statistics based on invoices
+      //   const totalInvoices = result.data?.length || 0;
+      //   const paidInvoices = result.data?.filter(inv => inv.status === 'paid')?.length || 0;
+      //   const unpaidInvoices = result.data?.filter(inv => inv.status === 'unpaid')?.length || 0;
+      //   const totalAmount = result.data?.reduce((sum, inv) => sum + parseFloat(inv.amount || 0), 0) || 0;
         
-        setStatistics(prev => ({
-          ...prev,
-          totalInvoices,
-          paidInvoices,
-          unpaidInvoices,
-          totalAmount: totalAmount.toFixed(2)
-        }));
-      } else {
-        console.error('Error loading invoices:', result.error);
-        setInvoices([]);
-      }
+      //   setStatistics(prev => ({
+      //     ...prev,
+      //     totalInvoices,
+      //     paidInvoices,
+      //     unpaidInvoices,
+      //     totalAmount: totalAmount.toFixed(2)
+      //   }));
+      // } else {
+      //   console.error('Error loading invoices:', result.error);
+      //   setInvoices([]);
+      // }
+      
+      // Set empty invoices for now
+      setInvoices([]);
+      setStatistics(prev => ({
+        ...prev,
+        totalInvoices: 0,
+        paidInvoices: 0,
+        unpaidInvoices: 0,
+        totalAmount: '0.00'
+      }));
     } catch (error) {
       console.error('Error loading invoices:', error);
       setInvoices([]);
@@ -1443,12 +1468,14 @@ const HomeClient = () => {
 
   const loadReviews = async () => {
     try {
+      console.log('[DEBUG] loadReviews - Starting to fetch reviews...');
       const response = await apiService.get('/api/reviews/my-reviews/');
+      console.log('[DEBUG] loadReviews response:', response);
       setReviews(response || []);
     } catch (error) {
-      // Silently handle 404 - endpoint not implemented yet
-      if (error.response?.status !== 404) {
-        console.error('Error loading reviews:', error);
+      console.error('Error loading reviews:', error);
+      if (error.response?.status === 404) {
+        console.log('[DEBUG] Reviews endpoint not found - backend might not be running or endpoint not implemented');
       }
       setReviews([]);
     }
@@ -1456,7 +1483,9 @@ const HomeClient = () => {
 
   const loadRatings = async () => {
     try {
+      console.log('[DEBUG] loadRatings - Starting to fetch ratings...');
       const response = await apiService.get('/api/ratings/my-ratings/');
+      console.log('[DEBUG] loadRatings response:', response);
       setRatings(response || []);
       
       // Calculate average rating
@@ -1465,9 +1494,9 @@ const HomeClient = () => {
         setStats(prev => ({ ...prev, avgRating }));
       }
     } catch (error) {
-      // Silently handle 404 - endpoint not implemented yet
-      if (error.response?.status !== 404) {
-        console.error('Error loading ratings:', error);
+      console.error('Error loading ratings:', error);
+      if (error.response?.status === 404) {
+        console.log('[DEBUG] Ratings endpoint not found - backend might not be running or endpoint not implemented');
       }
       setRatings([]);
     }
@@ -1510,7 +1539,7 @@ const HomeClient = () => {
 
   const removeFavorite = async (favoriteId) => {
     try {
-      await apiService.delete(`/api/favorites/${favoriteId}/`);
+      await apiService.delete(`/api/services/favorites/remove/${favoriteId}/`);
       setFavorites(prev => prev.filter(fav => fav.id !== favoriteId));
     } catch (error) {
       console.error('Error removing favorite:', error);
@@ -1519,10 +1548,12 @@ const HomeClient = () => {
 
   const downloadInvoice = async (invoiceId) => {
     try {
-      const result = await invoiceService.downloadInvoice(invoiceId);
-      if (!result.success) {
-        console.error('Error downloading invoice:', result.error);
-      }
+      // Temporarily disable invoice download since invoiceService is not available
+      console.log('Invoice download temporarily disabled - invoiceService not available');
+      // const result = await invoiceService.downloadInvoice(invoiceId);
+      // if (!result.success) {
+      //   console.error('Error downloading invoice:', result.error);
+      // }
     } catch (error) {
       console.error('Error downloading invoice:', error);
     }

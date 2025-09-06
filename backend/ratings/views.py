@@ -23,3 +23,25 @@ def add_or_update_rating(request, service_id):
         service=service, customer=request.user, defaults={"score": score}
     )
     return Response(RatingSerializer(rating).data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def my_ratings(request):
+    """Get all ratings by the current user"""
+    ratings = Rating.objects.filter(
+        customer=request.user
+    ).select_related('service').order_by('-created_at')
+    
+    ratings_data = []
+    for rating in ratings:
+        ratings_data.append({
+            'id': rating.id,
+            'service_name': rating.service.title,
+            'service_id': rating.service.id,
+            'rating': rating.score,
+            'created_at': rating.created_at,
+            'updated_at': rating.updated_at,
+        })
+    
+    return Response(ratings_data)

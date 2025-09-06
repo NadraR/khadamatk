@@ -3,11 +3,12 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import { 
   BsBell, BsCheck2All, BsFilter, BsSearch, BsX,
   BsInfoCircle, BsCheckCircle, BsExclamationTriangle, BsXCircle,
-  BsCircleFill, BsEye, BsEyeSlash, BsArrowClockwise
+  BsCircleFill, BsEye, BsEyeSlash, BsArrowClockwise, BsCheckLg, BsXLg
 } from 'react-icons/bs';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import { notificationService } from '../services/NotificationService';
+import apiService from '../services/ApiService';
 
 const NotificationsPage = () => {
   const injected = useRef(false);
@@ -19,6 +20,7 @@ const NotificationsPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [stats, setStats] = useState({});
+  const [actionLoading, setActionLoading] = useState({});
   
   // Filter states
   const [filterLevel, setFilterLevel] = useState('all');
@@ -225,6 +227,43 @@ const NotificationsPage = () => {
     loadStats();
   };
 
+  const handleNotificationAction = async (notificationId, action) => {
+    setActionLoading(prev => ({ ...prev, [notificationId]: action }));
+    
+    try {
+      const response = await apiService.post(`/api/notifications/${notificationId}/action/`, {
+        action: action
+      });
+      
+      if (response.success || response.message) {
+        // Update the notification in the local state
+        setNotifications(prev => 
+          prev.map(n => 
+            n.id === notificationId 
+              ? { 
+                  ...n, 
+                  action_taken: true, 
+                  action_type: action === 'accept' ? 'accepted' : 'declined',
+                  is_read: true 
+                }
+              : n
+          )
+        );
+        
+        // Show success message
+        alert(response.message || `تم ${action === 'accept' ? 'قبول' : 'رفض'} الطلب بنجاح`);
+        
+        // Refresh stats
+        loadStats();
+      }
+    } catch (error) {
+      console.error('Error handling notification action:', error);
+      alert('حدث خطأ أثناء معالجة الطلب. يرجى المحاولة مرة أخرى.');
+    } finally {
+      setActionLoading(prev => ({ ...prev, [notificationId]: null }));
+    }
+  };
+
   const getNotificationIcon = (level) => {
     switch (level) {
       case 'success': return <BsCheckCircle className="text-success" />;
@@ -428,6 +467,129 @@ const NotificationsPage = () => {
                       <div className="text-muted mb-2">
                         {notification.message || notification.short_message}
                       </div>
+                      
+                      {/* Order Details for Workers */}
+                      {notification.requires_action && (
+                        <div className="order-details mb-3 p-3 bg-light rounded border-start border-primary border-3">
+                          <h6 className="text-primary mb-2">
+                            <BsInfoCircle className="me-2" />
+                            تفاصيل الطلب
+                          </h6>
+                          
+                          {/* Job Description - Most Important Info */}
+                          {notification.job_description && (
+                            <div className="job-description mb-3 p-2 bg-white rounded border">
+                              <div className="text-muted small mb-1">وصف العمل المطلوب:</div>
+                              <div className="fw-bold text-dark" style={{ fontSize: '1.1rem' }}>
+                                "{notification.job_description}"
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Service Category (Secondary Info) */}
+                          {notification.service_name && (
+                            <div className="d-flex justify-content-between mb-2">
+                              <span className="text-muted small">فئة الخدمة:</span>
+                              <span className="text-info">{notification.service_name}</span>
+                            </div>
+                          )}
+                          
+                          {/* Client's Offered Price */}
+                          {notification.offered_price && (
+                            <div className="d-flex justify-content-between mb-2">
+                              <span className="text-muted">السعر المعروض من العميل:</span>
+                              <span className="fw-bold text-success fs-5">{notification.offered_price} ريال</span>
+                            </div>
+                          )}
+                          
+                          {/* Location */}
+                          {(notification.location_lat && notification.location_lng) && (
+                            <div className="location-info mb-2">
+                              <div className="d-flex justify-content-between align-items-center">
+                                <span className="text-muted">الموقع:</span>
+                                <div className="d-flex gap-2">
+                                  <button 
+                                    className="btn btn-outline-primary btn-sm"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      window.open(`https://www.google.com/maps?q=${notification.location_lat},${notification.location_lng}`, '_blank');
+                                    }}
+                                  >
+                                    📍 عرض على الخريطة
+                                  </button>
+                                </div>
+                              </div>
+                              {notification.location_address && (
+                                <div className="small text-muted mt-1">
+                                  {notification.location_address}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {/* Price Information for Non-Action Notifications */}
+                      {!notification.requires_action && notification.offered_price && (
+                        <div className="price-info mb-2 p-2 bg-light rounded">
+                          <div className="d-flex justify-content-between">
+                            <span className="text-muted">السعر:</span>
+                            <span className="fw-bold text-primary">{notification.offered_price} ريال</span>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Action Buttons for Workers */}
+                      {notification.requires_action && !notification.action_taken && (
+                        <div className="action-buttons mb-3">
+                          <div className="d-flex gap-2">
+                            <button
+                              className="btn btn-success btn-sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleNotificationAction(notification.id, 'accept');
+                              }}
+                              disabled={actionLoading[notification.id]}
+                            >
+                              {actionLoading[notification.id] === 'accept' ? (
+                                <div className="spinner-border spinner-border-sm me-1" role="status">
+                                  <span className="visually-hidden">جاري القبول...</span>
+                                </div>
+                              ) : (
+                                <BsCheckLg className="me-1" />
+                              )}
+                              قبول الطلب
+                            </button>
+                            <button
+                              className="btn btn-danger btn-sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleNotificationAction(notification.id, 'decline');
+                              }}
+                              disabled={actionLoading[notification.id]}
+                            >
+                              {actionLoading[notification.id] === 'decline' ? (
+                                <div className="spinner-border spinner-border-sm me-1" role="status">
+                                  <span className="visually-hidden">جاري الرفض...</span>
+                                </div>
+                              ) : (
+                                <BsXLg className="me-1" />
+                              )}
+                              رفض الطلب
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Action Status */}
+                      {notification.action_taken && (
+                        <div className="action-status mb-2">
+                          <span className={`badge ${notification.action_type === 'accepted' ? 'bg-success' : 'bg-danger'}`}>
+                            {notification.action_type === 'accepted' ? 'تم القبول' : 'تم الرفض'}
+                          </span>
+                        </div>
+                      )}
+                      
                       <div className="d-flex justify-content-between align-items-center">
                         <small className="text-muted">
                           {formatTime(notification.created_at)}
