@@ -12,7 +12,7 @@ from django.http import HttpResponse
 import csv
 
 from services.models import Service, ServiceCategory
-from orders.models import Order
+from orders.models import Order, Booking
 from reviews.models import Review
 from ratings.models import Rating
 from invoices.models import Invoice
@@ -279,14 +279,33 @@ class AdminStatsView(APIView):
     permission_classes = [IsStaffOrSuperuser]
 
     def get(self, request):
+        # إحصائيات الطلبات حسب الحالة
+        orders_status = {
+            'pending': Order.objects.filter(status='pending').count(),
+            'accepted': Order.objects.filter(status='accepted').count(),
+            'completed': Order.objects.filter(status='completed').count(),
+            'cancelled': Order.objects.filter(status='cancelled').count(),
+        }
+        
+        # إحصائيات الحجوزات حسب الحالة
+        bookings_status = {
+            'pending': Booking.objects.filter(status='pending').count(),
+            'confirmed': Booking.objects.filter(status='confirmed').count(),
+            'completed': Booking.objects.filter(status='completed').count(),
+            'cancelled': Booking.objects.filter(status='cancelled').count(),
+        }
+        
         return Response({
             "users_count": User.objects.count(),
             "services_count": Service.objects.count(),
             "orders_count": Order.objects.count(),
+            "bookings_count": Booking.objects.count(),
             "reviews_count": Review.objects.count(),
             "ratings_count": Rating.objects.count(),
             "invoices_count": Invoice.objects.count(),
-            "avg_rating": Rating.objects.aggregate(avg=Avg("score"))["avg"],
+            "avg_rating": Rating.objects.aggregate(avg=Avg("score"))["avg"] or 0,
+            "orders_status": orders_status,
+            "bookings_status": bookings_status,
         })
 
 class FinancialReportView(APIView):
