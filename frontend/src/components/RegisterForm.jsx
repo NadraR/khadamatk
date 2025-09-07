@@ -151,6 +151,13 @@ const RegisterForm = ({ onSuccess, onError, darkMode, language = "ar" }) => {
         }
       );
       
+      // Handle redirect path for workers
+      if (result.redirectPath) {
+        console.log('[DEBUG] RegisterForm: Redirecting to:', result.redirectPath);
+        window.location.href = result.redirectPath;
+        return;
+      }
+      
       if (onSuccess) onSuccess(result.data);
     } catch (err) {
       const errorMsg = err.message || t.registerError;

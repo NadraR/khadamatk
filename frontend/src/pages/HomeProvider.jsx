@@ -146,7 +146,7 @@ const HomeProvider = () => {
 
   const loadWorkerProfile = async () => {
     try {
-      const response = await apiService.get(`/api/accounts/user/${user.id}/profile/`);
+      const response = await apiService.get('/api/accounts/worker/profile/');
       console.log('[DEBUG] Worker profile response:', response);
       const workerProfile = response.worker_profile || response;
       setProfile(workerProfile);
@@ -177,12 +177,15 @@ const HomeProvider = () => {
       const response = await apiService.get('/api/orders/');
       console.log('[DEBUG] Provider orders response:', response);
       
+      // Extract orders array from response
+      const ordersData = response?.results || response?.data || response || [];
+      
       // Filter orders where this worker is the provider (this logic might need adjustment based on your Order model)
-      const providerOrders = response?.filter(order => 
+      const providerOrders = Array.isArray(ordersData) ? ordersData.filter(order => 
         order.worker_id === user.id || 
         order.service?.provider?.id === user.id ||
         order.service?.user_id === user.id
-      ) || [];
+      ) : [];
       
       setOrders(providerOrders);
       
@@ -209,13 +212,15 @@ const HomeProvider = () => {
 
   const loadServices = async () => {
     try {
-      // Load services created by this worker
+      // Load only services created by this worker
       const response = await apiService.get(`/api/services/?provider=${user.id}`);
-      console.log('[DEBUG] Services response:', response);
-      setServices(response || []);
+      console.log('[DEBUG] Worker services response:', response);
       
-      const totalServices = response?.length || 0;
-      const activeServices = response?.filter(service => service.is_active !== false).length || 0;
+      const servicesData = response?.results || response?.data || response || [];
+      setServices(Array.isArray(servicesData) ? servicesData : []);
+      
+      const totalServices = Array.isArray(servicesData) ? servicesData.length : 0;
+      const activeServices = Array.isArray(servicesData) ? servicesData.filter(service => service.is_active !== false).length : 0;
       
       setStats(prev => ({
         ...prev,
@@ -223,7 +228,7 @@ const HomeProvider = () => {
         activeServices
       }));
     } catch (error) {
-      console.error('Error loading services:', error);
+      console.error('Error loading worker services:', error);
       setServices([]);
     }
   };
@@ -264,12 +269,13 @@ const HomeProvider = () => {
   const loadReviews = async () => {
     try {
       // Load reviews for this provider's services
-      const response = await apiService.get(`/api/reviews/?provider=${user.id}`);
-      setReviews(response || []);
+      const response = await apiService.get('/api/reviews/my-reviews/');
+      const reviewsData = response?.results || response?.data || response || [];
+      setReviews(Array.isArray(reviewsData) ? reviewsData : []);
       
       // Calculate average rating
-      if (response && response.length > 0) {
-        const avgRating = response.reduce((sum, review) => sum + review.rating, 0) / response.length;
+      if (Array.isArray(reviewsData) && reviewsData.length > 0) {
+        const avgRating = reviewsData.reduce((sum, review) => sum + review.rating, 0) / reviewsData.length;
         setStats(prev => ({ ...prev, avgRating }));
       }
     } catch (error) {

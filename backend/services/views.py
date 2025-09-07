@@ -90,6 +90,11 @@ def service_list(request):
         if city:
             services = services.filter(city__icontains=city)
         
+        # Add provider filter support
+        provider_id = request.query_params.get("provider")
+        if provider_id:
+            services = services.filter(provider_id=provider_id)
+        
         q = request.query_params.get("q")
         if q:
             services = services.filter(Q(title__icontains=q) | Q(description__icontains=q))

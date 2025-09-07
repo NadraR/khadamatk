@@ -96,7 +96,7 @@ const WorkerProfileCompletion = () => {
       
       // If local flag is true, verify with server data
       try {
-        const profileResponse = await apiService.get(`/api/accounts/user/${userData.id}/profile/`);
+        const profileResponse = await apiService.get('/api/accounts/worker/profile/');
         const profile = profileResponse.worker_profile || profileResponse;
         
         console.log('[DEBUG] Server profile data:', profile);
@@ -273,8 +273,19 @@ const WorkerProfileCompletion = () => {
       };
 
       console.log('[DEBUG] Completing worker profile with data:', profileData);
+      console.log('[DEBUG] Profile data validation:', {
+        job_title: profileData.job_title,
+        experience_years: profileData.experience_years,
+        hourly_rate: profileData.hourly_rate,
+        skills: profileData.skills,
+        services_provided: profileData.services_provided,
+        estimated_price: profileData.estimated_price,
+        neighborhood: profileData.neighborhood
+      });
       
+      console.log('[DEBUG] Calling authService.completeWorkerProfile...');
       const result = await authService.completeWorkerProfile(profileData);
+      console.log('[DEBUG] AuthService response:', result);
       
       if (result.success) {
         console.log('[DEBUG] Worker profile completed successfully');
@@ -308,12 +319,32 @@ const WorkerProfileCompletion = () => {
       }
     } catch (error) {
       console.error('[DEBUG] Profile completion error:', error);
-      const errorMessage = error.response?.data?.detail || 
-                          error.response?.data?.message ||
-                          error.message || 
-                          (i18n.language === 'ar' ? 
-                           'حدث خطأ أثناء إكمال الملف الشخصي' : 
-                           'Error completing profile');
+      console.error('[DEBUG] Error response:', error.response);
+      console.error('[DEBUG] Error response data:', error.response?.data);
+      console.error('[DEBUG] Error status:', error.response?.status);
+      
+      let errorMessage = '';
+      if (error.response?.data) {
+        if (typeof error.response.data === 'string') {
+          errorMessage = error.response.data;
+        } else if (error.response.data.detail) {
+          errorMessage = error.response.data.detail;
+        } else if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.response.data.error) {
+          errorMessage = error.response.data.error;
+        } else {
+          // Handle validation errors
+          const validationErrors = Object.values(error.response.data).flat();
+          errorMessage = validationErrors.join(', ');
+        }
+      } else {
+        errorMessage = error.message || (i18n.language === 'ar' ? 
+          'حدث خطأ أثناء إكمال الملف الشخصي' : 
+          'Error completing profile');
+      }
+      
+      console.error('[DEBUG] Final error message:', errorMessage);
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);

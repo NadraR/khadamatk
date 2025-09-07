@@ -56,6 +56,14 @@ const LoginForm = ({ onSuccess, onError, darkMode, language = "ar" }) => {
     setErrors({});
     try {
       const result = await authService.login(email, password);
+      
+      // Handle redirect path for workers
+      if (result.redirectPath) {
+        console.log('[DEBUG] LoginForm: Redirecting to:', result.redirectPath);
+        window.location.href = result.redirectPath;
+        return;
+      }
+      
       if (onSuccess) onSuccess(result.data);
     } catch (err) {
       const errorMsg = err.message || t.loginError;
