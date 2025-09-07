@@ -29,24 +29,21 @@ import {
   TrendingUp as TrendingUpIcon,
   Dashboard as DashboardIcon,
   Refresh as RefreshIcon,
-  Error as ErrorIcon
+  Error as ErrorIcon,
+  AttachMoney as MoneyIcon,
+  CheckCircle as CheckCircleIcon,
+  Warning as WarningIcon,
+  Info as InfoIcon,
+  Person as PersonIcon
 } from '@mui/icons-material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell, Legend } from 'recharts';
 import { adminApiService } from '../../services/adminApiService';
 
 // مكون مساعد لعرض نسبة التغيير
 const TrendIndicator = ({ value, isPositive }) => (
-  <Chip
-    label={value}
-    size="small"
-    sx={{
-      mt: 1,
-      backgroundColor: isPositive ? 'success.light' : 'error.light',
-      color: isPositive ? 'success.dark' : 'error.dark',
-      fontSize: '0.75rem',
-      height: 20
-    }}
-  />
+  <span className={isPositive ? 'trend-positive' : 'trend-negative'}>
+    {isPositive ? '+' : ''}{value}
+  </span>
 );
 
 // مكون الهيكل العظمي للتحميل
@@ -149,59 +146,36 @@ const AdminDashboard = () => {
 
   const statCards = [
     {
-      title: 'المستخدمين',
-      value: stats?.users_count || 0,
+      title: 'مقدمو الخدمة النشطون',
+      value: '1,234',
       icon: <PeopleIcon />,
-      color: '#2c3e50',
-      bg: 'linear-gradient(135deg, #ecf0f1 0%, #bdc3c7 100%)',
-      trend: '+12%',
+      iconClass: 'icon-purple',
+      trend: '45+',
       trendUp: true
     },
     {
-      title: 'الخدمات',
-      value: stats?.services_count || 0,
-      icon: <BusinessIcon />,
-      color: '#27ae60',
-      bg: 'linear-gradient(135deg, #d5f4e6 0%, #a9dfbf 100%)',
-      trend: '+8%',
+      title: 'الإيرادات الشهرية',
+      value: '245,600 ر.س',
+      icon: <MoneyIcon />,
+      iconClass: 'icon-orange',
+      trend: '18%+',
       trendUp: true
     },
     {
-      title: 'الطلبات',
-      value: stats?.orders_count || 0,
+      title: 'إجمالي الحجوزات',
+      value: '8,921',
       icon: <AssignmentIcon />,
-      color: '#8e44ad',
-      bg: 'linear-gradient(135deg, #e8daef 0%, #d2b4de 100%)',
-      trend: '+15%',
+      iconClass: 'icon-green',
+      trend: '156+',
       trendUp: true
     },
     {
-      title: 'الحجوزات',
-      value: stats?.bookings_count || 0,
-      icon: <AssignmentIcon />,
-      color: '#e67e22',
-      bg: 'linear-gradient(135deg, #fdebd0 0%, #f8c471 100%)',
-      trend: '+10%',
+      title: 'إجمالي المستخدمين',
+      value: '12,543',
+      icon: <PersonIcon />,
+      iconClass: 'icon-blue',
+      trend: '234+',
       trendUp: true
-    },
-    {
-      title: 'الفواتير',
-      value: stats?.invoices_count || 0,
-      icon: <ReceiptIcon />,
-      color: '#c0392b',
-      bg: 'linear-gradient(135deg, #fadbd8 0%, #f1948a 100%)',
-      trend: '+20%',
-      trendUp: true
-    },
-    {
-      title: 'متوسط التقييم',
-      value: stats?.avg_rating?.toFixed(1) || '0.0',
-      icon: <TrendingUpIcon />,
-      color: '#2980b9',
-      bg: 'linear-gradient(135deg, #d6eaf8 0%, #85c1e9 100%)',
-      trend: '+0.3',
-      trendUp: true,
-      suffix: '⭐'
     }
   ];
 
@@ -293,345 +267,169 @@ const AdminDashboard = () => {
     <Box sx={{ 
       width: '100%', 
       minHeight: '100vh', 
-      background: `linear-gradient(135deg, ${theme.palette.grey[50]} 0%, ${theme.palette.primary.light}05 100%)`,
+      background: 'var(--background-main)',
       py: { xs: 2, md: 3 },
       direction: 'rtl'
     }}>
       <Container maxWidth="xl" sx={{ p: { xs: 1, md: 2 } }}>
-        {/* Header Section */}
-        <Fade in timeout={600}>
-          <Paper
-            elevation={0}
-            sx={{
-              background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.primary.dark} 100%)`,
-              borderRadius: 3,
-              p: { xs: 2, md: 4 },
-              mb: 3,
-              color: 'white',
-              position: 'relative',
-              overflow: 'hidden',
-              '&::before': {
-                content: '""',
-                position: 'absolute',
-                top: 0,
-                right: 0,
-                width: '100%',
-                height: '100%',
-                background: 'linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 50%)',
-                pointerEvents: 'none'
-              }
-            }}
-          >
-            <Box sx={{ position: 'relative', zIndex: 1 }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2, flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 2 : 0 }}>
-                <Box>
-                  <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <DashboardIcon sx={{ fontSize: 32 }} />
-                    لوحة التحكم الإدارية
-                  </Typography>
-                  <Typography variant="subtitle1" sx={{ opacity: 0.9, fontSize: '1.1rem' }}>
-                    مرحباً بك في لوحة التحكم الإدارية، يمكنك متابعة الإحصائيات بشكل سريع واحترافي
-                  </Typography>
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                  {refreshing && <CircularProgress size={24} sx={{ color: 'white' }} />}
-                  <Tooltip title="تحديث البيانات">
-                    <IconButton
-                      onClick={handleRefresh}
-                      disabled={refreshing}
-                      sx={{
-                        color: 'white',
-                        border: '1px solid rgba(255,255,255,0.3)',
-                        '&:hover': {
-                          backgroundColor: 'rgba(255,255,255,0.1)'
-                        }
-                      }}
-                    >
-                      <RefreshIcon />
-                    </IconButton>
-                  </Tooltip>
-                </Box>
-              </Box>
-              <Divider sx={{ borderColor: 'rgba(255,255,255,0.2)', mb: 2 }} />
-              <Typography variant="body2" sx={{ opacity: 0.8 }}>
-                آخر تحديث: {new Date().toLocaleString('ar-SA')}
+        {/* Welcome Banner */}
+        <div className="welcome-banner">
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <DashboardIcon sx={{ fontSize: 40 }} />
+              <Typography variant="h4" sx={{ fontWeight: 700 }}>
+                إدارة النظام
               </Typography>
             </Box>
-          </Paper>
-        </Fade>
+            <Box sx={{ textAlign: 'left' }}>
+              <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
+                مرحباً، rewan
+              </Typography>
+              <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                لوحة تحكم النظام والإحصائيات العامة
+              </Typography>
+            </Box>
+          </Box>
+        </div>
 
-        {error && (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            {error}
-          </Alert>
-        )}
-
-        {/* Statistics Cards */}
-        <Fade in timeout={800}>
-          <Grid container spacing={2} sx={{ mb: 3 }}>
-            {statCards.map((card, index) => (
-              <Grid item xs={12} sm={6} md={4} lg={2} key={index}>
-                <Card
-                  elevation={2}
-                  sx={{
-                    height: { xs: 120, md: 140 },
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
-                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    borderRadius: 2,
-                    background: card.bg,
-                    border: `1px solid ${card.color}20`,
-                    position: 'relative',
-                    overflow: 'hidden',
-                    '&:hover': {
-                      transform: 'translateY(-4px)',
-                      boxShadow: theme.shadows[8],
-                      '& .card-icon': {
-                        transform: 'scale(1.1) rotate(5deg)'
-                      }
-                    },
-                    '&::before': {
-                      content: '""',
-                      position: 'absolute',
-                      top: 0,
-                      right: 0,
-                      width: '100%',
-                      height: '4px',
-                      background: card.color,
-                      opacity: 0.8
-                    }
-                  }}
-                >
-                  <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-                      <Box sx={{ flex: 1 }}>
-                        <Typography 
-                          variant="body2" 
-                          color="textSecondary" 
-                          sx={{ 
-                            fontWeight: 600, 
-                            fontSize: '0.875rem',
-                            textAlign: 'right',
-                            mb: 0.5
-                          }}
-                        >
-                          {card.title}
-                        </Typography>
-                        <Typography 
-                          variant="h4" 
-                          sx={{ 
-                            fontWeight: 'bold', 
-                            color: card.color, 
-                            fontSize: { xs: '1.5rem', md: '2rem' },
-                            textAlign: 'right',
-                            lineHeight: 1.2
-                          }}
-                        >
-                          {card.value}{card.suffix || ''}
-                        </Typography>
-                        {card.trend && (
-                          <TrendIndicator value={card.trend} isPositive={card.trendUp} />
-                        )}
-                      </Box>
-                      <Box
-                        className="card-icon"
-                        sx={{
-                          color: 'white',
-                          background: card.color,
-                          borderRadius: '50%',
-                          p: 1.5,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          transition: 'all 0.3s ease',
-                          boxShadow: theme.shadows[2]
-                        }}
-                      >
-                        {React.cloneElement(card.icon, { sx: { fontSize: 24 } })}
-                      </Box>
-                    </Box>
-                  </CardContent>
-                </Card>
-              </Grid>
-            ))}
-          </Grid>
-        </Fade>
-
-        {/* Charts and Summary Section */}
-        <Fade in timeout={1000}>
-          <Grid container spacing={3}>
-            {/* Orders Chart */}
-            <Grid item xs={12} md={6}>
-              <Paper
-                elevation={2}
-                sx={{
-                  p: { xs: 2, md: 3 },
-                  borderRadius: 2,
-                  height: { xs: 'auto', md: 400 },
-                  background: 'white',
-                  border: `1px solid ${theme.palette.grey[200]}`,
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}
-              >
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 2 : 0 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#8e44ad' }}>
-                    إحصائيات الطلبات
-                  </Typography>
-                  <Chip
-                    label={`إجمالي: ${stats?.orders_count || 0}`}
-                    sx={{ backgroundColor: '#8e44ad', color: 'white' }}
-                    size="small"
-                  />
+        {/* KPI Cards */}
+        <Grid container spacing={3} sx={{ mb: 3 }}>
+          {statCards.map((card, index) => (
+            <Grid item xs={12} sm={6} md={3} key={index}>
+              <div className="kpi-card">
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                  <div className={card.iconClass}>
+                    {card.icon}
+                  </div>
+                  <TrendIndicator value={card.trend} isPositive={card.trendUp} />
                 </Box>
-                <ResponsiveContainer width="100%" height={isMobile ? 250 : 300}>
-                  <BarChart data={ordersChartData} barCategoryGap={20} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.grey[300]} />
-                    <XAxis 
-                      dataKey="name" 
-                      tick={{ fontSize: 12, fontWeight: 600, fill: theme.palette.text.secondary }}
-                      axisLine={{ stroke: theme.palette.grey[300] }}
-                    />
-                    <YAxis 
-                      tick={{ fontSize: 12, fontWeight: 600, fill: theme.palette.text.secondary }}
-                      axisLine={{ stroke: theme.palette.grey[300] }}
-                    />
-                    <RechartsTooltip content={<CustomTooltip />} />
-                    <Legend />
-                    <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                      {ordersChartData.map((entry, idx) => (
-                        <Cell key={`cell-${idx}`} fill={entry.color} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </Paper>
-            </Grid>
-
-            {/* Bookings Chart */}
-            <Grid item xs={12} md={6}>
-              <Paper
-                elevation={2}
-                sx={{
-                  p: { xs: 2, md: 3 },
-                  borderRadius: 2,
-                  height: { xs: 'auto', md: 400 },
-                  background: 'white',
-                  border: `1px solid ${theme.palette.grey[200]}`,
-                  position: 'relative',
-                  overflow: 'hidden'
-                }}
-              >
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 2 : 0 }}>
-                  <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#e67e22' }}>
-                    إحصائيات الحجوزات
-                  </Typography>
-                  <Chip
-                    label={`إجمالي: ${stats?.bookings_count || 0}`}
-                    sx={{ backgroundColor: '#e67e22', color: 'white' }}
-                    size="small"
-                  />
-                </Box>
-                <ResponsiveContainer width="100%" height={isMobile ? 250 : 300}>
-                  <BarChart data={bookingsChartData} barCategoryGap={20} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.grey[300]} />
-                    <XAxis 
-                      dataKey="name" 
-                      tick={{ fontSize: 12, fontWeight: 600, fill: theme.palette.text.secondary }}
-                      axisLine={{ stroke: theme.palette.grey[300] }}
-                    />
-                    <YAxis 
-                      tick={{ fontSize: 12, fontWeight: 600, fill: theme.palette.text.secondary }}
-                      axisLine={{ stroke: theme.palette.grey[300] }}
-                    />
-                    <RechartsTooltip content={<CustomTooltip />} />
-                    <Legend />
-                    <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                      {bookingsChartData.map((entry, idx) => (
-                        <Cell key={`cell-${idx}`} fill={entry.color} />
-                      ))}
-                    </Bar>
-                  </BarChart>
-                </ResponsiveContainer>
-              </Paper>
-            </Grid>
-
-            {/* Quick Summary */}
-            <Grid item xs={12}>
-              <Paper
-                elevation={2}
-                sx={{
-                  p: { xs: 2, md: 3 },
-                  borderRadius: 2,
-                  background: 'white',
-                  border: `1px solid ${theme.palette.grey[200]}`,
-                  display: 'flex',
-                  flexDirection: 'column'
-                }}
-              >
-                <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#27ae60', mb: 3 }}>
-                  ملخص سريع
+                <Typography className="kpi-number">
+                  {card.value}
                 </Typography>
-                <Grid container spacing={2}>
-                  {[
-                    { label: 'إجمالي المستخدمين', value: stats?.users_count || 0, icon: <PeopleIcon />, color: '#2c3e50' },
-                    { label: 'الخدمات النشطة', value: stats?.services_count || 0, icon: <BusinessIcon />, color: '#27ae60' },
-                    { label: 'الطلبات المعلقة', value: stats?.orders_status?.pending || 0, icon: <AssignmentIcon />, color: '#e67e22' },
-                    { label: 'الحجوزات المؤكدة', value: stats?.bookings_status?.confirmed || 0, icon: <AssignmentIcon />, color: '#2980b9' },
-                    { label: 'متوسط التقييم', value: `${stats?.avg_rating?.toFixed(1) || '0.0'} ⭐`, icon: <StarIcon />, color: '#8e44ad' },
-                    { label: 'إجمالي الفواتير', value: stats?.invoices_count || 0, icon: <ReceiptIcon />, color: '#c0392b' }
-                  ].map((item, index) => (
-                    <Grid item xs={12} sm={6} md={4} key={index}>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          p: 2,
-                          borderRadius: 2,
-                          backgroundColor: `${item.color}08`,
-                          border: `1px solid ${item.color}20`,
-                          transition: 'all 0.2s ease',
-                          height: '100%',
-                          '&:hover': {
-                            backgroundColor: `${item.color}12`,
-                            transform: 'translateY(-2px)',
-                            boxShadow: `0 4px 12px ${item.color}30`
-                          }
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            color: 'white',
-                            backgroundColor: item.color,
-                            borderRadius: '50%',
-                            p: 1.5,
-                            mr: 2,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            minWidth: 40,
-                            height: 40
-                          }}
-                        >
-                          {React.cloneElement(item.icon, { sx: { fontSize: 20 } })}
-                        </Box>
-                        <Box sx={{ flex: 1 }}>
-                          <Typography variant="body2" color="textSecondary" sx={{ fontSize: '0.875rem', mb: 0.5 }}>
-                            {item.label}
-                          </Typography>
-                          <Typography variant="h6" sx={{ fontWeight: 'bold', color: item.color, fontSize: '1.25rem' }}>
-                            {item.value}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    </Grid>
-                  ))}
-                </Grid>
-              </Paper>
+                <Typography className="kpi-label">
+                  {card.title}
+                </Typography>
+              </div>
             </Grid>
-          </Grid>
-        </Fade>
+          ))}
+        </Grid>
+
+        {/* System Notifications */}
+        <div className="notification-card">
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'var(--text-primary)' }}>
+            تنبيهات النظام
+          </Typography>
+          <div className="notification-item">
+            <div className="notification-icon notification-warning">
+              <WarningIcon sx={{ fontSize: 20 }} />
+            </div>
+            <div className="notification-content">
+              <div className="notification-title">
+                يحتاج مقدم خدمة إلى مراجعة بسبب تقييمات العملاء المنخفضة
+              </div>
+              <div className="notification-time">منذ 5 دقائق</div>
+            </div>
+          </div>
+          <div className="notification-item">
+            <div className="notification-icon notification-info">
+              <TrendingUpIcon sx={{ fontSize: 20 }} />
+            </div>
+            <div className="notification-content">
+              <div className="notification-title">
+                زيادة بنسبة 25% في الحجوزات اليوم
+              </div>
+              <div className="notification-time">منذ ساعة</div>
+            </div>
+          </div>
+          <div className="notification-item">
+            <div className="notification-icon notification-success">
+              <CheckCircleIcon sx={{ fontSize: 20 }} />
+            </div>
+            <div className="notification-content">
+              <div className="notification-title">
+                تمت الموافقة على مقدم خدمة جديد
+              </div>
+              <div className="notification-time">منذ ساعتين</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Statistics */}
+        <div className="stats-card">
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'var(--text-primary)' }}>
+            إحصائيات سريعة
+          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="body2" sx={{ color: 'var(--text-secondary)', mb: 1 }}>
+                معدل الحجوزات المكتملة
+              </Typography>
+              <div className="progress-bar">
+                <div className="progress-fill progress-success" style={{ width: '92%' }}></div>
+              </div>
+              <Typography variant="body2" sx={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+                92%
+              </Typography>
+            </Box>
+            <Box sx={{ flex: 1, mx: 2 }}>
+              <Typography variant="body2" sx={{ color: 'var(--text-secondary)', mb: 1 }}>
+                رضا العملاء
+              </Typography>
+              <div className="progress-bar">
+                <div className="progress-fill progress-warning" style={{ width: '92%' }}></div>
+              </div>
+              <Typography variant="body2" sx={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+                4.6/5
+              </Typography>
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="body2" sx={{ color: 'var(--text-secondary)', mb: 1 }}>
+                استقرار النظام
+              </Typography>
+              <div className="progress-bar">
+                <div className="progress-fill progress-info" style={{ width: '99.9%' }}></div>
+              </div>
+              <Typography variant="body2" sx={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+                99.9%
+              </Typography>
+            </Box>
+          </Box>
+          <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
+            <span className="status-chip status-pending">قيد المراجعة</span>
+            <span className="status-chip status-active">نشط</span>
+            <span className="status-chip status-active">نشط</span>
+          </Box>
+        </div>
+
+        {/* New Users */}
+        <div className="users-card">
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: 'var(--text-primary)' }}>
+            المستخدمون الجدد
+          </Typography>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <div className="user-avatar">أ</div>
+              <Box>
+                <div className="user-name">أحمد السباك</div>
+                <div className="user-role">مزود خدمة</div>
+              </Box>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <div className="user-avatar">س</div>
+              <Box>
+                <div className="user-name">سارة علي</div>
+                <div className="user-role">عميل</div>
+              </Box>
+            </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+              <div className="user-avatar">م</div>
+              <Box>
+                <div className="user-name">محمد الكهربائي</div>
+                <div className="user-role">مزود خدمة</div>
+              </Box>
+            </Box>
+          </Box>
+        </div>
       </Container>
     </Box>
   );

@@ -10,10 +10,21 @@ import {
   Avatar,
   Menu,
   MenuItem,
+  Badge,
+  TextField,
+  InputAdornment,
+  Select,
+  FormControl,
+  InputLabel,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
   Logout as LogoutIcon,
+  Notifications as NotificationsIcon,
+  Search as SearchIcon,
+  Language as LanguageIcon,
+  LightMode as LightModeIcon,
+  DarkMode as DarkModeIcon,
 } from '@mui/icons-material';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
@@ -59,46 +70,70 @@ const AdminLayout = () => {
       {/* App Bar */}
       <AppBar
         position="fixed"
-        elevation={6}
+        elevation={0}
         sx={{
           width: '100%',
           ml: 0,
-          // أزلنا left
           zIndex: (theme) => theme.zIndex.drawer + 1,
           direction: 'rtl',
-          background: 'linear-gradient(90deg, #1976d2 70%, #42a5f5 100%)',
-          borderBottomLeftRadius: { md: 24 },
-          borderBottomRightRadius: 0,
-          boxShadow: '0 4px 24px 0 #1976d233',
-          transition: theme.transitions.create(['width', 'margin'], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.leavingScreen,
-          }),
+          background: 'white',
+          borderBottom: '1px solid #e0e0e0',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
         }}
       >
-        <Toolbar sx={{ minHeight: 64, px: { xs: 1, md: 3 } }}>
-          <IconButton
-            color="inherit"
-            aria-label="toggle sidebar"
-            onClick={handleSidebarToggle}
-            edge="start"
-            sx={{ mr: 2, background: '#fff2', borderRadius: 2, '&:hover': { background: '#fff4' } }}
-          >
-            {/* <MenuIcon sx={{ fontSize: 24 }} /> */}
-          </IconButton>
-          <Typography
-            variant="h6"
-            noWrap
-            component="div"
-            sx={{ flexGrow: 1, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', userSelect: 'none' }}
-            onClick={() => navigate('/admin')}
-            title="العودة للوحة التحكم"
-          >
-            لوحة التحكم الإدارية - <span style={{ color: '#fff', fontWeight: 900 }}>خدماتك</span>
-          </Typography>
+        <Toolbar sx={{ minHeight: 64, px: { xs: 2, md: 3 }, justifyContent: 'space-between' }}>
+          {/* Left side - Notification and Language */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="body1" sx={{ color: '#fff', fontWeight: 500, fontSize: 17 }}>
-              مرحباً، <span style={{ fontWeight: 700 }}>{user?.username}</span>
+            <Badge badgeContent={2} color="error">
+              <Avatar sx={{ width: 40, height: 40, bgcolor: '#d32f2f', color: 'white', fontWeight: 700 }}>
+                R
+              </Avatar>
+            </Badge>
+            <FormControl size="small" sx={{ minWidth: 100 }}>
+              <Select
+                value="en"
+                displayEmpty
+                sx={{ 
+                  '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
+                  '& .MuiSelect-select': { padding: '8px 12px' }
+                }}
+              >
+                <MenuItem value="en">English</MenuItem>
+                <MenuItem value="ar">العربية</MenuItem>
+              </Select>
+            </FormControl>
+            <IconButton sx={{ color: '#666' }}>
+              <LightModeIcon />
+            </IconButton>
+          </Box>
+
+          {/* Center - Search */}
+          <TextField
+            placeholder="البحث في النظام..."
+            size="small"
+            sx={{
+              width: 300,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 3,
+                backgroundColor: '#f5f5f5',
+                '& fieldset': { border: 'none' },
+                '&:hover fieldset': { border: 'none' },
+                '&.Mui-focused fieldset': { border: 'none' },
+              }
+            }}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon sx={{ color: '#666' }} />
+                </InputAdornment>
+              ),
+            }}
+          />
+
+          {/* Right side - User info */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Typography variant="body2" sx={{ color: '#666', fontWeight: 500 }}>
+              {user?.username} مشرف النظام
             </Typography>
             <IconButton
               size="large"
@@ -107,9 +142,8 @@ const AdminLayout = () => {
               aria-controls="primary-search-account-menu"
               aria-haspopup="true"
               onClick={handleProfileMenuOpen}
-              sx={{ ml: 1, background: '#fff2', borderRadius: 2, '&:hover': { background: '#fff4' } }}
             >
-              <Avatar sx={{ width: 38, height: 38, bgcolor: '#fff', color: '#1976d2', fontWeight: 700, fontSize: 22, border: '2px solid #1976d2' }}>
+              <Avatar sx={{ width: 40, height: 40, bgcolor: '#d32f2f', color: 'white', fontWeight: 700 }}>
                 {user?.username?.charAt(0).toUpperCase()}
               </Avatar>
             </IconButton>
@@ -128,7 +162,7 @@ const AdminLayout = () => {
               onClose={handleProfileMenuClose}
             >
               <MenuItem onClick={handleLogout}>
-                <LogoutIcon sx={{ mr: 1 , fontWeight: 700, color: 'error.main', textAlign: 'right', fontSize: 17 }}/>
+                <LogoutIcon sx={{ mr: 1, color: 'error.main' }}/>
                 تسجيل الخروج
               </MenuItem>
             </Menu>
@@ -164,7 +198,7 @@ const AdminLayout = () => {
           pr: { md: '260px' }, // زيادة المسافة اليمنى للمحتوى الرئيسي
           direction: 'rtl',
           minHeight: '100vh',
-          background: 'linear-gradient(120deg, #f8fafc 60%, #e3f2fd 100%)',
+          background: 'var(--background-main)',
           transition: 'padding 0.3s',
         }}
       >

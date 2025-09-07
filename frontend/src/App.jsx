@@ -23,7 +23,7 @@ import OrdersPage from './pages/admin/OrdersPage';
 import ReviewsPage from './pages/admin/ReviewsPage';
 import RatingsPage from './pages/admin/RatingsPage';
 import InvoicesPage from './pages/admin/InvoicesPage';
-import NotificationsPage from './pages/admin/NotificationsPage';
+import AdminNotifications from './pages/admin/AdminNotifications';
 import SettingsPage from './pages/admin/SettingsPage';
 import AdminLogsPage from './pages/admin/AdminLogsPage';
 import CategoriesPage from './pages/admin/CategoriesPage';
@@ -119,7 +119,7 @@ function App() {
             <Route path="reviews" element={<ReviewsPage />} />
             <Route path="ratings" element={<RatingsPage />} />
             <Route path="invoices" element={<InvoicesPage />} />
-            <Route path="notifications" element={<NotificationsPage />} />
+            <Route path="notifications" element={<AdminNotifications />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="logs" element={<AdminLogsPage />} />
           </Route>
