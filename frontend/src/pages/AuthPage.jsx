@@ -59,7 +59,7 @@ const AuthPage = () => {
     }
   };
 
-  const redirectAfterLogin = (userData) => {
+  const redirectAfterLogin = async (userData) => {
     console.log("[DEBUG] AuthPage: redirectAfterLogin called with:", userData);
     
     // Check if there's a pending redirect (from booking flow)
@@ -78,6 +78,50 @@ const AuthPage = () => {
         console.log("[DEBUG] AuthPage: Redirecting client to complete pending order");
         window.location.href = '/order';
         return;
+      }
+    }
+    
+    // Check if there's saved location data to send to backend
+    const savedLocation = localStorage.getItem('selectedLocation');
+    const savedLocationDetails = localStorage.getItem('locationDetails');
+    
+    if (savedLocation && userData.role === 'client') {
+      try {
+        console.log("[DEBUG] AuthPage: Found saved location data, sending to backend");
+        const locationData = JSON.parse(savedLocation);
+        const detailsData = savedLocationDetails ? JSON.parse(savedLocationDetails) : {};
+        
+        // Import locationService dynamically to avoid circular imports
+        const { locationService } = await import('../services/locationService');
+        
+        const locationPayload = {
+          lat: locationData.lat,
+          lng: locationData.lng,
+          address: locationData.address || '',
+          city: locationData.city || '',
+          country: locationData.country || 'مصر',
+          neighborhood: locationData.neighborhood || '',
+          location_type: 'home',
+          name: 'الموقع الرئيسي',
+          is_primary: true,
+          building_number: detailsData.building_number || '',
+          apartment_number: detailsData.apartment_number || '',
+          floor_number: detailsData.floor_number || '',
+          landmark: detailsData.landmark || '',
+          additional_details: detailsData.additional_details || ''
+        };
+        
+        const result = await locationService.saveLocation(locationPayload);
+        if (result.success) {
+          console.log("[DEBUG] AuthPage: Location saved successfully to backend");
+          // Clear saved location data after successful save
+          localStorage.removeItem('selectedLocation');
+          localStorage.removeItem('locationDetails');
+        } else {
+          console.warn("[DEBUG] AuthPage: Failed to save location to backend:", result.error);
+        }
+      } catch (error) {
+        console.error("[DEBUG] AuthPage: Error saving location to backend:", error);
       }
     }
     
@@ -105,7 +149,7 @@ const AuthPage = () => {
   };
 
   // Google Login handlers
-const handleGoogleSuccess = (googleData) => {
+const handleGoogleSuccess = async (googleData) => {
   console.log("[DEBUG] AuthPage: Google success data received:", googleData);
   
   // Check if user needs role selection
@@ -136,7 +180,7 @@ const handleGoogleSuccess = (googleData) => {
       role: googleData.role,
       hasLocation: googleData.has_location || false,
       name: googleData.first_name + ' ' + googleData.last_name,
-      profile_completed: googleData.profile_completed || false
+      profile_completed: googleData.profile_completed || (googleData.role === 'worker' ? false : true)
     };
     
     localStorage.setItem('user', JSON.stringify(userData));
@@ -148,7 +192,7 @@ const handleGoogleSuccess = (googleData) => {
       "Logged in successfully!", "success");
     
     // Redirect using the unified redirect logic
-    redirectAfterLogin(userData);
+    await redirectAfterLogin(userData);
   } else {
     console.error("[DEBUG] AuthPage: Invalid Google response data:", googleData);
     showNotification(language === "ar" ? 
@@ -173,7 +217,7 @@ const handleGoogleSuccess = (googleData) => {
             role: selectedRole,
             hasLocation: result.data.has_location || false,
             name: result.data.first_name + ' ' + result.data.last_name,
-            profile_completed: true
+            profile_completed: selectedRole === 'worker' ? false : true
           };
           localStorage.setItem('user', JSON.stringify(userData));
           
@@ -190,7 +234,7 @@ const handleGoogleSuccess = (googleData) => {
           ? `مرحباً بك! تم تسجيل الدخول بنجاح كـ ${selectedRole === "client" ? "عميل" : "مزود خدمة"}`
           : `Welcome! Logged in successfully as ${selectedRole}`, 
           "success");
-        redirectAfterLogin(result.data);
+        await redirectAfterLogin(result.data);
       } else {
         showNotification(result.message || (language === "ar" ? "فشل تسجيل الدخول باستخدام Google" : "Google login failed"));
       }
@@ -240,7 +284,7 @@ const handleGoogleSuccess = (googleData) => {
         );
         
         // Redirect based on user role
-        redirectAfterLogin(result.data);
+        await redirectAfterLogin(result.data);
       }
     } catch (error) {
       console.error("[DEBUG] AuthPage: Google login error:", error);

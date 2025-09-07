@@ -18,6 +18,182 @@ import { FaMapMarkerAlt, FaPhone, FaUser, FaComments } from "react-icons/fa";
 import { toast } from 'react-toastify';
 import "./Orders.css";
 
+// Translation object
+const translations = {
+  ar: {
+    orders: "الطلبات",
+    allOrders: "جميع الطلبات",
+    pending: "في الانتظار",
+    accepted: "مقبولة",
+    declined: "مرفوضة",
+    inProgress: "قيد التنفيذ",
+    completed: "مكتملة",
+    refresh: "تحديث",
+    noOrders: "لا توجد طلبات",
+    noOrdersWithStatus: "لا توجد طلبات",
+    orderNumber: "رقم الطلب",
+    description: "الوصف",
+    category: "التصنيف",
+    clientInfo: "معلومات العميل",
+    name: "الاسم",
+    email: "البريد",
+    phone: "الهاتف",
+    call: "اتصال",
+    locationDetails: "تفاصيل الموقع",
+    address: "العنوان",
+    buildingNumber: "رقم العمارة",
+    apartmentNumber: "رقم الشقة",
+    floor: "الطابق",
+    landmark: "علامة مميزة",
+    additionalDetails: "تفاصيل إضافية",
+    viewOnMap: "عرض على الخريطة",
+    priceDetails: "تفاصيل السعر",
+    offeredPrice: "السعر المعروض من العميل",
+    servicePrice: "سعر الخدمة الأساسي",
+    estimatedDuration: "المدة المتوقعة",
+    timeline: "الجدول الزمني",
+    orderDate: "تاريخ الطلب",
+    scheduledTime: "موعد التنفيذ المطلوب",
+    deliveryTime: "موعد التسليم المطلوب",
+    lastUpdate: "آخر تحديث",
+    specialRequirements: "متطلبات خاصة",
+    specialReqs: "متطلبات خاصة",
+    materialsNeeded: "مواد مطلوبة",
+    toolsRequired: "أدوات مطلوبة",
+    orderPriority: "أولوية الطلب",
+    urgent: "عاجل جداً",
+    high: "عاجل",
+    low: "غير عاجل",
+    viewFullDetails: "عرض التفاصيل الكاملة",
+    accept: "قبول",
+    decline: "رفض",
+    contactClient: "تواصل مع العميل",
+    startWork: "بدء العمل",
+    orderDetails: "تفاصيل الطلب",
+    orderStatus: "حالة الطلب",
+    serviceInfo: "معلومات الخدمة",
+    serviceName: "اسم الخدمة",
+    serviceDescription: "وصف الخدمة",
+    problemDescription: "وصف المشكلة/الطلب",
+    clientName: "الاسم",
+    clientEmail: "البريد الإلكتروني",
+    clientPhone: "رقم الهاتف",
+    directCall: "اتصال مباشر",
+    priceOffered: "السعر المعروض من العميل",
+    acceptOrder: "قبول الطلب",
+    declineOrder: "رفض الطلب",
+    close: "إغلاق",
+    loading: "جاري التحميل...",
+    loadingOrders: "جاري تحميل الطلبات...",
+    showFrom: "عرض",
+    of: "من أصل",
+    order: "طلب",
+    errorLoadingOrders: "خطأ في تحميل الطلبات",
+    orderAccepted: "تم قبول الطلب بنجاح!",
+    orderDeclined: "تم رفض الطلب!",
+    errorAccepting: "خطأ في قبول الطلب",
+    errorDeclining: "خطأ في رفض الطلب",
+    invalidRequest: "طلب غير صحيح",
+    accessDenied: "تم رفض الوصول",
+    workerOnlyAction: "هذا الإجراء متاح للعمال فقط",
+    orderNotFound: "الطلب غير موجود",
+    orderMayBeDeleted: "قد يكون الطلب محذوفاً",
+    invalidOrderStatus: "حالة الطلب غير صحيحة",
+    checkOrderStatus: "تحقق من حالة الطلب",
+    serverError: "خطأ في الخادم",
+    tryAgainLater: "حاول مرة أخرى لاحقاً",
+    networkError: "خطأ في الشبكة",
+    checkConnection: "تحقق من اتصالك بالإنترنت",
+    workerOnlyPage: "هذه الصفحة مخصصة للعمال. يتم توجيهك إلى صفحة تتبع الطلبات."
+  },
+  en: {
+    orders: "Orders",
+    allOrders: "All Orders",
+    pending: "Pending",
+    accepted: "Accepted",
+    declined: "Declined",
+    inProgress: "In Progress",
+    completed: "Completed",
+    refresh: "Refresh",
+    noOrders: "No orders found",
+    noOrdersWithStatus: "No orders found",
+    orderNumber: "Order #",
+    description: "Description",
+    category: "Category",
+    clientInfo: "Client Information",
+    name: "Name",
+    email: "Email",
+    phone: "Phone",
+    call: "Call",
+    locationDetails: "Location Details",
+    address: "Address",
+    buildingNumber: "Building Number",
+    apartmentNumber: "Apartment Number",
+    floor: "Floor",
+    landmark: "Landmark",
+    additionalDetails: "Additional Details",
+    viewOnMap: "View on Map",
+    priceDetails: "Price Details",
+    offeredPrice: "Price Offered by Client",
+    servicePrice: "Base Service Price",
+    estimatedDuration: "Estimated Duration",
+    timeline: "Timeline",
+    orderDate: "Order Date",
+    scheduledTime: "Scheduled Time",
+    deliveryTime: "Delivery Time",
+    lastUpdate: "Last Update",
+    specialRequirements: "Special Requirements",
+    specialReqs: "Special Requirements",
+    materialsNeeded: "Materials Needed",
+    toolsRequired: "Tools Required",
+    orderPriority: "Order Priority",
+    urgent: "Very Urgent",
+    high: "High",
+    low: "Low",
+    viewFullDetails: "View Full Details",
+    accept: "Accept",
+    decline: "Decline",
+    contactClient: "Contact Client",
+    startWork: "Start Work",
+    orderDetails: "Order Details",
+    orderStatus: "Order Status",
+    serviceInfo: "Service Information",
+    serviceName: "Service Name",
+    serviceDescription: "Service Description",
+    problemDescription: "Problem/Order Description",
+    clientName: "Name",
+    clientEmail: "Email",
+    clientPhone: "Phone",
+    directCall: "Direct Call",
+    priceOffered: "Price Offered by Client",
+    acceptOrder: "Accept Order",
+    declineOrder: "Decline Order",
+    close: "Close",
+    loading: "Loading...",
+    loadingOrders: "Loading orders...",
+    showFrom: "Showing",
+    of: "of",
+    order: "orders",
+    errorLoadingOrders: "Error loading orders",
+    orderAccepted: "Order accepted successfully!",
+    orderDeclined: "Order declined!",
+    errorAccepting: "Error accepting order",
+    errorDeclining: "Error declining order",
+    invalidRequest: "Invalid request",
+    accessDenied: "Access denied",
+    workerOnlyAction: "This action is only available for workers",
+    orderNotFound: "Order not found",
+    orderMayBeDeleted: "Order may have been deleted",
+    invalidOrderStatus: "Invalid order status",
+    checkOrderStatus: "Check order status",
+    serverError: "Server error",
+    tryAgainLater: "Try again later",
+    networkError: "Network error",
+    checkConnection: "Check your internet connection",
+    workerOnlyPage: "This page is for workers only. Redirecting you to order tracking page."
+  }
+};
+
 // Create ApiService instance outside component to avoid recreation
 const apiService = new ApiService();
 
@@ -29,11 +205,23 @@ const Orders = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [showOrderModal, setShowOrderModal] = useState(false);
+  const [language, setLanguage] = useState('ar');
   const [pagination, setPagination] = useState({
     page: 1,
     totalPages: 1,
     totalCount: 0
   });
+
+  // Translation function
+  const t = useCallback((key) => {
+    return translations[language][key] || key;
+  }, [language]);
+
+  // Load language from localStorage on component mount
+  useEffect(() => {
+    const savedLanguage = localStorage.getItem('language') || 'ar';
+    setLanguage(savedLanguage);
+  }, []);
 
   const fetchWorkerOrders = useCallback(async () => {
     setLoading(true);
@@ -65,48 +253,200 @@ const Orders = () => {
       }
     } catch (err) {
       console.error("Error fetching worker orders:", err);
-      toast.error("خطأ في تحميل الطلبات");
+      toast.error(t('errorLoadingOrders'));
       setOrders([]);
     } finally {
       setLoading(false);
     }
-  }, [filterStatus, pagination.page]);
+  }, [filterStatus, pagination.page, t]);
 
   useEffect(() => {
     const user = authService.getCurrentUser();
     if (user) {
+      // Check if user is a worker, if not redirect to appropriate page
+      if (user.role !== 'worker') {
+        if (user.role === 'client') {
+          toast.info(t('workerOnlyPage'));
+          navigate('/track-order');
+        } else {
+          navigate('/');
+        }
+        return;
+      }
       fetchWorkerOrders();
+    } else {
+      navigate('/auth');
     }
-  }, [fetchWorkerOrders]);
+  }, [fetchWorkerOrders, navigate, t]);
 
   const handleOrderAction = async (orderId, action) => {
-    if (!orderId || !action) return;
+    if (!orderId || !action) {
+      toast.error(t('invalidRequest'));
+      return;
+    }
 
     setActionLoading(prev => ({ ...prev, [orderId]: action }));
     
     try {
-      const endpoint = action === 'accept' 
-        ? `/api/orders/${orderId}/accept/`
-        : `/api/orders/${orderId}/decline/`;
+      let endpoint;
+      if (action === 'accept') {
+        endpoint = `/api/orders/${orderId}/accept/`;
+      } else if (action === 'decline') {
+        endpoint = `/api/orders/${orderId}/decline/`;
+      } else if (action === 'start') {
+        endpoint = `/api/orders/${orderId}/start/`;
+      } else {
+        toast.error(t('invalidAction'));
+        return;
+      }
+      
+      console.log(`[DEBUG] Attempting to ${action} order ${orderId}...`);
+      console.log(`[DEBUG] Request details:`, {
+        orderId,
+        action,
+        endpoint,
+        timestamp: new Date().toISOString(),
+        userRole: localStorage.getItem('user_role'),
+        userId: localStorage.getItem('user_id')
+      });
       
       const response = await apiService.post(endpoint, {});
       
       if (response) {
-        toast.success(
-          action === 'accept' 
-            ? 'تم قبول الطلب بنجاح!' 
-            : 'تم رفض الطلب بنجاح!'
-        );
+        console.log(`[DEBUG] ${action} order response:`, response);
+        
+        // Show success message with more details
+        const successMessage = response.message || 
+          (action === 'accept' ? t('orderAccepted') : t('orderDeclined'));
+        
+        toast.success(successMessage, {
+          duration: 4000,
+          position: "top-center"
+        });
         
         // Refresh orders list
         fetchWorkerOrders();
       }
     } catch (error) {
-      console.error(`Error ${action}ing order:`, error);
+      console.error(`[ERROR] Error ${action}ing order ${orderId}:`, error);
+      
+      // Extract detailed error information
+      const errorResponse = error.response?.data;
+      const statusCode = error.response?.status;
+      
+      let errorMessage = '';
+      let errorDetails = '';
+      
+      if (errorResponse) {
+        // Handle structured error responses from backend
+        errorMessage = errorResponse.error || errorResponse.detail || errorResponse.message;
+        errorDetails = errorResponse.details || errorResponse.current_status || errorResponse.assigned_worker;
+        
+        // Show specific error messages based on status code
+        if (statusCode === 403) {
+          if (errorResponse.details && errorResponse.details.includes('role')) {
+            errorMessage = t('insufficientPermissions');
+            errorDetails = t('workerRoleRequired');
+          } else if (errorResponse.details && errorResponse.details.includes('assigned')) {
+            errorMessage = t('orderAlreadyAssigned');
+            errorDetails = t('orderAssignedToAnotherWorker');
+          } else {
+            errorMessage = t('accessDenied');
+            errorDetails = errorResponse.details || t('workerOnlyAction');
+          }
+        } else if (statusCode === 404) {
+          errorMessage = t('orderNotFound');
+          errorDetails = t('orderMayBeDeleted');
+        } else if (statusCode === 400) {
+          if (errorResponse.details && errorResponse.details.includes('status')) {
+            errorMessage = t('invalidOrderStatus');
+            errorDetails = `${t('currentStatus')}: ${errorResponse.current_status || 'unknown'}. ${t('expectedStatus')}: pending`;
+          } else if (errorResponse.details && errorResponse.details.includes('assigned')) {
+            errorMessage = t('orderAlreadyAssigned');
+            errorDetails = `${t('assignedTo')}: ${errorResponse.assigned_worker || 'unknown worker'}`;
+          } else {
+            errorMessage = errorResponse.error || t('invalidRequest');
+            errorDetails = errorResponse.details || t('checkOrderStatus');
+          }
+        } else if (statusCode === 500) {
+          errorMessage = t('serverError');
+          errorDetails = errorResponse.details || t('tryAgainLater');
+        } else if (statusCode === 401) {
+          errorMessage = t('authenticationRequired');
+          errorDetails = t('pleaseLoginAgain');
+        } else if (statusCode === 429) {
+          errorMessage = t('tooManyRequests');
+          errorDetails = t('pleaseWaitBeforeRetrying');
+        } else if (statusCode >= 500) {
+          errorMessage = t('serverError');
+          errorDetails = `${t('errorCode')}: ${statusCode}. ${t('contactSupport')}`;
+        } else {
+          errorMessage = errorResponse.error || t('unknownError');
+          errorDetails = errorResponse.details || t('unexpectedErrorOccurred');
+        }
+      } else if (error.message === 'Network Error') {
+        errorMessage = t('networkError');
+        errorDetails = t('checkConnection');
+      } else if (error.code === 'ECONNABORTED') {
+        errorMessage = t('requestTimeout');
+        errorDetails = t('serverTakingTooLong');
+      } else if (error.code === 'ERR_NETWORK') {
+        errorMessage = t('networkConnectionFailed');
+        errorDetails = t('checkInternetConnection');
+      } else if (error.code === 'ERR_BAD_RESPONSE') {
+        errorMessage = t('invalidServerResponse');
+        errorDetails = t('serverReturnedInvalidData');
+      } else {
+        errorMessage = action === 'accept' ? t('errorAccepting') : t('errorDeclining');
+        errorDetails = t('tryAgainLater');
+      }
+      
+      // Show detailed error toast
       toast.error(
-        error.response?.data?.detail || 
-        `خطأ في ${action === 'accept' ? 'قبول' : 'رفض'} الطلب`
+        <div>
+          <div className="fw-bold">{errorMessage}</div>
+          {errorDetails && <div className="small text-muted mt-1">{errorDetails}</div>}
+        </div>,
+        {
+          duration: 6000,
+          position: "top-center"
+        }
       );
+      
+      // Log detailed error for debugging
+      console.error(`[ERROR] Detailed error info:`, {
+        statusCode,
+        errorResponse,
+        errorMessage,
+        errorDetails,
+        orderId,
+        action,
+        timestamp: new Date().toISOString(),
+        userAgent: navigator.userAgent,
+        url: window.location.href
+      });
+      
+      // Additional debugging for specific error types
+      if (statusCode === 500) {
+        console.error(`[ERROR] Server Error Details:`, {
+          orderId,
+          action,
+          errorResponse,
+          requestData: { orderId, action },
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      if (statusCode === 400 && errorResponse?.details?.includes('status')) {
+        console.warn(`[WARNING] Order Status Issue:`, {
+          orderId,
+          currentStatus: errorResponse.current_status,
+          expectedStatus: 'pending',
+          action,
+          message: 'Order may already be processed'
+        });
+      }
+      
     } finally {
       setActionLoading(prev => ({ ...prev, [orderId]: false }));
     }
@@ -126,11 +466,11 @@ const Orders = () => {
 
   const getStatusText = (status) => {
     switch (status) {
-      case 'pending': return 'في الانتظار';
-      case 'accepted': return 'مقبول';
-      case 'declined': return 'مرفوض';
-      case 'in_progress': return 'قيد التنفيذ';
-      case 'completed': return 'مكتمل';
+      case 'pending': return t('pending');
+      case 'accepted': return t('accepted');
+      case 'declined': return t('declined');
+      case 'in_progress': return t('inProgress');
+      case 'completed': return t('completed');
       case 'cancelled': return 'ملغي';
       default: return status;
     }
@@ -181,9 +521,9 @@ const Orders = () => {
       <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '400px' }}>
         <div className="text-center">
           <div className="spinner-border text-primary" role="status">
-            <span className="visually-hidden">جاري التحميل...</span>
+            <span className="visually-hidden">{t('loading')}</span>
           </div>
-          <div className="mt-3">جاري تحميل الطلبات...</div>
+          <div className="mt-3">{t('loadingOrders')}</div>
         </div>
       </div>
     );
@@ -197,30 +537,42 @@ const Orders = () => {
           <div className="d-flex justify-content-between align-items-center">
             <h1 className="h3 mb-0">
               <BsClock className="me-2 text-primary" />
-              طلبات العمل
+              {t('orders')}
             </h1>
             
-            {/* Filter */}
+            {/* Language Toggle and Filter */}
             <div className="d-flex gap-2">
+              <select 
+                className="form-select form-select-sm" 
+                value={language} 
+                onChange={(e) => {
+                  setLanguage(e.target.value);
+                  localStorage.setItem('language', e.target.value);
+                }}
+                style={{ width: 'auto' }}
+              >
+                <option value="ar">العربية</option>
+                <option value="en">English</option>
+              </select>
               <select 
                 className="form-select form-select-sm" 
                 value={filterStatus} 
                 onChange={(e) => setFilterStatus(e.target.value)}
                 style={{ width: 'auto' }}
               >
-                <option value="all">جميع الطلبات</option>
-                <option value="pending">في الانتظار</option>
-                <option value="accepted">مقبولة</option>
-                <option value="declined">مرفوضة</option>
-                <option value="in_progress">قيد التنفيذ</option>
-                <option value="completed">مكتملة</option>
+                <option value="all">{t('allOrders')}</option>
+                <option value="pending">{t('pending')}</option>
+                <option value="accepted">{t('accepted')}</option>
+                <option value="declined">{t('declined')}</option>
+                <option value="in_progress">{t('inProgress')}</option>
+                <option value="completed">{t('completed')}</option>
               </select>
               <button 
                 className="btn btn-outline-primary btn-sm"
                 onClick={fetchWorkerOrders}
                 disabled={loading}
               >
-                تحديث
+                {t('refresh')}
               </button>
             </div>
           </div>
@@ -232,7 +584,7 @@ const Orders = () => {
         <div className="text-center py-5">
           <BsClock className="text-muted mb-3" size={48} />
           <div className="text-muted">
-            {filterStatus === 'all' ? 'لا توجد طلبات' : `لا توجد طلبات ${getStatusText(filterStatus)}`}
+            {filterStatus === 'all' ? t('noOrders') : `${t('noOrdersWithStatus')} ${getStatusText(filterStatus)}`}
           </div>
         </div>
       ) : (
@@ -262,11 +614,11 @@ const Orders = () => {
                       {order.service?.title || order.service_name || 'خدمة غير محددة'}
                     </h6>
                     <p className="card-text text-muted small mb-2">
-                      <strong>الوصف:</strong> {order.description || 'لا يوجد وصف'}
+                      <strong>{t('description')}:</strong> {order.description || 'لا يوجد وصف'}
                     </p>
                     {order.service?.category && (
                       <p className="card-text text-muted small mb-0">
-                        <strong>التصنيف:</strong> {order.service.category}
+                        <strong>{t('category')}:</strong> {order.service.category}
                       </p>
                     )}
                   </div>
@@ -275,12 +627,12 @@ const Orders = () => {
                   <div className="mb-3 p-3 bg-light rounded">
                     <h6 className="text-primary mb-2">
                       <FaUser className="me-2" size={14} />
-                      معلومات العميل
+                      {t('clientInfo')}
                     </h6>
                     <div className="row">
                       <div className="col-12">
                         <div className="d-flex align-items-center mb-2">
-                          <span className="small text-muted me-2">الاسم:</span>
+                          <span className="small text-muted me-2">{t('name')}:</span>
                           <span className="small fw-bold">
                             {order.customer_first_name && order.customer_last_name 
                               ? `${order.customer_first_name} ${order.customer_last_name}`
@@ -290,7 +642,7 @@ const Orders = () => {
                         </div>
                         {order.customer_email && (
                           <div className="d-flex align-items-center mb-2">
-                            <span className="small text-muted me-2">البريد:</span>
+                            <span className="small text-muted me-2">{t('email')}:</span>
                             <span className="small">{order.customer_email}</span>
                           </div>
                         )}
@@ -303,7 +655,7 @@ const Orders = () => {
                               className="btn btn-sm btn-outline-success ms-2"
                               style={{ fontSize: '10px', padding: '2px 8px' }}
                             >
-                              اتصال
+                              {t('call')}
                             </a>
                           </div>
                         )}
@@ -483,7 +835,7 @@ const Orders = () => {
                       onClick={() => openOrderModal(order)}
                     >
                       <BsEye className="me-1" />
-                      عرض التفاصيل الكاملة
+                      {t('viewFullDetails')}
                     </button>
                   </div>
                   

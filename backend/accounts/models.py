@@ -138,11 +138,11 @@ class WorkerProfile(BaseProfile):
     @property
     def is_complete(self):
         """Check if the worker profile has all essential information"""
-        return (
-            self.job_title and self.job_title.strip() and
-            self.skills and self.skills.strip() and
-            self.services_provided and self.services_provided.strip()
-        )
+        has_job_title = bool(self.job_title and self.job_title.strip())
+        has_skills = bool(self.skills and self.skills.strip())
+        has_services = bool(self.services_provided and self.services_provided.strip())
+        
+        return has_job_title and has_skills and has_services
 
     def __str__(self):
         return f"{self.user.username} - {self.job_title or 'No Title'}"

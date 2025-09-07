@@ -89,26 +89,45 @@ export default function NearbyServiceSearch() {
     
     try {
       setLoading(true);
-      console.log('Searching for service type:', selectedService);
+      console.log('[NearbyServiceSearch] Searching for service type:', selectedService);
+      console.log('[NearbyServiceSearch] Location:', location);
+      
       const result = await locationService.searchNearbyLocations(
         location.lat, 
         location.lng, 
         150, // radius in km - increased for better results
         selectedService, // pass the selected service type
-        100  // max results
+        ''   // no text search query
       );
       
+      console.log('[NearbyServiceSearch] LocationService result:', result);
+      
       if (result.success) {
-        console.log('Search results:', result.data);
-        setResults(result.data?.results || []);
+        // Handle the response structure properly
+        let resultsData = [];
+        
+        if (result.data && Array.isArray(result.data)) {
+          // If data is directly an array
+          resultsData = result.data;
+        } else if (result.data && result.data.results && Array.isArray(result.data.results)) {
+          // If data has results property
+          resultsData = result.data.results;
+        } else if (result.data && result.data.data && Array.isArray(result.data.data)) {
+          // If data has nested data property
+          resultsData = result.data.data;
+        }
+        
+        console.log('[NearbyServiceSearch] Processed results:', resultsData);
+        setResults(resultsData);
         setLastUpdated(new Date());
         setError(null);
       } else {
+        console.error('[NearbyServiceSearch] Search failed:', result.error);
         setError(result.error || "فشل في تحميل الخدمات القريبة");
       }
     } catch (err) {
+      console.error('[NearbyServiceSearch] Search error:', err);
       setError("فشل في تحميل الخدمات القريبة");
-      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -120,9 +139,9 @@ export default function NearbyServiceSearch() {
     }
   }, [userLocation, fetchNearbyServices]);
 
-  const getDirectionsUrl = (service) => {
-    const lat = service.lat || service.location_lat;
-    const lng = service.lng || service.location_lng;
+  const getDirectionsUrl = (worker) => {
+    const lat = worker.location?.lat || worker.lat || worker.location_lat;
+    const lng = worker.location?.lng || worker.lng || worker.location_lng;
     return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
   };
 
@@ -241,9 +260,9 @@ export default function NearbyServiceSearch() {
           </Box>
         ) : results.length > 0 ? (
           <List sx={{ maxHeight: 400, overflow: "auto" }}>
-            {results.map(service => (
+            {results.map(worker => (
               <ListItem 
-                key={service.id} 
+                key={worker.id} 
                 sx={{ 
                   flexDirection: "column", 
                   alignItems: "flex-start",
@@ -260,7 +279,7 @@ export default function NearbyServiceSearch() {
                 <Box sx={{ display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center" }}>
                   <Typography 
                     component={Link} 
-                    to={`/services/${service.id}`} 
+                    to={`/provider/${worker.provider.id}`} 
                     sx={{ 
                       textDecoration: "none", 
                       color: "primary.main",
@@ -268,15 +287,15 @@ export default function NearbyServiceSearch() {
                       "&:hover": { textDecoration: "underline" }
                     }}
                   >
-                    {service.user?.first_name && service.user?.last_name 
-                      ? `${service.user.first_name} ${service.user.last_name}`
-                      : service.user?.username || 'مزود خدمة'
+                    {worker.provider?.first_name && worker.provider?.last_name 
+                      ? `${worker.provider.first_name} ${worker.provider.last_name}`
+                      : worker.provider?.username || 'مزود خدمة'
                     }
                   </Typography>
-                  {service.distance_km != null && (
+                  {worker.distance_km != null && (
                     <Chip 
                       icon={<LocationIcon />}
-                      label={`${service.distance_km.toFixed(1)} كم`}
+                      label={`${worker.distance_km.toFixed(1)} كم`}
                       size="small"
                       variant="outlined"
                       color="primary"
@@ -284,23 +303,60 @@ export default function NearbyServiceSearch() {
                   )}
                 </Box>
                 
-                {service.address && (
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                    📍 {service.address}
+                {/* Display worker profile information */}
+                {worker.worker_profile?.job_title && (
+                  <Typography variant="body2" color="primary" sx={{ mt: 1, fontWeight: 'bold' }}>
+                    💼 {worker.worker_profile.job_title}
                   </Typography>
                 )}
                 
-                {service.user?.role && (
-                  <Typography variant="body2" color="text.secondary">
-                    {service.user.role === 'worker' && '👷‍♂️ عامل'}
-                    {service.user.role === 'client' && '👤 عميل'}
+                {worker.worker_profile?.skills && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    🛠️ المهارات: {worker.worker_profile.skills}
+                  </Typography>
+                )}
+                
+                {worker.worker_profile?.services_provided && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    📋 الخدمات: {worker.worker_profile.services_provided}
+                  </Typography>
+                )}
+                
+                {worker.location?.address && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    📍 {worker.location.address}
+                  </Typography>
+                )}
+                
+                {/* Display services offered */}
+                {worker.services && worker.services.length > 0 && (
+                  <Box sx={{ mt: 1 }}>
+                    <Typography variant="caption" color="text.secondary">
+                      الخدمات المتاحة:
+                    </Typography>
+                    {worker.services.map((service) => (
+                      <Chip
+                        key={service.id}
+                        label={`${service.title} - ${service.base_price} ج.م`}
+                        size="small"
+                        variant="outlined"
+                        sx={{ ml: 0.5, mt: 0.5 }}
+                      />
+                    ))}
+                  </Box>
+                )}
+                
+                {worker.provider?.role && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    {worker.provider.role === 'worker' && '👷‍♂️ عامل'}
+                    {worker.provider.role === 'client' && '👤 عميل'}
                   </Typography>
                 )}
                 
                 <Button
                   size="small"
                   startIcon={<DirectionsIcon />}
-                  href={getDirectionsUrl(service)}
+                  href={getDirectionsUrl(worker)}
                   target="_blank"
                   rel="noopener"
                   sx={{ mt: 1 }}

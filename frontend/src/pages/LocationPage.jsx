@@ -60,6 +60,43 @@ export default function LocationPage() {
     maxPrice: 1000
   });
 
+  // دالة لبناء العنوان الكامل من الموقع وتفاصيله
+  const buildLocationAddress = (location, details) => {
+    if (!location) return 'عنوان غير محدد';
+    
+    let address = location.address || '';
+    
+    // إضافة تفاصيل الموقع
+    const addressParts = [];
+    
+    if (details.building_number) {
+      addressParts.push(`عمارة ${details.building_number}`);
+    }
+    
+    if (details.apartment_number) {
+      addressParts.push(`شقة ${details.apartment_number}`);
+    }
+    
+    if (details.floor_number) {
+      addressParts.push(`الطابق ${details.floor_number}`);
+    }
+    
+    if (details.landmark) {
+      addressParts.push(`بجوار ${details.landmark}`);
+    }
+    
+    if (details.additional_details) {
+      addressParts.push(details.additional_details);
+    }
+    
+    // دمج العنوان الأساسي مع التفاصيل
+    if (addressParts.length > 0) {
+      address += (address ? ' - ' : '') + addressParts.join('، ');
+    }
+    
+    return address || 'عنوان غير محدد';
+  };
+
   // الدوال الجديدة للزرين
   const handleShowProviderProfile = (service) => {
     // الانتقال إلى صفحة الملف الشخصي لمزود الخدمة
@@ -94,7 +131,9 @@ export default function LocationPage() {
       worker_id: service.user?.id || service.provider?.id,
       worker_name: service.user?.username || service.provider?.username || 'Unknown',
       service_title: service.title || service.job_title || selectedService,
-      distance: service.distance_km
+      distance: service.distance_km,
+      // إضافة عنوان الموقع من تفاصيل الموقع
+      location_address: buildLocationAddress(selectedLocation, locationDetails)
     };
 
     // حفظ بيانات الطلب في localStorage
@@ -326,20 +365,47 @@ export default function LocationPage() {
   useEffect(() => {
     const fetchUserLocation = async () => {
       try {
-        console.log('Fetching user location...');
-        const result = await locationService.getLatestLocation();
-        if (result.success && result.data) {
-          const locationData = result.data;
-          if (locationData.lat && locationData.lng) {
-            setSelectedLocation({
-              lat: locationData.lat,
-              lng: locationData.lng,
-              address: locationData.address
-            });
-            console.log('User location loaded:', locationData.address);
+        // أولاً، جرب تحميل الموقع من localStorage
+        const savedLocation = localStorage.getItem('selectedLocation');
+        const savedDetails = localStorage.getItem('locationDetails');
+        
+        if (savedLocation) {
+          try {
+            const locationData = JSON.parse(savedLocation);
+            setSelectedLocation(locationData);
+            console.log('Location loaded from localStorage:', locationData);
+          } catch (e) {
+            console.error('Error parsing saved location:', e);
           }
-        } else {
-          console.log('No saved location found');
+        }
+        
+        if (savedDetails) {
+          try {
+            const detailsData = JSON.parse(savedDetails);
+            setLocationDetails(detailsData);
+            console.log('Location details loaded from localStorage:', detailsData);
+          } catch (e) {
+            console.error('Error parsing saved location details:', e);
+          }
+        }
+        
+        // إذا لم يكن هناك موقع محفوظ في localStorage، جرب تحميله من الخادم
+        if (!savedLocation) {
+          console.log('Fetching user location from server...');
+          const result = await locationService.getLatestLocation();
+          if (result.success && result.data) {
+            const locationData = result.data;
+            if (locationData.lat && locationData.lng) {
+              setSelectedLocation({
+                lat: locationData.lat,
+                lng: locationData.lng,
+                address: locationData.address
+              });
+              console.log('User location loaded from server:', locationData.address);
+            }
+          } else {
+            console.log('No saved location found on server');
+          }
         }
       } catch (err) {
         console.error('Error fetching user location:', err);
@@ -500,15 +566,32 @@ export default function LocationPage() {
     setCitySearch(suggestion.address);
     setSelectedLocation(suggestion.location);
     setSearchSuggestions([]);
+    
+    // حفظ الموقع المختار في localStorage
+    const locationData = {
+      ...suggestion.location,
+      address: suggestion.address,
+      timestamp: Date.now()
+    };
+    localStorage.setItem('selectedLocation', JSON.stringify(locationData));
+    console.log('[LOCATION] Location saved to localStorage:', locationData);
   };
 
   // التعامل مع تغيير تفاصيل الموقع
   const handleLocationDetailsChange = (e) => {
     const { name, value } = e.target;
-    setLocationDetails(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setLocationDetails(prev => {
+      const newDetails = {
+        ...prev,
+        [name]: value
+      };
+      
+      // حفظ تفاصيل الموقع في localStorage
+      localStorage.setItem('locationDetails', JSON.stringify(newDetails));
+      console.log('[LOCATION] Location details saved to localStorage:', newDetails);
+      
+      return newDetails;
+    });
   };
 
   // تطبيق الفلاتر
@@ -1077,6 +1160,14 @@ export default function LocationPage() {
                       setSelectedLocation(loc);
                       // Don't auto-trigger search here - let useEffect handle it
                       console.log('Location selected from map:', loc.address || 'No address');
+                      
+                      // حفظ الموقع المختار في localStorage
+                      const locationData = {
+                        ...loc,
+                        timestamp: Date.now()
+                      };
+                      localStorage.setItem('selectedLocation', JSON.stringify(locationData));
+                      console.log('[LOCATION] Location from map saved to localStorage:', locationData);
                     }}
                     initialLocation={selectedLocation}
                     height={400}

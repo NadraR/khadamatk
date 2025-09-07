@@ -7,6 +7,31 @@ from .models import Order, Offer, Negotiation
 from .serializers import OrderSerializer, OfferSerializer, NegotiationSerializer
 from notifications.models import Notification
 from invoices.models import Invoice
+from django.contrib.contenttypes.models import ContentType
+
+# Helper function for creating notifications
+def create_notification(recipient, actor, verb, message, short_message, level='info', **kwargs):
+    """Create a notification with proper Generic Foreign Key handling"""
+    try:
+        recipient_content_type = ContentType.objects.get_for_model(recipient)
+        
+        notification_data = {
+            'recipient_content_type': recipient_content_type,
+            'recipient_object_id': recipient.id,
+            'actor': actor,
+            'verb': verb,
+            'message': message,
+            'short_message': short_message,
+            'level': level,
+        }
+        
+        # Add any additional fields
+        notification_data.update(kwargs)
+        
+        return Notification.objects.create(**notification_data)
+    except Exception as e:
+        print(f"Error creating notification: {e}")
+        return None
 
 # ---------------- Orders ----------------
 @api_view(["GET", "POST"])
@@ -181,54 +206,98 @@ def accept_order(request, pk):
     Worker accepts an order
     """
     try:
-        order = get_object_or_404(Order, pk=pk, is_deleted=False)
+        # Get order with detailed error handling
+        try:
+            order = get_object_or_404(Order, pk=pk, is_deleted=False)
+        except Exception as e:
+            return Response(
+                {"error": f"Order not found: {str(e)}"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
         
         # Check if user is a worker
         if not hasattr(request.user, 'role') or request.user.role != 'worker':
             return Response(
-                {"error": "Only workers can accept orders"},
+                {"error": "Only workers can accept orders", "details": "User role is not worker"},
                 status=status.HTTP_403_FORBIDDEN,
             )
         
         # Check if order can be accepted
         if order.status not in ['pending']:
             return Response(
-                {"error": f"Cannot accept order with status: {order.status}. Order must be pending."},
+                {
+                    "error": f"Cannot accept order with status: {order.status}", 
+                    "details": "Order must be in 'pending' status to be accepted",
+                    "current_status": order.status
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        # Check if order already has a worker assigned
+        if order.worker and order.worker != request.user:
+            return Response(
+                {
+                    "error": "Order already assigned to another worker",
+                    "details": f"Order is already assigned to {order.worker.username}",
+                    "assigned_worker": order.worker.username
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
         
         # Update order status
-        order.status = 'accepted'
-        order.worker = request.user  # Assign worker to order
-        order.save()
+        try:
+            order.status = 'accepted'
+            order.worker = request.user  # Assign worker to order
+            order.save()
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to update order: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
         
         # Create notification for customer
-        Notification.objects.create(
-            recipient=order.customer,
-            verb='order_accepted',
-            message=f'تم قبول طلبك #{order.id} من قبل {request.user.username}',
-            short_message=f'تم قبول الطلب #{order.id}',
-            level='success',
-            requires_action=False,
-            # Add order details to notification
-            offered_price=order.offered_price,
-            service_name=order.service.title if order.service else 'خدمة غير محددة',
-            job_description=order.description or 'طلب جديد',
-            location_lat=order.location_lat,
-            location_lng=order.location_lng,
-            location_address=order.location_address,
-            url=f'/track-order'  # Client should go to track order page
-        )
+        try:
+            create_notification(
+                recipient=order.customer,
+                actor=request.user,
+                verb='order_accepted',
+                message=f'تم قبول طلبك #{order.id} من قبل {request.user.username}',
+                short_message=f'تم قبول الطلب #{order.id}',
+                level='success',
+                requires_action=False,
+                offered_price=order.offered_price,
+                service_name=order.service.title if order.service else 'خدمة غير محددة',
+                job_description=order.description or 'طلب جديد',
+                location_lat=order.location_lat,
+                location_lng=order.location_lng,
+                location_address=order.location_address or 'عنوان غير محدد',
+                url=f'/track-order'
+            )
+        except Exception as e:
+            # Log notification error but don't fail the request
+            print(f"Warning: Failed to create notification: {e}")
         
-        serializer = OrderSerializer(order)
-        return Response({
-            "message": "Order accepted successfully",
-            "order": serializer.data
-        }, status=status.HTTP_200_OK)
+        # Serialize response
+        try:
+            serializer = OrderSerializer(order)
+            return Response({
+                "message": "Order accepted successfully",
+                "order": serializer.data,
+                "success": True
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {"error": f"Failed to serialize order data: {str(e)}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
         
     except Exception as e:
         return Response(
-            {"error": str(e)},
+            {
+                "error": "Internal server error occurred while accepting order",
+                "details": str(e),
+                "success": False
+            },
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
@@ -324,22 +393,25 @@ def decline_order(request, pk):
         order.save()
         
         # Create notification for customer
-        Notification.objects.create(
-            recipient=order.customer,
-            verb='order_declined',
-            message=f'تم رفض طلبك #{order.id} من قبل {request.user.username}. السبب: {decline_reason}',
-            short_message=f'تم رفض الطلب #{order.id}',
-            level='warning',
-            requires_action=False,
-            # Add order details to notification
-            offered_price=order.offered_price,
-            service_name=order.service.title if order.service else 'خدمة غير محددة',
-            job_description=order.description or 'طلب مرفوض',
-            location_lat=order.location_lat,
-            location_lng=order.location_lng,
-            location_address=order.location_address,
-            url=f'/track-order'  # Client should go to track order page
-        )
+        try:
+            create_notification(
+                recipient=order.customer,
+                actor=request.user,
+                verb='order_declined',
+                message=f'تم رفض طلبك #{order.id} من قبل {request.user.username}. السبب: {decline_reason}',
+                short_message=f'تم رفض الطلب #{order.id}',
+                level='warning',
+                requires_action=False,
+                offered_price=order.offered_price,
+                service_name=order.service.title if order.service else 'خدمة غير محددة',
+                job_description=order.description or 'طلب مرفوض',
+                location_lat=order.location_lat,
+                location_lng=order.location_lng,
+                location_address=order.location_address or 'عنوان غير محدد',
+                url=f'/track-order'
+            )
+        except Exception as e:
+            print(f"Warning: Failed to create decline notification: {e}")
         
         serializer = OrderSerializer(order)
         return Response({

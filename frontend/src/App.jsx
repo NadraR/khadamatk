@@ -1,6 +1,7 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import FontProvider from './components/FontProvider';
+import FontOptimizer from './components/FontOptimizer';
 
 // Auth & Layout
 import AuthPage from './pages/AuthPage';
@@ -83,6 +84,7 @@ function App() {
 
   return (
     <FontProvider>
+      <FontOptimizer />
       <Routes>
         {/* Auth */}
         <Route path="/auth" element={<AuthPage />} />

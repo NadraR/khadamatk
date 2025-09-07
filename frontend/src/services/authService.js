@@ -54,7 +54,7 @@ class AuthService {
         first_name: responseData.first_name || responseData.user?.first_name || '',
         last_name: responseData.last_name || responseData.user?.last_name || '',
         username: responseData.username || responseData.user?.username || '',
-        profile_completed: responseData.profile_completed || false
+        profile_completed: responseData.profile_completed || (responseData.role === 'worker' ? false : true)
       };
       
       console.log('[DEBUG] handleLoginSuccess: Created user data:', userData);

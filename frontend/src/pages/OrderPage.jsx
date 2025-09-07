@@ -86,6 +86,7 @@ const OrderPage = () => {
         offered_price: orderData.offered_price || "",
         location_lat: orderData.location_lat || null,
         location_lng: orderData.location_lng || null,
+        location_address: orderData.location_address || "",
         scheduled_time: orderData.scheduled_time ? 
           new Date(orderData.scheduled_time).toISOString().slice(0, 16) : "",
         delivery_time: orderData.delivery_time ? 
@@ -102,8 +103,9 @@ const OrderPage = () => {
         return {
           description: data.description || "",
           offered_price: data.offered_price || "",
-          location_lat: data.location?.lat || null,
-          location_lng: data.location?.lng || null,
+          location_lat: data.location?.lat || data.selectedLocation?.lat || null,
+          location_lng: data.location?.lng || data.selectedLocation?.lng || null,
+          location_address: data.location_address || "",
           scheduled_time: data.scheduled_time ? 
             new Date(data.scheduled_time).toISOString().slice(0, 16) : "",
           delivery_time: data.delivery_time ? 
@@ -116,12 +118,15 @@ const OrderPage = () => {
     
     // Check for pending order or stored service data to populate location
     let locationData = null;
+    let locationAddress = '';
     const pendingOrder = localStorage.getItem('pendingOrder');
     if (pendingOrder) {
       try {
         const orderData = JSON.parse(pendingOrder);
         locationData = orderData.selectedLocation;
+        locationAddress = orderData.location_address || '';
         console.log('[DEBUG] OrderPage: Found location in pending order:', locationData);
+        console.log('[DEBUG] OrderPage: Found location address in pending order:', locationAddress);
       } catch (error) {
         console.error('Error parsing pending order for location:', error);
       }
@@ -134,7 +139,9 @@ const OrderPage = () => {
         try {
           const serviceData = JSON.parse(storedService);
           locationData = serviceData.selectedLocation;
+          locationAddress = serviceData.location_address || '';
           console.log('[DEBUG] OrderPage: Found location in stored service:', locationData);
+          console.log('[DEBUG] OrderPage: Found location address in stored service:', locationAddress);
         } catch (error) {
           console.error('Error parsing stored service for location:', error);
         }
@@ -147,6 +154,7 @@ const OrderPage = () => {
     offered_price: "",
       location_lat: locationData?.lat || null,
       location_lng: locationData?.lng || null,
+      location_address: locationAddress || "",
     scheduled_time: "",
       delivery_time: "",
     };
@@ -166,10 +174,11 @@ const OrderPage = () => {
       setFormData(prev => ({
         ...prev,
         location_lat: service.selectedLocation.lat,
-        location_lng: service.selectedLocation.lng
+        location_lng: service.selectedLocation.lng,
+        location_address: service.location_address || prev.location_address
       }));
     }
-  }, [service, formData.location_lat, formData.location_lng]);
+  }, [service, formData.location_lat, formData.location_lng, formData.location_address]);
 
   // Handle reorder data when component mounts
   useEffect(() => {
@@ -186,6 +195,7 @@ const OrderPage = () => {
           offered_price: data.offered_price || prev.offered_price,
           location_lat: data.location?.lat || prev.location_lat,
           location_lng: data.location?.lng || prev.location_lng,
+          location_address: data.location_address || prev.location_address,
           scheduled_time: data.scheduled_time ? 
             new Date(data.scheduled_time).toISOString().slice(0, 16) : prev.scheduled_time,
           delivery_time: data.delivery_time ? 
@@ -202,7 +212,7 @@ const OrderPage = () => {
         toast.error('حدث خطأ أثناء تحميل بيانات الطلب السابق');
       }
     }
-  }, [service]);
+  }, [service, formData.location_address]);
 
   // Check authentication status
   useEffect(() => {
@@ -679,6 +689,23 @@ const OrderPage = () => {
       transform: translateY(-1px);
     }
 
+    /* Button Outline Success */
+    .btn-outline-success {
+      border: 2px solid #28a745;
+      color: #28a745;
+      background: transparent;
+      border-radius: 8px;
+      padding: 0.8rem 2rem;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+    .btn-outline-success:hover:not(:disabled) {
+      background: #28a745;
+      color: white;
+      transform: translateY(-1px);
+    }
+
     /* Responsive Design */
     @media (max-width: 768px) {
       .banner-title { font-size: 2rem; }
@@ -735,6 +762,342 @@ const OrderPage = () => {
     // Redirect to HomeClient
     console.log('[DEBUG] Redirecting to /home-client from success modal');
     navigate("/home-client", { replace: true });
+  };
+
+  const handlePrintOrder = () => {
+    // Create a comprehensive order document
+    const orderDocument = generateOrderDocument();
+    
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(orderDocument);
+    printWindow.document.close();
+    
+    // Wait for content to load then print
+    printWindow.onload = () => {
+      printWindow.focus();
+      printWindow.print();
+      
+      // Close the window after printing
+      setTimeout(() => {
+        printWindow.close();
+      }, 1000);
+    };
+  };
+
+  const handleDownloadOrder = () => {
+    // Create a comprehensive order document
+    const orderDocument = generateOrderDocument();
+    
+    // Create a blob with the HTML content
+    const blob = new Blob([orderDocument], { type: 'text/html;charset=utf-8' });
+    
+    // Create download link
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // Generate filename with current date
+    const currentDate = new Date().toISOString().split('T')[0];
+    const orderNumber = Math.floor(Math.random() * 1000000) + 100000;
+    link.download = `order-${orderNumber}-${currentDate}.html`;
+    
+    // Trigger download
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Clean up
+    URL.revokeObjectURL(url);
+    
+    // Show success message
+    toast.success('تم تحميل تفاصيل الطلب بنجاح', {
+      position: "top-right",
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      rtl: true,
+    });
+  };
+
+  const generateOrderDocument = () => {
+    const currentDate = new Date().toLocaleDateString('ar-SA', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const orderNumber = Math.floor(Math.random() * 1000000) + 100000; // Generate order number
+
+    return `
+      <!DOCTYPE html>
+      <html dir="rtl" lang="ar">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>تفاصيل الطلب - ${orderNumber}</title>
+        <style>
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: white;
+            padding: 20px;
+          }
+          
+          .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #0077ff, #4da6ff);
+            color: white;
+            border-radius: 10px;
+          }
+          
+          .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+          }
+          
+          .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+          }
+          
+          .order-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+          }
+          
+          .info-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-right: 4px solid #0077ff;
+          }
+          
+          .info-section h3 {
+            color: #0077ff;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+          }
+          
+          .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 5px 0;
+            border-bottom: 1px solid #e9ecef;
+          }
+          
+          .info-item:last-child {
+            border-bottom: none;
+          }
+          
+          .info-label {
+            font-weight: 600;
+            color: #495057;
+          }
+          
+          .info-value {
+            color: #6c757d;
+          }
+          
+          .service-details {
+            background: white;
+            border: 2px solid #0077ff;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+          }
+          
+          .service-details h3 {
+            color: #0077ff;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            text-align: center;
+          }
+          
+          .service-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+          }
+          
+          .service-description {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-right: 4px solid #28a745;
+          }
+          
+          .order-details {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+          }
+          
+          .order-details h4 {
+            color: #856404;
+            margin-bottom: 15px;
+          }
+          
+          .price-highlight {
+            background: #d4edda;
+            border: 2px solid #c3e6cb;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            margin: 20px 0;
+          }
+          
+          .price-highlight .price-label {
+            font-size: 1.1rem;
+            color: #155724;
+            font-weight: 600;
+          }
+          
+          .price-highlight .price-value {
+            font-size: 2rem;
+            color: #28a745;
+            font-weight: 700;
+            margin-top: 5px;
+          }
+          
+          .footer {
+            margin-top: 40px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            text-align: center;
+            border-top: 3px solid #0077ff;
+          }
+          
+          .footer p {
+            color: #6c757d;
+            margin-bottom: 10px;
+          }
+          
+          .footer .order-number {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #0077ff;
+          }
+          
+          @media print {
+            body { padding: 0; }
+            .header { page-break-inside: avoid; }
+            .service-details { page-break-inside: avoid; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>تفاصيل الطلب</h1>
+          <p>تاريخ الطباعة: ${currentDate}</p>
+        </div>
+        
+        <div class="order-info">
+          <div class="info-section">
+            <h3>معلومات العميل</h3>
+            <div class="info-item">
+              <span class="info-label">الاسم:</span>
+              <span class="info-value">${user?.name || user?.username || 'غير محدد'}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">البريد الإلكتروني:</span>
+              <span class="info-value">${user?.email || 'غير محدد'}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">رقم الطلب:</span>
+              <span class="info-value">#${orderNumber}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">تاريخ الطلب:</span>
+              <span class="info-value">${currentDate}</span>
+            </div>
+          </div>
+          
+          <div class="info-section">
+            <h3>معلومات الخدمة</h3>
+            <div class="info-item">
+              <span class="info-label">نوع الخدمة:</span>
+              <span class="info-value">${service?.title || 'خدمة مختارة'}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">الفئة:</span>
+              <span class="info-value">${service?.category?.name || service?.category || 'غير محدد'}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">مزود الخدمة:</span>
+              <span class="info-value">${service?.provider_username || (service?.provider && service.provider.username) || 'مزود خدمة'}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">الموقع:</span>
+              <span class="info-value">${formData.location_lat ? `${formData.location_lat.toFixed(4)}, ${formData.location_lng.toFixed(4)}` : 'غير محدد'}</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="service-details">
+          <h3>تفاصيل الخدمة المطلوبة</h3>
+          <div class="service-title">${service?.title || 'خدمة مختارة'}</div>
+          
+          ${service?.description ? `
+            <div class="service-description">
+              <strong>وصف الخدمة:</strong><br>
+              ${service.description}
+            </div>
+          ` : ''}
+          
+          <div class="order-details">
+            <h4>تفاصيل الطلب</h4>
+            <div class="info-item">
+              <span class="info-label">وصف الطلب:</span>
+              <span class="info-value">${formData.description || 'غير محدد'}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">تاريخ بدء العمل:</span>
+              <span class="info-value">${formData.scheduled_time ? new Date(formData.scheduled_time).toLocaleString('ar-SA') : 'غير محدد'}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">تاريخ إنجاز العمل:</span>
+              <span class="info-value">${formData.delivery_time ? new Date(formData.delivery_time).toLocaleString('ar-SA') : 'غير محدد'}</span>
+            </div>
+          </div>
+          
+          <div class="price-highlight">
+            <div class="price-label">السعر المقترح</div>
+            <div class="price-value">${formData.offered_price || '0'} جنيه مصري</div>
+          </div>
+        </div>
+        
+        <div class="footer">
+          <p>شكراً لاختيارك خدماتنا</p>
+          <p>سيتم التواصل معك قريباً لتأكيد الطلب</p>
+          <p class="order-number">رقم الطلب: #${orderNumber}</p>
+          <p>تاريخ الطباعة: ${currentDate}</p>
+        </div>
+      </body>
+      </html>
+    `;
   };
 
   const validateForm = () => {
@@ -937,6 +1300,7 @@ const OrderPage = () => {
         offered_price: parseFloat(formData.offered_price),
         location_lat: formData.location_lat,
         location_lng: formData.location_lng,
+        location_address: formData.location_address || 'عنوان غير محدد',
         scheduled_time: new Date(formData.scheduled_time).toISOString(),
         delivery_time: new Date(formData.delivery_time).toISOString(),
       };
@@ -1462,11 +1826,20 @@ const OrderPage = () => {
                 <button
                   type="button"
                   className="btn btn-outline-primary"
-                  onClick={() => window.print()}
+                  onClick={handlePrintOrder}
                   disabled={isLoading}
                 >
                   <i className="fas fa-print me-2"></i>
                   طباعة الطلب
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline-success"
+                  onClick={handleDownloadOrder}
+                  disabled={isLoading}
+                >
+                  <i className="fas fa-download me-2"></i>
+                  تحميل الطلب
                 </button>
                 <button
                   type="submit"

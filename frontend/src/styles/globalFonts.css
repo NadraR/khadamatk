@@ -1,9 +1,27 @@
 /* Global Font Styles for Arabic and English Support */
 
-/* Import Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@300;400;500;600;700;800&family=Cairo:wght@300;400;500;600;700;800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&family=Fira+Code:wght@300;400;500;600;700;800&display=swap');
+/* Fonts are preloaded in index.html for better performance */
+
+/* Font loading optimization */
+html {
+  font-display: swap;
+}
+
+/* Prevent layout shift during font loading */
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  transition: font-family 0.3s ease;
+}
+
+/* Apply custom fonts when loaded */
+.fonts-loaded body {
+  font-family: var(--font-primary);
+}
+
+/* Fallback fonts for better performance */
+:root {
+  --font-fallback: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
 
 /* Root font family for all pages */
 :root {

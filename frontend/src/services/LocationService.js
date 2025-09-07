@@ -13,7 +13,16 @@ class LocationService {
         lng: locationData.lng,
         address: locationData.address || '',
         city: locationData.city || '',
-        country: locationData.country || 'مصر'
+        country: locationData.country || 'مصر',
+        neighborhood: locationData.neighborhood || '',
+        location_type: locationData.location_type || 'other',
+        name: locationData.name || '',
+        is_primary: locationData.is_primary || false,
+        building_number: locationData.building_number || '',
+        apartment_number: locationData.apartment_number || '',
+        floor_number: locationData.floor_number || '',
+        landmark: locationData.landmark || '',
+        additional_details: locationData.additional_details || ''
       };
       
       const response = await apiService.post(`${this.baseEndpoint}save-location/`, payload);

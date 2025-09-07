@@ -41,10 +41,21 @@ class UserRegisterView(generics.CreateAPIView):
         refresh = RefreshToken.for_user(user)
         access = refresh.access_token
         
+        # Check if user has saved locations (new users won't have any)
+        from location.models import UserLocation
+        has_location = UserLocation.objects.filter(user=user).exists()
+        
+        # Check if worker profile is complete (new workers won't have complete profiles)
+        profile_completed = True
+        if user.role == 'worker':
+            profile_completed = False  # New workers need to complete their profile
+        
         response_data.update({
             'refresh': str(refresh),
             'access': str(access),
             'user_id': user.id,
+            'has_location': has_location,
+            'profile_completed': profile_completed,
         })
         
         return Response(response_data, status=status.HTTP_201_CREATED)
@@ -243,6 +254,19 @@ class LoginView(generics.GenericAPIView):
         refresh = RefreshToken.for_user(user)
         access = refresh.access_token
 
+        # Check if user has saved locations
+        from location.models import UserLocation
+        has_location = UserLocation.objects.filter(user=user).exists()
+        
+        # Check if worker profile is complete
+        profile_completed = True
+        if user.role == 'worker':
+            try:
+                worker_profile = user.worker_profile
+                profile_completed = worker_profile.is_complete
+            except:
+                profile_completed = False
+
         return Response({
             'refresh': str(refresh),
             'access': str(access),
@@ -250,6 +274,8 @@ class LoginView(generics.GenericAPIView):
             'username': user.username,
             'email': user.email,
             'role': getattr(user, 'role', None),
+            'has_location': has_location,
+            'profile_completed': profile_completed,
         }, status=status.HTTP_200_OK)
     
 class LogoutView(APIView):
@@ -348,6 +374,19 @@ class GoogleLoginView(APIView):
             refresh = RefreshToken.for_user(user)
             access = refresh.access_token
 
+            # Check if user has saved locations
+            from location.models import UserLocation
+            has_location = UserLocation.objects.filter(user=user).exists()
+            
+            # Check if worker profile is complete
+            profile_completed = True
+            if user.role == 'worker':
+                try:
+                    worker_profile = user.worker_profile
+                    profile_completed = worker_profile.is_complete
+                except:
+                    profile_completed = False
+
             logger.info(f"[GoogleLogin DEBUG] Login successful for {email}")
             return Response({
                 "refresh": str(refresh),
@@ -359,6 +398,8 @@ class GoogleLoginView(APIView):
                 "first_name": user.first_name,
                 "last_name": user.last_name,
                 "is_new_user": created,
+                "has_location": has_location,
+                "profile_completed": profile_completed,
             }, status=status.HTTP_200_OK)
 
         except Exception as e:

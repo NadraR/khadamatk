@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   FaUser, 
@@ -29,10 +29,200 @@ import invoiceService from '../services/InvoiceService';
 import Navbar from '../components/Navbar';
 import './HomeClient.css';
 
+// Translation object
+const translations = {
+  ar: {
+    welcomeBack: "مرحباً بك،",
+    welcomeMessage: "نحن سعداء لرؤيتك مرة أخرى. تابع طلباتك وخدماتك المفضلة من هنا.",
+    newServiceRequest: "طلب خدمة جديدة",
+    viewMyOrders: "عرض طلباتي",
+    trackOrders: "تتبع الطلبات",
+    totalOrders: "إجمالي الطلبات",
+    completedOrders: "طلبات مكتملة",
+    totalAmountPaid: "إجمالي المبلغ المدفوع",
+    totalInvoices: "إجمالي الفواتير",
+    paidInvoices: "الفواتير المدفوعة",
+    unpaidInvoices: "الفواتير غير المدفوعة",
+    averageRating: "متوسط التقييم",
+    whyChooseUs: "لماذا تختار",
+    ourServices: "خدماتك؟",
+    qualityGuarantee: "ضمان جودة شهر كامل",
+    qualityGuaranteeDesc: "ضمان جودة الخدمة لمدة شهر كامل.",
+    flexibleSchedule: "مواعيد مرنة",
+    flexibleScheduleDesc: "مواعيد مرنة والتزام بالوقت.",
+    trustedTechnicians: "فنيين موثوقين",
+    trustedTechniciansDesc: "فنيين موثوقين وعمال معتمدين.",
+    recentOrders: "الطلبات الأخيرة",
+    recentInvoices: "الفواتير الأخيرة",
+    viewAllOrders: "عرض جميع الطلبات",
+    viewAllInvoices: "عرض جميع الفواتير",
+    yourAchievements: "إنجازاتك معنا",
+    premiumMember: "عضو مميز",
+    completedOrdersCount: "أكثر من",
+    completedOrdersText: "طلبات مكتملة",
+    excellentRating: "تقييم ممتاز",
+    averageRatingStars: "متوسط تقييم",
+    stars: "نجوم",
+    loyalCustomer: "عميل وفي",
+    withUsSince: "معنا منذ انضمامك للمنصة",
+    manageOrders: "إدارة طلباتي",
+    trackAllOrders: "تتبع جميع طلباتك وحالتها من مكان واحد",
+    newOrder: "طلب جديد",
+    allOrders: "جميع الطلبات",
+    allStatuses: "جميع الحالات",
+    pending: "قيد الانتظار",
+    accepted: "مقبول",
+    completed: "مكتمل",
+    cancelled: "ملغي",
+    inProgress: "قيد التنفيذ",
+    noOrdersYet: "لا توجد طلبات بعد",
+    noOrdersWithStatus: "لا توجد طلبات بحالة",
+    startNewService: "ابدأ بطلب خدمة جديدة من الصفحة الرئيسية",
+    tryDifferentFilter: "جرب تغيير الفلتر لعرض طلبات أخرى",
+    favorites: "الخدمات المفضلة",
+    invoices: "فواتيري",
+    reviews: "تقييماتي",
+    overview: "نظرة عامة",
+    myOrders: "طلباتي",
+    myFavorites: "المفضلة",
+    myInvoices: "الفواتير",
+    myReviews: "التقييمات",
+    loading: "جاري التحميل...",
+    offeredPrice: "السعر المعروض",
+    orderDate: "تاريخ الطلب",
+    serviceTime: "موعد الخدمة",
+    view: "عرض",
+    edit: "تعديل",
+    messages: "رسائل",
+    invoiceNumber: "فاتورة #",
+    amount: "المبلغ",
+    status: "الحالة",
+    dueDate: "تاريخ الاستحقاق",
+    actions: "الإجراءات",
+    close: "إغلاق",
+    editOrder: "تعديل الطلب",
+    messaging: "المراسلة",
+    orderDetails: "تفاصيل الطلب",
+    orderStatus: "حالة الطلب",
+    lastUpdate: "آخر تحديث",
+    serviceInfo: "معلومات الخدمة",
+    serviceName: "اسم الخدمة",
+    serviceCategory: "فئة الخدمة",
+    orderDetailsTitle: "تفاصيل الطلب",
+    orderDescription: "وصف الطلب",
+    noDescriptionAvailable: "لا يوجد وصف متاح",
+    locationInfo: "معلومات الموقع",
+    latitude: "خط العرض",
+    longitude: "خط الطول",
+    viewOnMap: "عرض على الخريطة",
+    orderStages: "مراحل الطلب",
+    orderCreated: "تم إنشاء الطلب",
+    orderAccepted: "تم قبول الطلب",
+    serviceCompleted: "تم إكمال الخدمة",
+    done: "تم",
+    waiting: "في الانتظار",
+    inProgressStatus: "قيد التنفيذ",
+    completedStatus: "مكتمل"
+  },
+  en: {
+    welcomeBack: "Welcome back,",
+    welcomeMessage: "We're happy to see you again. Track your orders and favorite services from here.",
+    newServiceRequest: "New Service Request",
+    viewMyOrders: "View My Orders",
+    trackOrders: "Track Orders",
+    totalOrders: "Total Orders",
+    completedOrders: "Completed Orders",
+    totalAmountPaid: "Total Amount Paid",
+    totalInvoices: "Total Invoices",
+    paidInvoices: "Paid Invoices",
+    unpaidInvoices: "Unpaid Invoices",
+    averageRating: "Average Rating",
+    whyChooseUs: "Why Choose",
+    ourServices: "Our Services?",
+    qualityGuarantee: "One Month Quality Guarantee",
+    qualityGuaranteeDesc: "Quality guarantee for one month.",
+    flexibleSchedule: "Flexible Schedule",
+    flexibleScheduleDesc: "Flexible schedule and time commitment.",
+    trustedTechnicians: "Trusted Technicians",
+    trustedTechniciansDesc: "Trusted technicians and certified workers.",
+    recentOrders: "Recent Orders",
+    recentInvoices: "Recent Invoices",
+    viewAllOrders: "View All Orders",
+    viewAllInvoices: "View All Invoices",
+    yourAchievements: "Your Achievements",
+    premiumMember: "Premium Member",
+    completedOrdersCount: "More than",
+    completedOrdersText: "completed orders",
+    excellentRating: "Excellent Rating",
+    averageRatingStars: "Average rating",
+    stars: "stars",
+    loyalCustomer: "Loyal Customer",
+    withUsSince: "With us since joining the platform",
+    manageOrders: "Manage My Orders",
+    trackAllOrders: "Track all your orders and their status from one place",
+    newOrder: "New Order",
+    allOrders: "All Orders",
+    allStatuses: "All Statuses",
+    pending: "Pending",
+    accepted: "Accepted",
+    completed: "Completed",
+    cancelled: "Cancelled",
+    inProgress: "In Progress",
+    noOrdersYet: "No orders yet",
+    noOrdersWithStatus: "No orders with status",
+    startNewService: "Start by requesting a new service from the main page",
+    tryDifferentFilter: "Try changing the filter to view other orders",
+    favorites: "Favorite Services",
+    invoices: "My Invoices",
+    reviews: "My Reviews",
+    overview: "Overview",
+    myOrders: "My Orders",
+    myFavorites: "Favorites",
+    myInvoices: "Invoices",
+    myReviews: "Reviews",
+    loading: "Loading...",
+    offeredPrice: "Offered Price",
+    orderDate: "Order Date",
+    serviceTime: "Service Time",
+    view: "View",
+    edit: "Edit",
+    messages: "Messages",
+    invoiceNumber: "Invoice #",
+    amount: "Amount",
+    status: "Status",
+    dueDate: "Due Date",
+    actions: "Actions",
+    close: "Close",
+    editOrder: "Edit Order",
+    messaging: "Messaging",
+    orderDetails: "Order Details",
+    orderStatus: "Order Status",
+    lastUpdate: "Last Update",
+    serviceInfo: "Service Information",
+    serviceName: "Service Name",
+    serviceCategory: "Service Category",
+    orderDetailsTitle: "Order Details",
+    orderDescription: "Order Description",
+    noDescriptionAvailable: "No description available",
+    locationInfo: "Location Information",
+    latitude: "Latitude",
+    longitude: "Longitude",
+    viewOnMap: "View on Map",
+    orderStages: "Order Stages",
+    orderCreated: "Order Created",
+    orderAccepted: "Order Accepted",
+    serviceCompleted: "Service Completed",
+    done: "Done",
+    waiting: "Waiting",
+    inProgressStatus: "In Progress",
+    completedStatus: "Completed"
+  }
+};
+
 // Import images (you can add actual images later)
 const clientHeroImage = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600"><rect width="800" height="600" fill="%23f0f8ff"/><circle cx="200" cy="150" r="80" fill="%234da6ff" opacity="0.3"/><circle cx="600" cy="400" r="120" fill="%230077ff" opacity="0.2"/><rect x="100" y="200" width="600" height="200" rx="20" fill="%23ffffff" opacity="0.9"/><text x="400" y="320" text-anchor="middle" fill="%230077ff" font-size="32" font-weight="bold">مرحباً بك في لوحة التحكم</text></svg>';
 
-const serviceImage = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><rect width="400" height="300" fill="%23e3f2fd"/><circle cx="100" cy="100" r="40" fill="%230077ff" opacity="0.6"/><circle cx="300" cy="200" r="60" fill="%234da6ff" opacity="0.4"/><rect x="50" y="120" width="300" height="120" rx="15" fill="%23ffffff"/><text x="200" y="190" text-anchor="middle" fill="%230077ff" font-size="18" font-weight="bold">خدماتك</text></svg>';
+// const serviceImage = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><rect width="400" height="300" fill="%23e3f2fd"/><circle cx="100" cy="100" r="40" fill="%230077ff" opacity="0.6"/><circle cx="300" cy="200" r="60" fill="%234da6ff" opacity="0.4"/><rect x="50" y="120" width="300" height="120" rx="15" fill="%23ffffff"/><text x="200" y="190" text-anchor="middle" fill="%230077ff" font-size="18" font-weight="bold">خدماتك</text></svg>';
 
 const achievementImage = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><rect width="400" height="300" fill="%23fff3cd"/><polygon points="200,50 220,120 290,120 235,165 255,235 200,190 145,235 165,165 110,120 180,120" fill="%23f59e0b"/><text x="200" y="280" text-anchor="middle" fill="%23856404" font-size="16" font-weight="bold">إنجازاتك</text></svg>';
 
@@ -44,10 +234,11 @@ const HomeClient = () => {
   const [favorites, setFavorites] = useState([]);
   const [invoices, setInvoices] = useState([]);
   const [reviews, setReviews] = useState([]);
-  const [ratings, setRatings] = useState([]);
+  // const [ratings, setRatings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [language, setLanguage] = useState('ar');
   const [stats, setStats] = useState({
     totalOrders: 0,
     completedOrders: 0,
@@ -66,6 +257,17 @@ const HomeClient = () => {
   // Filter state for orders
   const [orderFilter, setOrderFilter] = useState('all');
 
+  // Translation function
+  const t = useCallback((key) => {
+    return translations[language][key] || key;
+  }, [language]);
+
+  // Load language from localStorage on component mount
+  useEffect(() => {
+    const savedLanguage = localStorage.getItem('language') || 'ar';
+    setLanguage(savedLanguage);
+  }, []);
+
   // Function to filter orders based on selected status
   const getFilteredOrders = () => {
     if (orderFilter === 'all') {
@@ -79,27 +281,20 @@ const HomeClient = () => {
     setOrderFilter(e.target.value);
   };
 
-  // Get filter status text in Arabic
+  // Get filter status text
   const getFilterStatusText = (status) => {
     const statusTexts = {
-      'all': 'جميع الحالات',
-      'pending': 'قيد الانتظار',
-      'accepted': 'مقبول',
-      'completed': 'مكتمل',
-      'cancelled': 'ملغي',
-      'in_progress': 'قيد التنفيذ'
+      'all': t('allStatuses'),
+      'pending': t('pending'),
+      'accepted': t('accepted'),
+      'completed': t('completed'),
+      'cancelled': t('cancelled'),
+      'in_progress': t('inProgress')
     };
     return statusTexts[status] || status;
   };
 
-  useEffect(() => {
-    checkAuthentication();
-    if (user) {
-      loadClientData();
-    }
-  }, [user?.id]);
-
-  const checkAuthentication = () => {
+  const checkAuthentication = useCallback(() => {
     const userData = localStorage.getItem('user');
     if (!userData) {
       navigate('/auth');
@@ -117,24 +312,7 @@ const HomeClient = () => {
       console.error('Error parsing user data:', error);
       navigate('/auth');
     }
-  };
-
-  const loadClientData = async () => {
-    try {
-      setLoading(true);
-      await Promise.all([
-        loadOrders(),
-        loadFavorites(),
-        loadInvoices(),
-        loadReviews(),
-        loadRatings()
-      ]);
-    } catch (error) {
-      console.error('Error loading client data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [navigate]);
 
   const loadOrders = async () => {
     try {
@@ -214,7 +392,7 @@ const HomeClient = () => {
   const loadRatings = async () => {
     try {
       const response = await apiService.get('/api/ratings/my-ratings/');
-      setRatings(response || []);
+      // setRatings(response || []);
       
       // Calculate average rating
       if (response && response.length > 0) {
@@ -223,16 +401,44 @@ const HomeClient = () => {
       }
     } catch (error) {
       console.error('Error loading ratings:', error);
-      setRatings([]);
+      // setRatings([]);
     }
   };
 
+  const loadClientData = useCallback(async () => {
+    try {
+      setLoading(true);
+      await Promise.all([
+        loadOrders(),
+        loadFavorites(),
+        loadInvoices(),
+        loadReviews(),
+        loadRatings()
+      ]);
+    } catch (error) {
+      console.error('Error loading client data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    checkAuthentication();
+  }, [checkAuthentication]);
+
+  useEffect(() => {
+    if (user) {
+      loadClientData();
+    }
+  }, [user, loadClientData]);
+
   const getOrderStatusBadge = (status) => {
     const statusConfig = {
-      pending: { class: 'badge-warning', icon: FaClock, text: 'قيد الانتظار' },
-      accepted: { class: 'badge-info', icon: FaCheck, text: 'مقبول' },
-      completed: { class: 'badge-success', icon: FaCheck, text: 'مكتمل' },
-      cancelled: { class: 'badge-danger', icon: FaExclamationTriangle, text: 'ملغي' }
+      pending: { class: 'badge-warning', icon: FaClock, text: t('pending') },
+      accepted: { class: 'badge-info', icon: FaCheck, text: t('accepted') },
+      completed: { class: 'badge-success', icon: FaCheck, text: t('completed') },
+      cancelled: { class: 'badge-danger', icon: FaExclamationTriangle, text: t('cancelled') },
+      in_progress: { class: 'badge-primary', icon: FaClock, text: t('inProgress') }
     };
     
     const config = statusConfig[status] || statusConfig.pending;
@@ -334,19 +540,19 @@ const HomeClient = () => {
             <div className="col-md-6">
               <h2 className="fw-bold text-primary mb-3">
                 <FaTrophy className="me-2" />
-                مرحباً بك، {user?.first_name}!
+                {t('welcomeBack')} {user?.first_name}!
               </h2>
               <p className="text-muted mb-4" style={{ fontSize: '1.1rem', lineHeight: '1.6' }}>
-                نحن سعداء لرؤيتك مرة أخرى. تابع طلباتك وخدماتك المفضلة من هنا.
+                {t('welcomeMessage')}
               </p>
-              <div className="d-flex gap-3">
+              <div className="d-flex gap-3 flex-wrap">
                 <button 
                   className="btn btn-primary btn-lg"
                   onClick={() => navigate('/services')}
                   style={{ borderRadius: '50px', padding: '0.75rem 2rem' }}
                 >
                   <FaPlus className="me-2" />
-                  طلب خدمة جديدة
+                  {t('newServiceRequest')}
                 </button>
                 <button 
                   className="btn btn-outline-primary btn-lg"
@@ -354,7 +560,15 @@ const HomeClient = () => {
                   style={{ borderRadius: '50px', padding: '0.75rem 2rem' }}
                 >
                   <FaEye className="me-2" />
-                  عرض طلباتي
+                  {t('viewMyOrders')}
+                </button>
+                <button 
+                  className="btn btn-outline-success btn-lg"
+                  onClick={() => navigate('/track-order')}
+                  style={{ borderRadius: '50px', padding: '0.75rem 2rem' }}
+                >
+                  <FaClock className="me-2" />
+                  {t('trackOrders')}
                 </button>
               </div>
             </div>
@@ -379,7 +593,7 @@ const HomeClient = () => {
             </div>
             <div className="stat-content">
               <h3>{stats.totalOrders}</h3>
-              <p>إجمالي الطلبات</p>
+              <p>{t('totalOrders')}</p>
             </div>
           </div>
         </div>
@@ -390,7 +604,7 @@ const HomeClient = () => {
             </div>
             <div className="stat-content">
               <h3>{stats.completedOrders}</h3>
-              <p>طلبات مكتملة</p>
+              <p>{t('completedOrders')}</p>
             </div>
           </div>
         </div>
@@ -401,7 +615,7 @@ const HomeClient = () => {
             </div>
             <div className="stat-content">
               <h3>{stats.totalSpent.toFixed(2)} ج.م</h3>
-              <p>إجمالي المبلغ المدفوع</p>
+              <p>{t('totalAmountPaid')}</p>
             </div>
           </div>
         </div>
@@ -412,7 +626,7 @@ const HomeClient = () => {
             </div>
             <div className="stat-content">
               <h3>{statistics.totalInvoices || 0}</h3>
-              <p>إجمالي الفواتير</p>
+              <p>{t('totalInvoices')}</p>
             </div>
           </div>
         </div>
@@ -423,7 +637,7 @@ const HomeClient = () => {
             </div>
             <div className="stat-content">
               <h3>{statistics.paidInvoices || 0}</h3>
-              <p>الفواتير المدفوعة</p>
+              <p>{t('paidInvoices')}</p>
             </div>
           </div>
         </div>
@@ -434,7 +648,7 @@ const HomeClient = () => {
             </div>
             <div className="stat-content">
               <h3>{statistics.unpaidInvoices || 0}</h3>
-              <p>الفواتير غير المدفوعة</p>
+              <p>{t('unpaidInvoices')}</p>
             </div>
           </div>
         </div>
@@ -445,7 +659,7 @@ const HomeClient = () => {
             </div>
             <div className="stat-content">
               <h3>{stats.avgRating.toFixed(1)}</h3>
-              <p>متوسط التقييم</p>
+              <p>{t('averageRating')}</p>
             </div>
           </div>
         </div>
@@ -928,7 +1142,7 @@ const HomeClient = () => {
     return (
       <div className="loading-container">
         <div className="spinner-border text-primary" role="status">
-          <span className="sr-only">جاري التحميل...</span>
+          <span className="sr-only">{t('loading')}</span>
         </div>
       </div>
     );
@@ -954,40 +1168,55 @@ const HomeClient = () => {
                 </div>
                 
                 <nav className="profile-nav">
+                  {/* Language Toggle */}
+                  <div className="language-toggle mb-3">
+                    <select 
+                      className="form-select form-select-sm" 
+                      value={language} 
+                      onChange={(e) => {
+                        setLanguage(e.target.value);
+                        localStorage.setItem('language', e.target.value);
+                      }}
+                    >
+                      <option value="ar">العربية</option>
+                      <option value="en">English</option>
+                    </select>
+                  </div>
+                  
                   <button 
                     className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`}
                     onClick={() => setActiveTab('overview')}
                   >
                     <FaUser className="nav-icon" />
-                    نظرة عامة
+                    {t('overview')}
                   </button>
                   <button 
                     className={`nav-item ${activeTab === 'orders' ? 'active' : ''}`}
                     onClick={() => setActiveTab('orders')}
                   >
                     <FaClipboardList className="nav-icon" />
-                    طلباتي ({orders.length})
+                    {t('myOrders')} ({orders.length})
                   </button>
                   <button 
                     className={`nav-item ${activeTab === 'favorites' ? 'active' : ''}`}
                     onClick={() => setActiveTab('favorites')}
                   >
                     <FaHeart className="nav-icon" />
-                    المفضلة ({favorites.length})
+                    {t('myFavorites')} ({favorites.length})
                   </button>
                   <button 
                     className={`nav-item ${activeTab === 'invoices' ? 'active' : ''}`}
                     onClick={() => setActiveTab('invoices')}
                   >
                     <FaFileInvoiceDollar className="nav-icon" />
-                    الفواتير ({invoices.length})
+                    {t('myInvoices')} ({invoices.length})
                   </button>
                   <button 
                     className={`nav-item ${activeTab === 'reviews' ? 'active' : ''}`}
                     onClick={() => setActiveTab('reviews')}
                   >
                     <FaStar className="nav-icon" />
-                    التقييمات ({reviews.length})
+                    {t('myReviews')} ({reviews.length})
                   </button>
                 </nav>
               </div>

@@ -17,25 +17,19 @@ class UserLocationViewSet(viewsets.ModelViewSet):
     """
     queryset = UserLocation.objects.all()
     serializer_class = UserLocationSerializer
-    permission_classes = [permissions.AllowAny]  # السماح بالوصول بدون تسجيل دخول
+    permission_classes = [permissions.IsAuthenticated]  # يتطلب تسجيل الدخول
 
     def get_queryset(self):
         user = self.request.user
         if user.is_staff:
             return UserLocation.objects.select_related('user').all()
-        elif user.is_authenticated:
-            return UserLocation.objects.filter(user=user).order_by('-created_at')
         else:
-            # للمستخدمين غير المسجلين، إرجاع المواقع العامة أو فارغ
-            return UserLocation.objects.filter(user__isnull=True).order_by('-created_at')
+            # للمستخدمين المسجلين، إرجاع مواقعهم فقط
+            return UserLocation.objects.filter(user=user).order_by('-created_at')
 
     def perform_create(self, serializer):
-        """ربط الموقع بالمستخدم الحالي تلقائياً (إذا كان مسجل دخول)"""
-        if self.request.user.is_authenticated:
-            serializer.save(user=self.request.user)
-        else:
-            # حفظ الموقع بدون ربطه بمستخدم (للمستخدمين غير المسجلين)
-            serializer.save(user=None)
+        """ربط الموقع بالمستخدم الحالي تلقائياً"""
+        serializer.save(user=self.request.user)
 
     @action(detail=False, methods=['get'], url_path='my-locations')
     def my_locations(self, request):
@@ -60,6 +54,13 @@ class UserLocationViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], url_path='save-location')
     def save_location(self, request):
         """حفظ موقع جديد للمستخدم مع دعم جميع الحقول"""
+        # التحقق من المصادقة
+        if not request.user.is_authenticated:
+            return Response(
+                {"error": "يجب تسجيل الدخول أولاً"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
         lat = request.data.get('lat')
         lng = request.data.get('lng')
         address = request.data.get('address', '')
@@ -335,7 +336,21 @@ class UserLocationViewSet(viewsets.ModelViewSet):
                     'Carpenters': ['carpentry', 'carpenter', 'نجارة', 'نجار'],
                     'Painters': ['painting', 'painter', 'دهان', 'دهانات'],
                     'Cleaning Services': ['cleaning', 'clean', 'تنظيف', 'نظافة'],
-                    'Gardening': ['gardening', 'garden', 'بستنة', 'حدائق']
+                    'Gardening': ['gardening', 'garden', 'بستنة', 'حدائق'],
+                    # Add Arabic category names
+                    'كهرباء': ['electrical', 'electric', 'كهرباء', 'كهربائي'],
+                    'سباكة': ['plumbing', 'plumber', 'سباكة', 'سباك'],
+                    'نجارة': ['carpentry', 'carpenter', 'نجارة', 'نجار'],
+                    'دهان': ['painting', 'painter', 'دهان', 'دهانات'],
+                    'تنظيف': ['cleaning', 'clean', 'تنظيف', 'نظافة'],
+                    'تكييف': ['air conditioning', 'ac', 'تكييف', 'مكيف'],
+                    'صيانة أجهزة': ['maintenance', 'repair', 'صيانة', 'أجهزة'],
+                    'تركيب أثاث': ['furniture', 'installation', 'تركيب', 'أثاث'],
+                    'نقل أثاث': ['moving', 'transport', 'نقل', 'أثاث'],
+                    'حدادة': ['welding', 'metalwork', 'حدادة', 'حداد'],
+                    'بلاط': ['tiling', 'tiles', 'بلاط', 'سيراميك'],
+                    'جص': ['plastering', 'gypsum', 'جص', 'جبس'],
+                    'خدمات عامة': ['general', 'services', 'خدمات', 'عامة']
                 }
                 
                 keywords = category_keywords.get(category.name, [])
@@ -372,7 +387,10 @@ class UserLocationViewSet(viewsets.ModelViewSet):
         # إضافة البحث النصي إذا تم توفيره
         if q.strip():
             from django.db.models import Q
-            nearby_workers_query = nearby_workers_query.filter(
+            from accounts.models import WorkerProfile
+            
+            # Search in location fields
+            location_search = Q(
                 Q(user__first_name__icontains=q) |
                 Q(user__last_name__icontains=q) |
                 Q(user__username__icontains=q) |
@@ -380,6 +398,23 @@ class UserLocationViewSet(viewsets.ModelViewSet):
                 Q(city__icontains=q) |
                 Q(neighborhood__icontains=q)
             )
+            
+            # Search in worker profile fields
+            profile_search = Q()
+            try:
+                profile_workers = WorkerProfile.objects.filter(
+                    Q(skills__icontains=q) |
+                    Q(job_title__icontains=q) |
+                    Q(services_provided__icontains=q)
+                ).values_list('user_id', flat=True)
+                
+                if profile_workers:
+                    profile_search = Q(user_id__in=profile_workers)
+            except:
+                pass
+            
+            # Combine both searches
+            nearby_workers_query = nearby_workers_query.filter(location_search | profile_search)
 
         # ترتيب النتائج وتحديد العدد الأقصى
         nearby_workers = nearby_workers_query.order_by('distance')[:max_results]
@@ -411,7 +446,7 @@ class UserLocationViewSet(viewsets.ModelViewSet):
                     'title': service.title,
                     'description': service.description,
                     'category': service.category.name if service.category else None,
-                    'base_price': float(service.base_price) if service.base_price else 0,
+                    'base_price': float(service.price) if service.price else 0,
                     'rating': avg_rating
                 })
 

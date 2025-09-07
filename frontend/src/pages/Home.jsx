@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 import Navbar from "../components/Navbar";
 import SearchBar from "../components/SearchBar";
 import ImageTicker from "../components/ImageTicker";
+import { authService } from "../services/authService";
 import assemblyImg from "../images/assembly.jpg";
 import movingImg from "../images/moving.jpeg";
 import cleaningImg from "../images/cleaning.jpg";
@@ -46,6 +47,36 @@ const Home = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [activeService, setActiveService] = useState(() => services[0]);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Check if user is logged in
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        const isAuthenticated = await authService.isAuthenticated();
+        setIsLoggedIn(isAuthenticated);
+      } catch (error) {
+        console.error('Error checking auth status:', error);
+        setIsLoggedIn(false);
+      }
+    };
+    
+    checkAuthStatus();
+
+    // Listen for auth changes
+    const handleAuthChange = () => {
+      checkAuthStatus();
+    };
+
+    // Add event listeners for auth changes
+    window.addEventListener('userLogin', handleAuthChange);
+    window.addEventListener('userLogout', handleAuthChange);
+
+    return () => {
+      window.removeEventListener('userLogin', handleAuthChange);
+      window.removeEventListener('userLogout', handleAuthChange);
+    };
+  }, []);
 
   useEffect(() => {
     if (injected.current) return;
@@ -120,55 +151,57 @@ const Home = () => {
     <div>
       <Navbar />
       
-      {/* Join as Service Provider Banner */}
-      <div className="container-fluid py-3" style={{ 
-        background: 'linear-gradient(135deg,rgb(199, 212, 228),rgb(125, 185, 245))', 
-        borderBottom: '3px solid #fff',
-        boxShadow: '0 4px 15px rgba(7, 52, 102, 0.3)'
-      }}>
-        <div className="container">
-          <div className="row align-items-center justify-content-center">
-            <div className="col-md-8 text-center">
-              <div className="d-flex align-items-center justify-content-center gap-3">
-                <div className="text-white">
-                  <i className="bi bi-star-fill me-2" style={{ fontSize: '1.5rem' }}></i>
-                  <span className="fw-bold" style={{ fontSize: '1.2rem' }}>
-                    {t("joinBannerText")}
-                  </span>
+      {/* Join as Service Provider Banner - Only show if user is not logged in */}
+      {!isLoggedIn && (
+        <div className="container-fluid py-3" style={{ 
+          background: 'linear-gradient(135deg,rgb(199, 212, 228),rgb(125, 185, 245))', 
+          borderBottom: '3px solid #fff',
+          boxShadow: '0 4px 15px rgba(7, 52, 102, 0.3)'
+        }}>
+          <div className="container">
+            <div className="row align-items-center justify-content-center">
+              <div className="col-md-8 text-center">
+                <div className="d-flex align-items-center justify-content-center gap-3">
+                  <div className="text-white">
+                    <i className="bi bi-star-fill me-2" style={{ fontSize: '1.5rem' }}></i>
+                    <span className="fw-bold" style={{ fontSize: '1.2rem' }}>
+                      {t("joinBannerText")}
+                    </span>
+                  </div>
+                  <button
+                    className="btn btn-lg fw-bold px-4 py-2 ms-3"
+                    onClick={() => navigate('/auth')}
+                    style={{
+                      borderRadius: '50px',
+                      backgroundColor: '#7dd3fc',
+                      color: '#0f172a',
+                      boxShadow: '0 4px 15px rgba(125, 211, 252, 0.4)',
+                      transition: 'all 0.3s ease',
+                      border: '3px solid #fff',
+                      animation: 'pulse 2s infinite'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.transform = 'scale(1.05) translateY(-2px)';
+                      e.target.style.backgroundColor = '#38bdf8';
+                      e.target.style.boxShadow = '0 8px 25px rgba(125, 211, 252, 0.6)';
+                      e.target.style.animation = 'none';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.transform = 'scale(1) translateY(0)';
+                      e.target.style.backgroundColor = '#7dd3fc';
+                      e.target.style.boxShadow = '0 4px 15px rgba(125, 211, 252, 0.4)';
+                      e.target.style.animation = 'pulse 2s infinite';
+                    }}
+                  >
+                    <i className="bi bi-plus-circle-fill me-2"></i>
+                    {t("joinNowButton")}
+                  </button>
                 </div>
-                <button
-                  className="btn btn-lg fw-bold px-4 py-2 ms-3"
-                  onClick={() => navigate('/auth')}
-                  style={{
-                    borderRadius: '50px',
-                    backgroundColor: '#7dd3fc',
-                    color: '#0f172a',
-                    boxShadow: '0 4px 15px rgba(125, 211, 252, 0.4)',
-                    transition: 'all 0.3s ease',
-                    border: '3px solid #fff',
-                    animation: 'pulse 2s infinite'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.transform = 'scale(1.05) translateY(-2px)';
-                    e.target.style.backgroundColor = '#38bdf8';
-                    e.target.style.boxShadow = '0 8px 25px rgba(125, 211, 252, 0.6)';
-                    e.target.style.animation = 'none';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.transform = 'scale(1) translateY(0)';
-                    e.target.style.backgroundColor = '#7dd3fc';
-                    e.target.style.boxShadow = '0 4px 15px rgba(125, 211, 252, 0.4)';
-                    e.target.style.animation = 'pulse 2s infinite';
-                  }}
-                >
-                  <i className="bi bi-plus-circle-fill me-2"></i>
-                  {t("joinNowButton")}
-                </button>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
       
       {/* Search Bar Section */}
       <section className="container my-4">
