@@ -9,22 +9,34 @@ import {
   CircularProgress,
   Select,
   MenuItem,
-  FormControl
+  FormControl,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Snackbar
 } from '@mui/material';
 import {
   Edit as EditIcon,
   Assignment as AssignmentIcon,
+  PersonAdd as PersonAddIcon,
 } from '@mui/icons-material';
 import { DataGrid } from '@mui/x-data-grid';
 import { adminApiService } from '../../services/adminApiService';
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState([]);
+  const [providers, setProviders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [assignDialogOpen, setAssignDialogOpen] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [selectedProvider, setSelectedProvider] = useState('');
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   useEffect(() => {
     fetchOrders();
+    fetchProviders();
   }, []);
 
   const fetchOrders = async () => {
@@ -38,6 +50,17 @@ const OrdersPage = () => {
     }
   };
 
+  const fetchProviders = async () => {
+    try {
+      const data = await adminApiService.getUsers();
+      // Filter only workers/providers
+      const workers = data.filter(user => user.role === 'worker');
+      setProviders(workers);
+    } catch (err) {
+      console.error('فشل في تحميل مقدمي الخدمة:', err);
+    }
+  };
+
   const handleStatusChange = async (orderId, newStatus) => {
     try {
       await adminApiService.setOrderStatus(orderId, newStatus);
@@ -45,6 +68,27 @@ const OrdersPage = () => {
     } catch (err) {
       setError('فشل في تحديث حالة الطلب');
     }
+  };
+
+  const handleAssignProvider = (order) => {
+    setSelectedOrder(order);
+    setSelectedProvider('');
+    setAssignDialogOpen(true);
+  };
+
+  const handleConfirmAssignment = async () => {
+    try {
+      await adminApiService.assignProvider(selectedOrder.id, selectedProvider);
+      setSnackbar({ open: true, message: 'تم تعيين مقدم الخدمة بنجاح', severity: 'success' });
+      setAssignDialogOpen(false);
+      fetchOrders();
+    } catch (err) {
+      setSnackbar({ open: true, message: 'فشل في تعيين مقدم الخدمة', severity: 'error' });
+    }
+  };
+
+  const showSnackbar = (message, severity = 'success') => {
+    setSnackbar({ open: true, message, severity });
   };
 
   const getStatusColor = (status) => {
@@ -88,9 +132,9 @@ const OrdersPage = () => {
     {
       field: 'actions',
       headerName: 'الإجراءات',
-      width: 200,
+      width: 300,
       renderCell: (params) => (
-        <Box>
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
           <FormControl size="small" sx={{ minWidth: 120 }}>
             <Select
               value={params.row.status}
@@ -102,6 +146,15 @@ const OrdersPage = () => {
               <MenuItem value="cancelled">ملغي</MenuItem>
             </Select>
           </FormControl>
+          <Button
+            size="small"
+            variant="outlined"
+            startIcon={<PersonAddIcon />}
+            onClick={() => handleAssignProvider(params.row)}
+            sx={{ minWidth: 'auto', px: 1 }}
+          >
+            تعيين
+          </Button>
         </Box>
       ),
     },
@@ -188,7 +241,16 @@ const OrdersPage = () => {
                 <Chip label={`سعر: ${order.offered_price}`} color="info" size="medium" sx={{ fontWeight: 700, fontSize: 15 }} />
                 <Chip label={order.scheduled_time} color="default" size="medium" sx={{ fontWeight: 700, fontSize: 15 }} />
               </Box>
-              <Box sx={{ display: 'flex', gap: 1.5, mt: 'auto', justifyContent: 'flex-end' }}>
+              <Box sx={{ display: 'flex', gap: 1.5, mt: 'auto', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  startIcon={<PersonAddIcon />}
+                  onClick={() => handleAssignProvider(order)}
+                  sx={{ minWidth: 'auto', px: 2 }}
+                >
+                  تعيين مقدم خدمة
+                </Button>
                 <FormControl size="small" sx={{ minWidth: 120 }}>
                   <Select
                     value={order.status}
@@ -205,6 +267,62 @@ const OrdersPage = () => {
           ))}
         </Box>
       </Box>
+
+      {/* Provider Assignment Dialog */}
+      <Dialog open={assignDialogOpen} onClose={() => setAssignDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>تعيين مقدم خدمة للطلب</DialogTitle>
+        <DialogContent>
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="body1" sx={{ mb: 2 }}>
+              العميل: {selectedOrder?.customer_name}
+            </Typography>
+            <Typography variant="body1" sx={{ mb: 2 }}>
+              الخدمة: {selectedOrder?.service_name}
+            </Typography>
+            <FormControl fullWidth sx={{ mt: 2 }}>
+              <Select
+                value={selectedProvider}
+                onChange={(e) => setSelectedProvider(e.target.value)}
+                displayEmpty
+              >
+                <MenuItem value="" disabled>
+                  اختر مقدم الخدمة
+                </MenuItem>
+                {providers.map((provider) => (
+                  <MenuItem key={provider.id} value={provider.id}>
+                    {provider.username} ({provider.email})
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setAssignDialogOpen(false)}>إلغاء</Button>
+          <Button 
+            onClick={handleConfirmAssignment} 
+            variant="contained"
+            disabled={!selectedProvider}
+          >
+            تعيين
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      >
+        <Alert
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

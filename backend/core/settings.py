@@ -5,8 +5,6 @@ from dotenv import load_dotenv
 from datetime import timedelta
 from decouple import config, Csv
 import sys
-from corsheaders.defaults import default_headers
-
 
 load_dotenv()
 
@@ -25,6 +23,7 @@ DEBUG = config("DEBUG", cast=bool, default=False)
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv(), default=["127.0.0.1", "localhost"])
 CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS", cast=Csv(), default=[])
 CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", cast=Csv(), default=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000", "http://127.0.0.1:3000"])
+
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Application definition
@@ -56,26 +55,25 @@ INSTALLED_APPS = [
     
     # Local apps
     'accounts',
-    # 'invoices.apps.InvoicesConfig',  # Temporarily disabled - app incomplete
+    'invoices.apps.InvoicesConfig',
     'orders.apps.OrdersConfig',
-    'ratings.apps.RatingsConfig',
+    'ratings.apps.RatingsConfig', 
     'reviews',
     'services.apps.ServicesConfig',
     'admin_api',
     'location',
-    # 'favorites.apps.FavoritesConfig',  # Using services.Favorite instead
-    # 'chat',  # Temporarily disabled
     'notifications.apps.NotificationsConfig',
-    # 'channels',  # Temporarily disabled
+    'channels',
+    'chat',
     ]
    
 
 SITE_ID = 1
 
-MIDDLEWARE = [    
-    'corsheaders.middleware.CorsMiddleware', 
+MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
+    'corsheaders.middleware.CorsMiddleware', 
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -123,16 +121,16 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'core.wsgi.application'
-# ASGI_APPLICATION = 'core.asgi.application'  # Temporarily disabled
+ASGI_APPLICATION = 'core.asgi.application'
 
-# CHANNEL_LAYERS = {  # Temporarily disabled
-#     "default": {
-#         "BACKEND": "channels_redis.core.RedisChannelLayer",
-#         "CONFIG": {
-#             "hosts": [("127.0.0.1", 6379)], 
-#         },
-#     },
-# }
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)], 
+        },
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -203,9 +201,7 @@ AUTH_USER_MODEL = 'accounts.User'
 
 
 
-CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
-CORS_PREFLIGHT_MAX_AGE = 86400  # 24 hours
 
 # Additional CORS settings for better compatibility
 CORS_ALLOW_METHODS = [
@@ -220,19 +216,13 @@ CORS_ALLOW_METHODS = [
 CORS_ALLOW_HEADERS = [
     "accept",
     "accept-encoding",
-    "authorization", 
+    "authorization",
     "content-type",
     "dnt",
     "origin",
     "user-agent",
     "x-csrftoken",
     "x-requested-with",
-    "x-forwarded-for",
-    "x-forwarded-proto",
-    "cache-control",
-    "pragma",
-    "expires",
-    "headers",  # Added this explicitly
 ]
 
 PASSWORD_HASHERS = [

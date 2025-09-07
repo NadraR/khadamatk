@@ -20,7 +20,13 @@ import AdminLogin from './pages/admin/AdminLogin';
 import UsersPage from './pages/admin/UsersPage';
 import ServicesPage from './pages/admin/ServicesPage';
 import OrdersPage from './pages/admin/OrdersPage';
+import ReviewsPage from './pages/admin/ReviewsPage';
+import RatingsPage from './pages/admin/RatingsPage';
 import InvoicesPage from './pages/admin/InvoicesPage';
+import NotificationsPage from './pages/admin/NotificationsPage';
+import SettingsPage from './pages/admin/SettingsPage';
+import AdminLogsPage from './pages/admin/AdminLogsPage';
+import CategoriesPage from './pages/admin/CategoriesPage';
 import AdminLayout from './layouts/AdminLayout';
 import { AdminAuthProvider, useAdminAuth } from './contexts/AdminAuthContext';
 
@@ -108,11 +114,14 @@ function App() {
             <Route index element={<AdminDashboard />} />
             <Route path="users" element={<UsersPage />} />
             <Route path="services" element={<ServicesPage />} />
+            <Route path="categories" element={<CategoriesPage />} />
             <Route path="orders" element={<OrdersPage />} />
-            <Route path="reviews" element={<div>صفحة التقييمات</div>} />
+            <Route path="reviews" element={<ReviewsPage />} />
+            <Route path="ratings" element={<RatingsPage />} />
             <Route path="invoices" element={<InvoicesPage />} />
-            <Route path="settings" element={<div>صفحة الإعدادات</div>} />
-            <Route path="notifications" element={<div>صفحة الإشعارات</div>} />
+            <Route path="notifications" element={<NotificationsPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+            <Route path="logs" element={<AdminLogsPage />} />
           </Route>
           <Route path="/adminDashboard" element={<Navigate to="/admin" />} />
 

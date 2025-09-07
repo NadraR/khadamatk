@@ -150,6 +150,20 @@ export const adminApiService = {
     return response.data;
   },
 
+  createCategory: async (categoryData) => {
+    const response = await adminApi.post('/categories/', categoryData);
+    return response.data;
+  },
+
+  updateCategory: async (categoryId, categoryData) => {
+    const response = await adminApi.patch(`/categories/${categoryId}/`, categoryData);
+    return response.data;
+  },
+
+  deleteCategory: async (categoryId) => {
+    await adminApi.delete(`/categories/${categoryId}/`);
+  },
+
   // Me (admin profile & permissions)
   getAdminMe: async () => {
     const response = await adminApi.get('/me/');

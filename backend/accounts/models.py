@@ -30,12 +30,12 @@ class User(AbstractUser):
         verbose_name="Role"
     )
     
-    bio = models.TextField(
-        blank=True,
-        null=True,
-        verbose_name="Bio",
-        help_text="User biography"
-    )
+    # bio = models.TextField(
+    #     blank=True,
+    #     null=True,
+    #     verbose_name="Bio",
+    #     help_text="User biography"
+    # )
 
     auth_provider = models.CharField(
         max_length=50,
