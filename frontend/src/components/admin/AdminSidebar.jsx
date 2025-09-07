@@ -215,7 +215,6 @@ const AdminSidebar = ({ open, onClose }) => {
       sx={{
         width: drawerWidth,
         flexShrink: 0,
-        background: 'transparent',
         '& .MuiDrawer-paper': {
           width: drawerWidth,
           boxSizing: 'border-box',

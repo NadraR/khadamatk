@@ -82,8 +82,16 @@ const AdminLayout = () => {
         }}
       >
         <Toolbar sx={{ minHeight: 64, px: { xs: 2, md: 3 }, justifyContent: 'space-between' }}>
-          {/* Left side - Notification and Language */}
+          {/* Left side - Menu Toggle, Notification and Language */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <IconButton
+              color="inherit"
+              aria-label="toggle sidebar"
+              onClick={handleSidebarToggle}
+              sx={{ color: '#666' }}
+            >
+              <MenuIcon />
+            </IconButton>
             <Badge badgeContent={2} color="error">
               <Avatar sx={{ width: 40, height: 40, bgcolor: '#d32f2f', color: 'white', fontWeight: 700 }}>
                 R
@@ -171,22 +179,7 @@ const AdminLayout = () => {
       </AppBar>
 
       {/* Sidebar */}
-      <Box
-        sx={{
-          display: { xs: 'none', md: 'block' },
-          position: 'fixed',
-          right: 0,
-          top: '64px',
-          height: 'calc(100vh - 64px)',
-          zIndex: (theme) => theme.zIndex.drawer,
-        }}
-      >
-        <AdminSidebar open={true} onClose={() => {}} />
-      </Box>
-      {/* Drawer للهواتف */}
-      <Box sx={{ display: { xs: 'block', md: 'none' } }}>
-        <AdminSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      </Box>
+      <AdminSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* Main Content */}
       <Box
@@ -195,7 +188,7 @@ const AdminLayout = () => {
           flexGrow: 1,
           p: { xs: 1, md: 3 },
           width: '100%',
-          pr: { md: '260px' }, // زيادة المسافة اليمنى للمحتوى الرئيسي
+          pr: { md: sidebarOpen ? '260px' : '0px' }, // زيادة المسافة اليمنى للمحتوى الرئيسي
           direction: 'rtl',
           minHeight: '100vh',
           background: 'var(--background-main)',

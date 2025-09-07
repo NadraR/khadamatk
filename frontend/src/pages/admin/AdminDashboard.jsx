@@ -147,34 +147,34 @@ const AdminDashboard = () => {
   const statCards = [
     {
       title: 'مقدمو الخدمة النشطون',
-      value: '1,234',
+      value: stats?.services_count || 0,
       icon: <PeopleIcon />,
       iconClass: 'icon-purple',
-      trend: '45+',
+      trend: '+45',
       trendUp: true
     },
     {
-      title: 'الإيرادات الشهرية',
-      value: '245,600 ر.س',
+      title: 'إجمالي الطلبات',
+      value: stats?.orders_count || 0,
       icon: <MoneyIcon />,
       iconClass: 'icon-orange',
-      trend: '18%+',
+      trend: '+18%',
       trendUp: true
     },
     {
       title: 'إجمالي الحجوزات',
-      value: '8,921',
+      value: stats?.bookings_count || 0,
       icon: <AssignmentIcon />,
       iconClass: 'icon-green',
-      trend: '156+',
+      trend: '+156',
       trendUp: true
     },
     {
       title: 'إجمالي المستخدمين',
-      value: '12,543',
+      value: stats?.users_count || 0,
       icon: <PersonIcon />,
       iconClass: 'icon-blue',
-      trend: '234+',
+      trend: '+234',
       trendUp: true
     }
   ];
