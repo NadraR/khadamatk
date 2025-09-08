@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import LocationPicker from '../components/LocationPicker';
 import { authService } from '../services/authService';
 import apiService from '../services/ApiService';
-import { locationService } from '../services/LocationService';
+import { locationService } from '../services/locationService';
 import { FaUser, FaClock, FaMapMarkerAlt, FaTools, FaStar, FaSpinner, FaCheck } from 'react-icons/fa';
 import './WorkerProfileCompletion.css';
 
@@ -41,7 +41,7 @@ const WorkerProfileCompletion = () => {
           navigate('/auth');
           return;
         }
-        
+
         // احصل على بيانات المستخدم
         const userData = authService.getCurrentUser();
         if (!userData) {
@@ -53,18 +53,18 @@ const WorkerProfileCompletion = () => {
             return;
           }
         }
-        
+
         const finalUserData = authService.getCurrentUser();
-        
+
         // إذا لم يكن worker، وجهه للصفحة الرئيسية
         if (finalUserData.role !== 'worker') {
           navigate('/');
           return;
         }
-        
+
         // تحقق من اكتمال الملف الشخصي للعامل
         const profileCompleted = await checkWorkerProfileCompletion(finalUserData);
-        
+
         if (profileCompleted) {
           // إذا كان الملف مكتمل، وجهه لصفحة مزود الخدمة
           console.log('[DEBUG] Worker profile is complete, redirecting to HomeProvider');
@@ -73,13 +73,13 @@ const WorkerProfileCompletion = () => {
           // إذا لم يكن الملف مكتمل، ابقى في هذه الصفحة
           console.log('[DEBUG] Worker profile incomplete, staying on completion page');
         }
-        
+
       } catch (error) {
         console.error('Error checking user:', error);
         navigate('/auth');
       }
     };
-    
+
     checkUserAndRedirect();
   }, [navigate]);
 
@@ -87,25 +87,25 @@ const WorkerProfileCompletion = () => {
   const checkWorkerProfileCompletion = async (userData) => {
     try {
       console.log('[DEBUG] Checking worker profile completion for:', userData);
-      
+
       // First check the local flag - if it's false, definitely incomplete
       if (!userData.profile_completed) {
         console.log('[DEBUG] Local profile_completed flag is false');
         return false;
       }
-      
+
       // If local flag is true, verify with server data
       try {
         const profileResponse = await apiService.get('/api/accounts/worker/profile/');
         const profile = profileResponse.worker_profile || profileResponse;
-        
+
         console.log('[DEBUG] Server profile data:', profile);
-        
+
         // Check if essential fields are filled
         const hasJobTitle = profile.job_title && profile.job_title.trim();
         const hasSkills = profile.skills && profile.skills.trim();
         const hasServices = profile.services_provided && profile.services_provided.trim();
-        
+
         console.log('[DEBUG] Profile completeness check:', {
           hasJobTitle,
           hasSkills,
@@ -114,19 +114,19 @@ const WorkerProfileCompletion = () => {
           skills: profile.skills,
           services_provided: profile.services_provided
         });
-        
+
         // Profile is complete if user has job title, skills, and services
         const isComplete = hasJobTitle && hasSkills && hasServices;
         console.log('[DEBUG] Profile is complete:', isComplete);
-        
+
         return isComplete;
-        
+
       } catch (profileError) {
         console.warn('[DEBUG] Could not fetch profile details:', profileError);
         // If we can't fetch profile details, assume incomplete to be safe
         return false;
       }
-      
+
     } catch (error) {
       console.error('Error checking profile completion:', error);
       return false;
@@ -155,10 +155,10 @@ const WorkerProfileCompletion = () => {
   const handleSkillChange = (e) => {
     const value = e.target.value;
     const isChecked = e.target.checked;
-    
+
     setFormData(prev => ({
       ...prev,
-      skills: isChecked 
+      skills: isChecked
         ? [...prev.skills, value]
         : prev.skills.filter(skill => skill !== value)
     }));
@@ -166,7 +166,7 @@ const WorkerProfileCompletion = () => {
 
   const validateStep = (step) => {
     const newErrors = {};
-    
+
     if (step === 1) {
       if (!formData.job_title.trim()) {
         newErrors.job_title = i18n.language === 'ar' ? 'المسمى الوظيفي مطلوب' : 'Job title is required';
@@ -182,7 +182,7 @@ const WorkerProfileCompletion = () => {
         newErrors.hourly_rate = i18n.language === 'ar' ? 'السعر يجب أن يكون أكبر من صفر' : 'Hourly rate must be greater than 0';
       }
     }
-    
+
     if (step === 2) {
       if (!formData.description.trim()) {
         newErrors.description = i18n.language === 'ar' ? 'وصف الخدمات مطلوب' : 'Service description is required';
@@ -193,13 +193,13 @@ const WorkerProfileCompletion = () => {
         newErrors.skills = i18n.language === 'ar' ? 'يجب اختيار مهارة واحدة على الأقل' : 'Please select at least one skill';
       }
     }
-    
+
     if (step === 3) {
       if (!selectedLocation && !neighborhood.trim()) {
         newErrors.location = i18n.language === 'ar' ? 'يرجى تحديد موقعك على الخريطة أو كتابة الحي' : 'Please select your location on map or enter your neighborhood';
       }
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -220,7 +220,7 @@ const WorkerProfileCompletion = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     // Validate all steps
     if (!validateStep(1) || !validateStep(2) || !validateStep(3)) {
       toast.error(i18n.language === 'ar' ? 'يرجى إكمال جميع الحقول المطلوبة' : 'Please complete all required fields');
@@ -230,12 +230,12 @@ const WorkerProfileCompletion = () => {
     setIsLoading(true);
     try {
       console.log('[DEBUG] Starting worker profile completion...');
-      
+
       // First, save location if provided
       let savedLocationId = null;
       if (selectedLocation) {
         console.log('[DEBUG] Saving worker location:', selectedLocation);
-        
+
         const locationData = {
           lat: selectedLocation.lat,
           lng: selectedLocation.lng,
@@ -247,9 +247,9 @@ const WorkerProfileCompletion = () => {
           name: 'موقع العمل',
           is_primary: true
         };
-        
+
         const locationResult = await locationService.saveLocation(locationData);
-        
+
         if (locationResult.success) {
           savedLocationId = locationResult.data?.data?.id || locationResult.data?.id;
           console.log('[DEBUG] Location saved successfully:', savedLocationId);
@@ -260,7 +260,7 @@ const WorkerProfileCompletion = () => {
           toast.warning(i18n.language === 'ar' ? 'تعذر حفظ الموقع ولكن سيتم إكمال الملف الشخصي' : 'Could not save location but will continue with profile');
         }
       }
-      
+
       // Prepare profile data - only send fields that exist in WorkerProfile model
       const profileData = {
         job_title: formData.job_title.trim(),
@@ -282,19 +282,19 @@ const WorkerProfileCompletion = () => {
         estimated_price: profileData.estimated_price,
         neighborhood: profileData.neighborhood
       });
-      
+
       console.log('[DEBUG] Calling authService.completeWorkerProfile...');
       const result = await authService.completeWorkerProfile(profileData);
       console.log('[DEBUG] AuthService response:', result);
-      
+
       if (result.success) {
         console.log('[DEBUG] Worker profile completed successfully');
         console.log('[DEBUG] Profile completion status:', result.profile_completed);
-        
-        toast.success(i18n.language === 'ar' ? 
-          'تم إكمال الملف الشخصي بنجاح!' : 
+
+        toast.success(i18n.language === 'ar' ?
+          'تم إكمال الملف الشخصي بنجاح!' :
           'Profile completed successfully!');
-        
+
         // تحديث بيانات المستخدم
         const userData = authService.getCurrentUser();
         if (userData) {
@@ -304,17 +304,17 @@ const WorkerProfileCompletion = () => {
           localStorage.setItem('user', JSON.stringify(userData));
           console.log('[DEBUG] User data updated in localStorage with profile_completed:', userData.profile_completed);
         }
-        
+
         // الانتقال للصفحة المناسبة بعد ثانيتين
         setTimeout(() => {
           console.log('[DEBUG] Redirecting to HomeProvider...');
           navigate('/homeProvider');
         }, 2000);
-        
+
       } else {
         console.error('[DEBUG] Failed to complete worker profile:', result);
-        toast.error(result.message || (i18n.language === 'ar' ? 
-          'فشل في إكمال الملف الشخصي' : 
+        toast.error(result.message || (i18n.language === 'ar' ?
+          'فشل في إكمال الملف الشخصي' :
           'Failed to complete profile'));
       }
     } catch (error) {
@@ -322,7 +322,7 @@ const WorkerProfileCompletion = () => {
       console.error('[DEBUG] Error response:', error.response);
       console.error('[DEBUG] Error response data:', error.response?.data);
       console.error('[DEBUG] Error status:', error.response?.status);
-      
+
       let errorMessage = '';
       if (error.response?.data) {
         if (typeof error.response.data === 'string') {
@@ -339,11 +339,11 @@ const WorkerProfileCompletion = () => {
           errorMessage = validationErrors.join(', ');
         }
       } else {
-        errorMessage = error.message || (i18n.language === 'ar' ? 
-          'حدث خطأ أثناء إكمال الملف الشخصي' : 
+        errorMessage = error.message || (i18n.language === 'ar' ?
+          'حدث خطأ أثناء إكمال الملف الشخصي' :
           'Error completing profile');
       }
-      
+
       console.error('[DEBUG] Final error message:', errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -392,15 +392,15 @@ const WorkerProfileCompletion = () => {
               {i18n.language === 'ar' ? 'إكمال الملف الشخصي' : 'Complete Your Profile'}
             </h1>
             <p className="subtitle">
-              {i18n.language === 'ar' 
-                ? 'أكمل ملفك الشخصي لبدء تقديم الخدمات للعملاء' 
+              {i18n.language === 'ar'
+                ? 'أكمل ملفك الشخصي لبدء تقديم الخدمات للعملاء'
                 : 'Complete your profile to start providing services to clients'
               }
             </p>
           </div>
 
           {renderStepIndicator()}
-          
+
           <form onSubmit={handleSubmit} className="profile-form">
             {/* Step 1: Basic Information */}
             {currentStep === 1 && (
@@ -409,7 +409,7 @@ const WorkerProfileCompletion = () => {
                   <FaUser className="section-icon" />
                   {i18n.language === 'ar' ? 'المعلومات الأساسية' : 'Basic Information'}
                 </h2>
-                
+
                 <div className="form-group">
                   <label className="form-label">
                     {i18n.language === 'ar' ? 'المسمى الوظيفي *' : 'Job Title *'}
@@ -420,14 +420,14 @@ const WorkerProfileCompletion = () => {
                     value={formData.job_title}
                     onChange={handleInputChange}
                     className={`form-input ${errors.job_title ? 'error' : ''}`}
-                    placeholder={i18n.language === 'ar' 
-                      ? 'مثال: فني كهرباء، سباك، نجار...' 
+                    placeholder={i18n.language === 'ar'
+                      ? 'مثال: فني كهرباء، سباك، نجار...'
                       : 'e.g., Electrician, Plumber, Carpenter...'
                     }
                   />
                   {errors.job_title && <span className="error-message">{errors.job_title}</span>}
                 </div>
-                
+
                 <div className="form-row">
                   <div className="form-group">
                     <label className="form-label">
@@ -487,7 +487,7 @@ const WorkerProfileCompletion = () => {
                   <FaTools className="section-icon" />
                   {i18n.language === 'ar' ? 'المهارات والخدمات' : 'Skills & Services'}
                 </h2>
-                
+
                 <div className="form-group">
                   <label className="form-label">
                     {i18n.language === 'ar' ? 'وصف الخدمات *' : 'Service Description *'}
@@ -498,8 +498,8 @@ const WorkerProfileCompletion = () => {
                     onChange={handleInputChange}
                     className={`form-textarea ${errors.description ? 'error' : ''}`}
                     rows="5"
-                    placeholder={i18n.language === 'ar' 
-                      ? 'اكتب وصفاً مفصلاً عن خدماتك وخبرتك... (50 حرف على الأقل)' 
+                    placeholder={i18n.language === 'ar'
+                      ? 'اكتب وصفاً مفصلاً عن خدماتك وخبرتك... (50 حرف على الأقل)'
                       : 'Write a detailed description of your services and experience... (at least 50 characters)'
                     }
                   />
@@ -573,12 +573,12 @@ const WorkerProfileCompletion = () => {
                   {i18n.language === 'ar' ? 'موقع العمل *' : 'Work Location *'}
                 </h2>
                 <p className="location-hint">
-                  {i18n.language === 'ar' 
-                    ? 'يمكنك تحديد موقعك على الخريطة أو كتابة اسم الحي فقط' 
+                  {i18n.language === 'ar'
+                    ? 'يمكنك تحديد موقعك على الخريطة أو كتابة اسم الحي فقط'
                     : 'You can select your location on the map or just enter your neighborhood name'
                   }
                 </p>
-                
+
                 {/* حقل الحي */}
                 <div className="form-group mb-4">
                   <label className="form-label">
@@ -589,14 +589,14 @@ const WorkerProfileCompletion = () => {
                     value={neighborhood}
                     onChange={(e) => setNeighborhood(e.target.value)}
                     className={`form-input ${errors.location && !selectedLocation && !neighborhood.trim() ? 'error' : ''}`}
-                    placeholder={i18n.language === 'ar' 
-                      ? 'مثال: المعادي، الزمالك، النزهة...' 
+                    placeholder={i18n.language === 'ar'
+                      ? 'مثال: المعادي، الزمالك، النزهة...'
                       : 'e.g., Maadi, Zamalek, Nozha...'
                     }
                   />
                   <small className="text-muted">
-                    {i18n.language === 'ar' 
-                      ? 'يمكنك كتابة اسم الحي بدلاً من تحديد الموقع الدقيق على الخريطة' 
+                    {i18n.language === 'ar'
+                      ? 'يمكنك كتابة اسم الحي بدلاً من تحديد الموقع الدقيق على الخريطة'
                       : 'You can enter neighborhood name instead of precise location on map'
                     }
                   </small>
@@ -615,7 +615,7 @@ const WorkerProfileCompletion = () => {
                         <div className="small text-muted">
                           {selectedLocation && (
                             <div>
-                              {i18n.language === 'ar' ? 'الإحداثيات:' : 'Coordinates:'} 
+                              {i18n.language === 'ar' ? 'الإحداثيات:' : 'Coordinates:'}
                               {` ${selectedLocation.lat.toFixed(4)}, ${selectedLocation.lng.toFixed(4)}`}
                             </div>
                           )}
@@ -629,8 +629,8 @@ const WorkerProfileCompletion = () => {
                     </div>
                   </div>
                 )}
-                <LocationPicker 
-                  onLocationSelect={handleLocationSelect} 
+                <LocationPicker
+                  onLocationSelect={handleLocationSelect}
                   height={400}
                   showSaveButton={false}
                   showSearchBox={true}
@@ -651,7 +651,7 @@ const WorkerProfileCompletion = () => {
                     {i18n.language === 'ar' ? 'السابق' : 'Previous'}
                   </button>
                 )}
-                
+
                 <button
                   type="button"
                   onClick={() => navigate('/')}
@@ -660,7 +660,7 @@ const WorkerProfileCompletion = () => {
                 >
                   {i18n.language === 'ar' ? 'إلغاء' : 'Cancel'}
                 </button>
-                
+
                 {currentStep < 3 ? (
                   <button
                     type="button"

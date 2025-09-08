@@ -39,7 +39,6 @@ import LocationPage from './pages/LocationPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import MessagesPage from "./pages/MessagesPage";
 import NotificationsPage from "./pages/NotificationsPage";
-import InvoiceDetails from "./pages/InvoiceDetails";
 import WorkerProfileCompletion from "./pages/WorkerProfileCompletion";
 import FontTest from "./components/FontTest";
 
@@ -107,52 +106,24 @@ function App() {
         {/* Services */}
         <Route path="/service/:id" element={<Layout><ServiceDetails /></Layout>} />
         <Route path="/services" element={<Layout><Services /></Layout>} />
-<<<<<<< HEAD
-        <Route path="/orders" element={<Layout><Orders /></Layout>} />
-=======
         <Route path="/order" element={<Layout><OrderPage /></Layout>} />
         <Route path="/order-page" element={<Layout><OrderPage /></Layout>} />
         <Route path="/orders" element={<Layout><Orders /></Layout>} />
         <Route path="/orders/:id" element={<Layout><Orders /></Layout>} />
         <Route path="/track-order" element={<Layout><TrackOrder /></Layout>} />
         <Route path="/track-orders" element={<Layout><TrackOrder /></Layout>} />
->>>>>>> origin/nadra
         <Route path="/reviews/:serviceId" element={<Layout><Reviews /></Layout>} />
         <Route path="/ratings/:serviceId" element={<Layout><Ratings /></Layout>} />
 
-  {/* Admin */ }
+        {/* Admin */}
         <Route path="/clients" element={<Layout><Clients /></Layout>} />
         <Route path="/settings" element={<Layout><Settings /></Layout>} />
 
-  {/* Categories */ }
+        {/* Categories */}
         <Route path="/category/painting" element={<Layout><Painting /></Layout>} />
         <Route path="/category/carpentry" element={<Layout><Carpentry /></Layout>} />
         <Route path="/category/electricity" element={<Layout><Electricity /></Layout>} />
         <Route path="/category/plumbing" element={<Layout><Plumbing /></Layout>} />
-<<<<<<< HEAD
-
-  {/* OAuth callback */ }
-  <Route path="/oauth2callback" element={<OAuthCallback />} />
-
-  {/* Location (without Layout wrapper, uses custom navbar) */ }
-        <Route path="/location" element={<ErrorBoundary><LocationPage /></ErrorBoundary>} />
-        <Route path="/location/my-location" element={<ErrorBoundary><LocationPage /></ErrorBoundary>} />
-
-  {/* Messages */ }
-  <Route path="/messages" element={<Layout><MessagesPage /></Layout>} />
-
-  {/* Font Test (Development) */ }
-  <Route path="/font-test" element={<Layout><FontTest /></Layout>} />
-
-  {/* Chat */ }
-  {/* <Route path="/chat" element={<Layout><ChatBox /></Layout>} /> */ }
-
-  {/* ====== Invoices & Booking Routes ====== */ }
-        <Route path="/invoices" element={<Layout><Invoices /></Layout>} />
-        <Route path="/invoices/:id" element={<Layout><InvoiceDetails /></Layout>} />
-        <Route path="/bookings/:id" element={<Layout><BookingDetails /></Layout>} />
-
-=======
         <Route path="/oauth2callback" element={<OAuthCallback />} />
 
         {/* Location (without Layout wrapper, uses custom navbar) */}
@@ -174,7 +145,6 @@ function App() {
 
         {/* Chat */}
         {/* <Route path="/chat" element={<Layout><ChatBox /></Layout>} /> */}
->>>>>>> origin/nadra
       </Routes >
     </FontProvider >
   );

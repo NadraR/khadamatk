@@ -11,7 +11,7 @@ import {
   Person as PersonIcon,
   EventAvailable as EventIcon
 } from "@mui/icons-material";
-import { locationService } from '../services/LocationService';
+import { locationService } from '../services/locationService';
 import LocationPicker from '../components/LocationPicker';
 import Navbar from '../components/Navbar';
 import ChatbotWidget from '../components/ChatbotWidget';
@@ -1156,10 +1156,6 @@ export default function LocationPage() {
                     <h6 className="fw-bold mb-0">الخريطة التفاعلية</h6>
                     <small className="text-muted">انقر على الخريطة لتحديد موقعك أو ابحث عن مكان</small>
                   </div>
-<<<<<<< HEAD
-  <LocationPicker
-    onLocationSelect={(loc) => setSelectedLocation(loc)}
-=======
                   <LocationPicker
                     onLocationSelect={(loc) => {
                       setSelectedLocation(loc);
@@ -1175,11 +1171,10 @@ export default function LocationPage() {
                       console.log('[LOCATION] Location from map saved to localStorage:', locationData);
                     }}
                     initialLocation={selectedLocation}
->>>>>>> origin/nadra
-    height={400}
-    showSaveButton={true}
-    showSearchBox={true}
-  />
+                    height={400}
+                    showSaveButton={true}
+                    showSearchBox={true}
+                  />
                 </CardContent >
               </Card >
             </div >
@@ -1187,59 +1182,6 @@ export default function LocationPage() {
         </div >
       </Container >
 
-<<<<<<< HEAD
-    {/* Custom Styles */ }
-    < style jsx = "true" > {`
-        .step-indicator {
-          display: flex;
-          gap: 8px;
-        }
-        .step {
-          width: 32px;
-          height: 32px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: bold;
-          font-size: 14px;
-          background: rgba(255,255,255,0.3);
-          color: white;
-        }
-        .step.active {
-          background: white;
-          color: #0077ff;
-        }
-        .suggestions-dropdown {
-          position: absolute;
-          top: 100%;
-          left: 0;
-          right: 0;
-          background: white;
-          border: 1px solid #e5e7eb;
-          border-radius: 8px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-          z-index: 1000;
-          max-height: 200px;
-          overflow-y: auto;
-        }
-        .suggestion-item {
-          padding: 12px 16px;
-          cursor: pointer;
-          border-bottom: 1px solid #f3f4f6;
-          display: flex;
-          align-items: center;
-        }
-        .suggestion-item:hover {
-          background: #f9fafb;
-        }
-        .suggestion-item:last-child {
-          border-bottom: none;
-        }
-      `}</style >
-  <ChatbotWidget />
-=======
->>>>>>> origin/nadra
     </div >
   );
 }

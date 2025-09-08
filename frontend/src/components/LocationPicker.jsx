@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useJsApiLoader, GoogleMap, Marker, InfoWindow } from '@react-google-maps/api';
 import { toast } from 'react-toastify';
-import { locationService } from '../services/LocationService';
+import { locationService } from '../services/locationService';
 import { MapPin, Save, Crosshair, Navigation, Search } from 'lucide-react';
 import './LocationPicker.css';
 
@@ -31,7 +31,7 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [currentLocationAccuracy, setCurrentLocationAccuracy] = useState(null);
-  
+
   const searchTimeoutRef = useRef(null);
   const geocoderRef = useRef(null);
 
@@ -45,9 +45,9 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
   // تحميل الموقع الحالي عند التحميل الأول فقط
   useEffect(() => {
     if (hasInitialized || initialLocation) return;
-    
+
     setHasInitialized(true);
-    
+
     // If no initial location provided, try to get current location
     if (navigator.geolocation && !isManualSelection) {
       navigator.geolocation.getCurrentPosition(
@@ -71,9 +71,9 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
           setMarkerPosition(fallbackLocation);
           onLocationSelect && onLocationSelect(fallbackLocation);
         },
-        { 
-          enableHighAccuracy: true, 
-          timeout: 10000, 
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
           maximumAge: 300000 // 5 minutes cache
         }
       );
@@ -89,7 +89,7 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
   // Geocode location to get address
   const geocodeLocation = useCallback(async (location) => {
     if (!geocoderRef.current) return location;
-    
+
     try {
       const results = await new Promise((resolve, reject) => {
         geocoderRef.current.geocode({ location }, (results, status) => {
@@ -100,7 +100,7 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
           }
         });
       });
-      
+
       return {
         ...location,
         address: results[0].formatted_address,
@@ -124,7 +124,7 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
     }
 
     setIsSearching(true);
-    
+
     try {
       if (window.google && window.google.maps && window.google.maps.places) {
         const service = new window.google.maps.places.PlacesService(document.createElement('div'));
@@ -168,11 +168,11 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
   // Handle search input with debouncing
   const handleSearchChange = (value) => {
     setSearchQuery(value);
-    
+
     if (searchTimeoutRef.current) {
       clearTimeout(searchTimeoutRef.current);
     }
-    
+
     searchTimeoutRef.current = setTimeout(() => {
       searchPlaces(value);
     }, 300);
@@ -183,10 +183,10 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
       toast.error('المتصفح لا يدعم الموقع الحالي');
       return;
     }
-    
+
     setIsGettingCurrentLocation(true);
     setIsManualSelection(false);
-    
+
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const location = {
@@ -194,11 +194,11 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
           lng: position.coords.longitude,
           accuracy: position.coords.accuracy
         };
-        
+
         // Geocode to get address
         const locationWithAddress = await geocodeLocation(location);
         locationWithAddress.address = 'موقعي الحالي - ' + (locationWithAddress.address || 'موقع غير محدد');
-        
+
         setSelectedLocation(locationWithAddress);
         setMarkerPosition(locationWithAddress);
         setCurrentLocationAccuracy(position.coords.accuracy);
@@ -208,14 +208,14 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
           map.panTo(location);
           map.setZoom(16);
         }
-        
+
         setShowInfoWindow(true);
         toast.success(`تم تحديد موقعك بنجاح (دقة: ${Math.round(position.coords.accuracy)}م)`);
         setIsGettingCurrentLocation(false);
       },
       (error) => {
         let errorMessage = 'فشل في الحصول على الموقع';
-        switch(error.code) {
+        switch (error.code) {
           case error.PERMISSION_DENIED:
             errorMessage = 'تم رفض الإذن للوصول إلى الموقع';
             break;
@@ -229,9 +229,9 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
         toast.error(errorMessage);
         setIsGettingCurrentLocation(false);
       },
-      { 
-        enableHighAccuracy: true, 
-        timeout: 15000, 
+      {
+        enableHighAccuracy: true,
+        timeout: 15000,
         maximumAge: 60000 // 1 minute cache
       }
     );
@@ -239,19 +239,19 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
 
   const handleMapClick = async (event) => {
     if (!event.latLng) return;
-    
+
     const location = {
       lat: event.latLng.lat(),
       lng: event.latLng.lng(),
     };
-    
+
     // Mark as manual selection to prevent auto-location override
     setIsManualSelection(true);
-    
+
     // Update marker immediately for better UX
     setMarkerPosition(location);
     setShowInfoWindow(true);
-    
+
     // Geocode to get address
     try {
       const locationWithAddress = await geocodeLocation(location);
@@ -279,12 +279,12 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
       placeId: result.placeId,
       name: result.name
     });
-    
+
     if (map) {
       map.panTo(result.location);
       map.setZoom(16);
     }
-    
+
     setSearchResults([]);
     setSearchQuery(result.name || result.address);
     setShowInfoWindow(true);
@@ -294,7 +294,7 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
       placeId: result.placeId,
       name: result.name
     });
-    
+
     toast.success('تم اختيار الموقع من نتائج البحث');
   };
 
@@ -331,7 +331,7 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
         <div className="error-icon">⚠️</div>
         <h3>خطأ في تحميل الخريطة</h3>
         <p>تأكد من اتصالك بالإنترنت أو أعد تحميل الصفحة</p>
-        <button 
+        <button
           className="current-location-button"
           onClick={() => window.location.reload()}
         >
@@ -340,7 +340,7 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
       </div>
     );
   }
-  
+
   if (!isLoaded) {
     return (
       <div className="location-picker-loading">
@@ -367,7 +367,7 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
             {isSearching && <div className="search-spinner spinner-small"></div>}
             <Search className="search-icon" size={20} />
           </div>
-          
+
           {searchResults.length > 0 && (
             <div className="search-results">
               {searchResults.map((result, index) => (
@@ -415,7 +415,7 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
             حفظ الموقع
           </button>
         )}
-        
+
         {selectedLocation && (
           <button
             onClick={() => setShowInfoWindow(!showInfoWindow)}
@@ -473,11 +473,11 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
           }}
         >
           {markerPosition && (
-            <Marker 
+            <Marker
               position={markerPosition}
               animation={window.google?.maps?.Animation?.BOUNCE}
               icon={{
-                url: isManualSelection 
+                url: isManualSelection
                   ? 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiNGRjY5MDAiLz4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iOCIgZmlsbD0id2hpdGUiLz4KPC9zdmc+Cg=='
                   : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiMwMDdCRkYiLz4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iOCIgZmlsbD0id2hpdGUiLz4KPC9zdmc+Cg==',
                 scaledSize: new window.google.maps.Size(24, 24),
