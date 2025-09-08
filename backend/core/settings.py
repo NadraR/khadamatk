@@ -6,6 +6,7 @@ from datetime import timedelta
 from decouple import config, Csv
 import sys
 
+# تحميل ملف .env
 load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -15,7 +16,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY =  os.environ.get("DJANGO_SECRET_KEY", "unsafe-secret-key")
+SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "unsafe-secret-key")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config("DEBUG", cast=bool, default=False)
@@ -143,18 +144,10 @@ DATABASES["default"]["ENGINE"] = "django.contrib.gis.db.backends.postgis"
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
+    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
+    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
 # Internationalization
@@ -225,3 +218,9 @@ SOCIALACCOUNT_ADAPTER = 'accounts.adapters.CustomSocialAccountAdapter'
 GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+
+# 🔑 OpenAI API Key
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+
+if not OPENAI_API_KEY:
+    print("⚠️ Warning: OPENAI_API_KEY is not set! Check your .env file.")
