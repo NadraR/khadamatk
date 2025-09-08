@@ -7,3 +7,4 @@ class InvoicesConfig(AppConfig):
     def ready(self):
         import invoices.signals
         
+

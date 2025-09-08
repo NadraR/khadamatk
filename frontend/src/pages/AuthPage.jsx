@@ -18,6 +18,7 @@ const AuthPage = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [language, setLanguage] = useState("ar"); // ar | en
+  const [showGoogleRoleSelector, setShowGoogleRoleSelector] = useState(false);
 
   // تحديث لغة الصفحة وRTL/LTR
   useEffect(() => {
@@ -59,24 +60,107 @@ const AuthPage = () => {
     }
   };
 
-  const redirectAfterLogin = (userData) => {
+  const redirectAfterLogin = async (userData) => {
     console.log("[DEBUG] AuthPage: redirectAfterLogin called with:", userData);
 
-    // Always redirect to Home page after successful login
-    console.log("[DEBUG] AuthPage: Redirecting to Home page");
-    window.location.href = "/";
+    // Check if there's a pending redirect (from booking flow)
+    const pendingRedirect = localStorage.getItem('redirectAfterLogin');
+    const pendingOrder = localStorage.getItem('pendingOrder');
+
+    if (pendingRedirect && pendingOrder) {
+      console.log("[DEBUG] AuthPage: Found pending redirect:", pendingRedirect);
+      console.log("[DEBUG] AuthPage: Found pending order data");
+
+      // Clear the redirect flag
+      localStorage.removeItem('redirectAfterLogin');
+
+      // For clients with pending orders, redirect to order page
+      if (userData.role === 'client' && pendingRedirect === '/order') {
+        console.log("[DEBUG] AuthPage: Redirecting client to complete pending order");
+        window.location.href = '/order';
+        return;
+      }
+    }
+
+    // Check if there's saved location data to send to backend
+    const savedLocation = localStorage.getItem('selectedLocation');
+    const savedLocationDetails = localStorage.getItem('locationDetails');
+
+    if (savedLocation && userData.role === 'client') {
+      try {
+        console.log("[DEBUG] AuthPage: Found saved location data, sending to backend");
+        const locationData = JSON.parse(savedLocation);
+        const detailsData = savedLocationDetails ? JSON.parse(savedLocationDetails) : {};
+
+        // Import locationService dynamically to avoid circular imports
+        const { locationService } = await import('../services/locationService');
+
+        const locationPayload = {
+          lat: locationData.lat,
+          lng: locationData.lng,
+          address: locationData.address || '',
+          city: locationData.city || '',
+          country: locationData.country || 'مصر',
+          neighborhood: locationData.neighborhood || '',
+          location_type: 'home',
+          name: 'الموقع الرئيسي',
+          is_primary: true,
+          building_number: detailsData.building_number || '',
+          apartment_number: detailsData.apartment_number || '',
+          floor_number: detailsData.floor_number || '',
+          landmark: detailsData.landmark || '',
+          additional_details: detailsData.additional_details || ''
+        };
+
+        const result = await locationService.saveLocation(locationPayload);
+        if (result.success) {
+          console.log("[DEBUG] AuthPage: Location saved successfully to backend");
+          // Clear saved location data after successful save
+          localStorage.removeItem('selectedLocation');
+          localStorage.removeItem('locationDetails');
+        } else {
+          console.warn("[DEBUG] AuthPage: Failed to save location to backend:", result.error);
+        }
+      } catch (error) {
+        console.error("[DEBUG] AuthPage: Error saving location to backend:", error);
+      }
+    }
+
+    // Check if worker needs profile completion
+    if (userData.role === 'worker' && !userData.profile_completed) {
+      console.log("[DEBUG] AuthPage: Redirecting worker to profile completion");
+      window.location.href = "/worker-profile-completion";
+      return;
+    }
+
+    // Default redirect based on user role
+    switch (userData.role) {
+      case 'worker':
+        console.log("[DEBUG] AuthPage: Redirecting worker to provider home");
+        window.location.href = "/homeProvider";
+        break;
+      case 'client':
+        console.log("[DEBUG] AuthPage: Redirecting client to home");
+        window.location.href = "/";
+        break;
+      default:
+        console.log("[DEBUG] AuthPage: Redirecting to default home page");
+        window.location.href = "/";
+    }
   };
 
   // Google Login handlers
-  const handleGoogleSuccess = (googleData) => {
+  const handleGoogleSuccess = async (googleData) => {
     console.log("[DEBUG] AuthPage: Google success data received:", googleData);
 
     // Check if user needs role selection
-    if (googleData.needsRole) {
+    if (googleData.needsRole || !googleData.role) {
       console.log("[DEBUG] AuthPage: User needs role selection");
-      setPendingGoogleToken(googleData.token);
+      setPendingGoogleToken(googleData.token || googleData.access_token);
       setShowRoleSelector(true);
-      showNotification(language === "ar" ? "تم تسجيل الدخول بنجاح باستخدام Google. يرجى اختيار نوع الحساب" : "Google login successful. Please choose account type", "info");
+      showNotification(language === "ar" ?
+        "تم تسجيل الدخول بنجاح باستخدام Google. يرجى اختيار نوع الحساب" :
+        "Google login successful. Please choose account type", "info");
       return;
     }
 
@@ -97,31 +181,28 @@ const AuthPage = () => {
         role: googleData.role,
         hasLocation: googleData.has_location || false,
         name: googleData.first_name + ' ' + googleData.last_name,
-        profile_completed: true
+        profile_completed: googleData.profile_completed || (googleData.role === 'worker' ? false : true)
       };
+
       localStorage.setItem('user', JSON.stringify(userData));
+      authService.saveUserToStorage(userData);
 
       // Show success message
-      showNotification(language === "ar" ? "تم تسجيل الدخول بنجاح!" : "Logged in successfully!", "success");
+      showNotification(language === "ar" ?
+        "تم تسجيل الدخول بنجاح!" :
+        "Logged in successfully!", "success");
 
-      // Redirect based on role
-      redirectAfterLogin({
-        role: googleData.role,
-        hasLocation: googleData.has_location || false,
-        ...googleData
-      });
+      // Redirect using the unified redirect logic
+      await redirectAfterLogin(userData);
     } else {
       console.error("[DEBUG] AuthPage: Invalid Google response data:", googleData);
-      showNotification(language === "ar" ? "بيانات الاستجابة من Google غير صحيحة" : "Invalid response data from Google");
+      showNotification(language === "ar" ?
+        "بيانات الاستجابة من Google غير صحيحة" :
+        "Invalid response data from Google");
     }
   };
 
   const handleRoleConfirm = async (selectedRole) => {
-    if (!pendingGoogleToken) {
-      showNotification(language === "ar" ? "لا يوجد رمز وصول صالح" : "No valid access token");
-      return;
-    }
-
     setIsLoading(true);
     try {
       console.log("[DEBUG] AuthPage: Confirming role with token:", pendingGoogleToken.substring(0, 20) + "...");
@@ -137,12 +218,12 @@ const AuthPage = () => {
             role: selectedRole,
             hasLocation: result.data.has_location || false,
             name: result.data.first_name + ' ' + result.data.last_name,
-            profile_completed: true
+            profile_completed: selectedRole === 'worker' ? false : true
           };
           localStorage.setItem('user', JSON.stringify(userData));
 
           // Store tokens if available (using consistent keys)
-          if (result.data.access) {
+          if (result.data.itaccess) {
             localStorage.setItem('access', result.data.access);
           }
           if (result.data.refresh) {
@@ -154,7 +235,7 @@ const AuthPage = () => {
           ? `مرحباً بك! تم تسجيل الدخول بنجاح كـ ${selectedRole === "client" ? "عميل" : "مزود خدمة"}`
           : `Welcome! Logged in successfully as ${selectedRole}`,
           "success");
-        redirectAfterLogin(result.data);
+        await redirectAfterLogin(result.data);
       } else {
         showNotification(result.message || (language === "ar" ? "فشل تسجيل الدخول باستخدام Google" : "Google login failed"));
       }
@@ -185,6 +266,34 @@ const AuthPage = () => {
     else if (error.error === "idpiframe_initialization_failed") errorMessage = language === "ar" ? "تعذر تهيئة تسجيل الدخول" : "Login initialization failed";
 
     showNotification(errorMessage);
+  };
+
+  const handleGoogleRoleSelection = async (selectedRole) => {
+    if (!pendingGoogleToken) return;
+
+    setIsLoading(true);
+    setShowGoogleRoleSelector(false);
+
+    try {
+      const result = await authService.googleLogin(pendingGoogleToken, selectedRole);
+      console.log("[DEBUG] AuthPage: Google login result:", result);
+
+      if (result.success) {
+        showNotification(
+          language === "ar" ? "تم تسجيل الدخول بنجاح!" : "Login successful!",
+          "success"
+        );
+
+        // Redirect based on user role
+        await redirectAfterLogin(result.data);
+      }
+    } catch (error) {
+      console.error("[DEBUG] AuthPage: Google login error:", error);
+      showNotification(error.message, "error");
+    } finally {
+      setIsLoading(false);
+      setPendingGoogleToken(null);
+    }
   };
 
   const handleModeChange = (newMode) => setMode(newMode);
@@ -229,7 +338,7 @@ const AuthPage = () => {
               <div className="brand-title-container">
                 <h1 className="brand-title">Khadamatk</h1>
                 <div className="brand-icon-small">
-                  <i className="fas fa-tools"></i>
+                  <i className="fas fa-wrench"></i>
                 </div>
               </div>
             </div>
@@ -274,6 +383,21 @@ const AuthPage = () => {
             onChange={setGoogleRole}
             onConfirm={() => handleRoleConfirm(googleRole)}
             onCancel={handleRoleCancel}
+            isLoading={isLoading}
+            darkMode={darkMode}
+            language={language}
+          />
+        )}
+
+        {showGoogleRoleSelector && (
+          <RoleSelector
+            value={googleRole}
+            onChange={setGoogleRole}
+            onConfirm={() => handleGoogleRoleSelection(googleRole)}
+            onCancel={() => {
+              setShowGoogleRoleSelector(false);
+              setPendingGoogleToken(null);
+            }}
             isLoading={isLoading}
             darkMode={darkMode}
             language={language}

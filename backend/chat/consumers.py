@@ -13,12 +13,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
         self.user = self.scope["user"]
         self.room_group_name = f'chat_{self.order_id}'
 
-        # Check if user is authenticated
         if not self.user.is_authenticated:
             await self.close(code=4001)
             return
 
-        # Check if order exists and user has permission to access it
         try:
             order = await self.get_order(self.order_id)
             if not await self.user_can_access_order(self.user, order):

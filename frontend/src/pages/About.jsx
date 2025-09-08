@@ -1,177 +1,181 @@
 import React, { useState, useEffect, useRef } from 'react';
+import "bootstrap/dist/css/bootstrap.min.css";
 import { 
   FaUsers, FaHandshake, FaRocket, FaAward, FaStar, FaQuoteLeft, 
   FaLightbulb, FaCode, FaHeart, FaLinkedin, FaGithub, FaGlobe, 
-  FaGraduationCap, FaPython, FaReact, FaDatabase, FaDocker, FaUserFriends,
-  FaSun, FaMoon, FaLanguage
+  FaGraduationCap, FaPython, FaReact, FaDatabase, FaDocker, FaUserFriends
 } from 'react-icons/fa';
 import { SiDjango, SiPostgresql, SiJavascript, SiHtml5, SiCss3 } from 'react-icons/si';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import './About.css';
+import Navbar from '../components/Navbar';
 
 const About = () => {
+  const injected = useRef(false);
   const [darkMode, setDarkMode] = useState(false);
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const canvasRef = useRef(null);
 
+  useEffect(() => {
+    if (injected.current) return;
+    const css = `
+    :root {
+      --primary:#0077ff;
+      --primary-dark:#0056b3;
+      --gradient:linear-gradient(135deg, #0077ff, #4da6ff);
+      --bg:#f9fbff;
+      --muted:#6b7280;
+      --dark-bg:#1a1a1a;
+      --dark-card:#2d2d2d;
+      --dark-text:#e5e5e5;
+      --dark-muted:#a0a0a0;
+    }
+    body { background:var(--bg); color:#0f172a; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
+    /* Dark Mode */
+    body.dark-mode { background:var(--dark-bg) !important; color:var(--dark-text) !important; }
+
+    /* About Page Specific Styles */
+    .about-hero { 
+      background: var(--gradient); 
+      color: white; 
+      padding: 120px 0 80px 0; 
+      text-align: center; 
+      border-radius: 0 0 2rem 2rem; 
+      margin-bottom: 3rem;
+    }
+    .about-hero h1 { font-size: 3.5rem; font-weight: 800; margin-bottom: 1.5rem; }
+    .about-hero p { font-size: 1.3rem; opacity: 0.9; max-width: 800px; margin: 0 auto; }
+    
+    /* Cards */
+    .about-card { 
+      background: #fff; 
+      border-radius: 1rem; 
+      padding: 2rem; 
+      box-shadow: 0 6px 18px rgba(0,0,0,.05); 
+      transition: .3s; 
+      height: 100%;
+    }
+    .about-card:hover { transform: translateY(-6px); box-shadow: 0 10px 25px rgba(0,0,0,.1); }
+    
+    /* Dark mode cards */
+    body.dark-mode .about-card { 
+      background: var(--dark-card); 
+      color: var(--dark-text); 
+      box-shadow: 0 6px 18px rgba(0,0,0,.3); 
+    }
+    body.dark-mode .about-card:hover { box-shadow: 0 10px 25px rgba(0,0,0,.4); }
+    
+    /* Stats */
+    .stat-card { 
+      background: #fff; 
+      border-radius: 1rem; 
+      padding: 2rem; 
+      text-align: center; 
+      box-shadow: 0 6px 18px rgba(0,0,0,.05); 
+      transition: .3s; 
+    }
+    .stat-card:hover { transform: translateY(-5px); }
+    .stat-icon { font-size: 3rem; color: var(--primary); margin-bottom: 1rem; }
+    .stat-number { font-size: 2.5rem; font-weight: 900; color: var(--primary); }
+    .stat-label { color: var(--muted); font-weight: 500; }
+    
+    /* Dark mode stats */
+    body.dark-mode .stat-card { 
+      background: var(--dark-card); 
+      color: var(--dark-text); 
+      box-shadow: 0 6px 18px rgba(0,0,0,.3); 
+    }
+    body.dark-mode .stat-label { color: var(--dark-muted); }
+    
+    /* Team Cards */
+    .team-card { 
+      background: #fff; 
+      border-radius: 1rem; 
+      padding: 1.5rem; 
+      box-shadow: 0 6px 18px rgba(0,0,0,.05); 
+      transition: .3s; 
+      text-align: center;
+    }
+    .team-card:hover { transform: translateY(-6px); box-shadow: 0 10px 25px rgba(0,0,0,.1); }
+    .team-avatar { 
+      width: 80px; 
+      height: 80px; 
+      border-radius: 50%; 
+      background: var(--gradient); 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      color: white; 
+      font-size: 1.5rem; 
+      font-weight: bold; 
+      margin: 0 auto 1rem; 
+    }
+    
+    /* Dark mode team cards */
+    body.dark-mode .team-card { 
+      background: var(--dark-card); 
+      color: var(--dark-text); 
+      box-shadow: 0 6px 18px rgba(0,0,0,.3); 
+    }
+    body.dark-mode .team-card:hover { box-shadow: 0 10px 25px rgba(0,0,0,.4); }
+    
+    /* Tech Cards */
+    .tech-card { 
+      background: #fff; 
+      border-radius: 1rem; 
+      padding: 1.5rem; 
+      text-align: center; 
+      box-shadow: 0 6px 18px rgba(0,0,0,.05); 
+      transition: .3s; 
+    }
+    .tech-card:hover { transform: translateY(-6px); box-shadow: 0 10px 25px rgba(0,0,0,.1); }
+    .tech-icon { font-size: 3rem; margin-bottom: 1rem; }
+    
+    /* Dark mode tech cards */
+    body.dark-mode .tech-card { 
+      background: var(--dark-card); 
+      color: var(--dark-text); 
+      box-shadow: 0 6px 18px rgba(0,0,0,.3); 
+    }
+    body.dark-mode .tech-card:hover { box-shadow: 0 10px 25px rgba(0,0,0,.4); }
+    
+    /* Buttons */
+    .btn-cta {
+      background: var(--gradient);
+      color: #fff !important;
+      border:none;
+      padding:.75rem 2rem;
+      border-radius:50px;
+      font-weight:600;
+      transition:.3s;
+    }
+    .btn-cta:hover { opacity:.9; transform:scale(1.05); }
+    
+    
+    /* Text colors in dark mode */
+    body.dark-mode .text-muted { color: var(--dark-muted) !important; }
+    body.dark-mode .text-primary { color: #60a5fa !important; }
+    body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, body.dark-mode h4, body.dark-mode h5, body.dark-mode h6 { color: var(--dark-text) !important; }
+    `;
+    const style = document.createElement("style");
+    style.innerHTML = css;
+    document.head.appendChild(style);
+    injected.current = true;
+  }, []);
+
+  // Load saved dark mode state and apply to body
   useEffect(() => {
     const savedDarkMode = localStorage.getItem('darkMode') === 'true';
     setDarkMode(savedDarkMode);
+    document.body.classList.toggle('dark-mode', savedDarkMode);
+  }, []);
 
-    // تهيئة الخلفية المتحركة
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    const ctx = canvas.getContext('2d');
-    let animationFrameId;
-    let particles = [];
-    const resizeCanvas = () => {
-      // اجعل canvas يغطي الشاشة بشكل ثابت بدون التمرير
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = window.innerWidth * dpr;
-      canvas.height = (window.innerHeight - 200) * dpr;
-      canvas.style.width = '100vw';
-      canvas.style.height = `calc(100vh - 200px)`;
-      ctx.setTransform(1, 0, 0, 1, 0, 0); // إعادة تعيين التحويل
-      ctx.scale(dpr, dpr);
-    };
-
-    window.addEventListener('resize', resizeCanvas);
-    resizeCanvas();
-
-    // إنشاء جسيمات متحركة محسنة
-    class Particle {
-      constructor() {
-        this.x = Math.random() * canvas.width;
-        this.y = Math.random() * canvas.height;
-        this.size = Math.random() * 3 + 1;
-        this.speedX = Math.random() * 2 - 1;
-        this.speedY = Math.random() * 2 - 1;
-        this.opacity = Math.random() * 0.5 + 0.2;
-        this.color = darkMode ? 'rgba(59, 130, 246, 0.6)' : 'rgba(30, 64, 175, 0.6)';
-        this.pulse = Math.random() * Math.PI * 2;
-        this.pulseSpeed = Math.random() * 0.02 + 0.01;
-      }
-
-      update() {
-        this.x += this.speedX;
-        this.y += this.speedY;
-        this.pulse += this.pulseSpeed;
-
-        // إضافة تأثير نبض للجسيمات
-        this.currentSize = this.size + Math.sin(this.pulse) * 0.5;
-        this.currentOpacity = this.opacity + Math.sin(this.pulse) * 0.2;
-
-        if (this.x > canvas.width || this.x < 0) {
-          this.speedX = -this.speedX;
-        }
-        if (this.y > canvas.height || this.y < 0) {
-          this.speedY = -this.speedY;
-        }
-      }
-
-      draw() {
-        // رسم هالة حول الجسيم
-        const gradient = ctx.createRadialGradient(
-          this.x, this.y, 0,
-          this.x, this.y, this.currentSize * 2
-        );
-        gradient.addColorStop(0, this.color.replace('0.6', this.currentOpacity.toString()));
-        gradient.addColorStop(1, this.color.replace('0.6', '0'));
-        
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.currentSize * 2, 0, Math.PI * 2);
-        ctx.fill();
-
-        // رسم الجسيم الأساسي
-        ctx.fillStyle = this.color.replace('0.6', this.currentOpacity.toString());
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.currentSize, 0, Math.PI * 2);
-        ctx.fill();
-      }
-    }
-
-    const createParticles = () => {
-      particles = [];
-      const particleCount = Math.min(120, Math.floor(canvas.width * canvas.height / 15000));
-      
-      for (let i = 0; i < particleCount; i++) {
-        particles.push(new Particle());
-      }
-    };
-
-    const connectParticles = () => {
-      const maxDistance = 120;
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-
-          if (distance < maxDistance) {
-            const opacity = (1 - distance / maxDistance) * 0.3;
-            const lineWidth = (1 - distance / maxDistance) * 1.5;
-            
-            // خط متدرج
-            const gradient = ctx.createLinearGradient(
-              particles[i].x, particles[i].y,
-              particles[j].x, particles[j].y
-            );
-            
-            const lineColor = darkMode 
-              ? `rgba(59, 130, 246, ${opacity})` 
-              : `rgba(30, 64, 175, ${opacity})`;
-              
-            gradient.addColorStop(0, lineColor);
-            gradient.addColorStop(1, lineColor);
-            
-            ctx.strokeStyle = gradient;
-            ctx.lineWidth = lineWidth;
-            ctx.beginPath();
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.stroke();
-          }
-        }
-      }
-    };
-
-    const animate = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      for (let i = 0; i < particles.length; i++) {
-        particles[i].update();
-        particles[i].draw();
-      }
-
-      connectParticles();
-      animationFrameId = requestAnimationFrame(animate);
-    };
-
-    createParticles();
-    animate();
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-      window.removeEventListener('resize', resizeCanvas);
-    };
+  // Apply dark mode class to body when state changes
+  useEffect(() => {
+    document.body.classList.toggle('dark-mode', darkMode);
   }, [darkMode]);
 
-  const toggleDarkMode = () => {
-    const newDarkMode = !darkMode;
-    setDarkMode(newDarkMode);
-    localStorage.setItem('darkMode', newDarkMode.toString());
-  };
-
-  const toggleLanguage = () => {
-    const newLang = i18n.language === 'ar' ? 'en' : 'ar';
-    i18n.changeLanguage(newLang);
-    document.documentElement.dir = newLang === 'ar' ? 'rtl' : 'ltr';
-    document.documentElement.lang = newLang;
-  };
 
   const handleJoinAsProvider = () => {
     navigate('/auth');
@@ -285,238 +289,194 @@ const About = () => {
   ];
 
   return (
-    <div className={`about-page ${darkMode ? 'dark-mode' : ''}`} dir={i18n.language === 'ar' ? 'rtl' : 'ltr'}>
-      {/* أزرار التحكم */}
-      <div className="control-buttons">
-        <button className="control-button language-button" onClick={toggleLanguage} title={i18n.language === 'ar' ? 'Switch to English' : 'التبديل إلى العربية'}>
-          <FaLanguage className="control-icon" />
-          <span className="control-text">{i18n.language === 'ar' ? 'EN' : 'عربي'}</span>
-        </button>
-        <button className="control-button theme-button" onClick={toggleDarkMode} title={darkMode ? t('buttons.lightMode') : t('buttons.darkMode')}>
-          {darkMode ? <FaSun className="control-icon" /> : <FaMoon className="control-icon" />}
-        </button>
-      </div>
+    <div>
+      <Navbar />
+      
 
-      {/* خلفية متحركة محسنة */}
-      <canvas 
-        ref={canvasRef} 
-        className="animated-background"
-        style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100%',
-          maxHeight: 'calc(100vh - 80px)', // غطاء كل شيء ما عدا الفوتر (80px مثال لارتفاع الفوتر)
-          zIndex: -1, // اجعل الخلفية خلف كل شيء
-          pointerEvents: 'none',
-          background: darkMode 
-            ? 'linear-gradient(135deg, rgba(15, 23, 42, 0.8) 0%, rgba(30, 41, 59, 0.6) 100%)'
-            : 'linear-gradient(135deg, rgba(248, 250, 252, 0.8) 0%, rgba(241, 245, 249, 0.6) 100%)'
-        }}
-      />
-
+      {/* Hero Section */}
       <section className="about-hero">
         <div className="container">
-          <div className="hero-content">
-            <div className="hero-text">
-              <h1>{t('Welcome to')} <span className="brand">Khadamatk</span></h1>
-              <p className="hero-description">
+          <h1>{t('Welcome to')} <span className="fw-bold">Khadamatk</span></h1>
+          <p>
                 {t('We are a team of web developers dedicated to providing the best digital services for our clients.')}
               </p>
-              <div className="hero-stats">
-                <div className="hero-stat">
-                  <span className="number">6</span>
-                  <span className="label">{t('Developers')}</span>
+          <div className="row g-3 justify-content-center mt-4">
+            <div className="col-auto">
+              <div className="d-flex align-items-center gap-2">
+                <FaUsers className="fs-4" />
+                <div>
+                  <div className="fw-bold fs-4">6</div>
+                  <small>{t('Developers')}</small>
                 </div>
-                <div className="hero-stat">
-                  <span className="number">100%</span>
-                  <span className="label">{t('graduates')}</span>
+              </div>
                 </div>
-                <div className="hero-stat">
-                  <span className="number">2025</span>
-                  <span className="label">{t('batch')}</span>
+            <div className="col-auto">
+              <div className="d-flex align-items-center gap-2">
+                <FaGraduationCap className="fs-4" />
+                <div>
+                  <div className="fw-bold fs-4">100%</div>
+                  <small>{t('graduates')}</small>
                 </div>
               </div>
             </div>
-            <div className="hero-visual">
-              <div className="team-photo-container no-image">
-                <div className="team-placeholder">
-                  <FaUserFriends className="placeholder-icon" />
-                  <span>{t('about.team.ourTeam')}</span>
+            <div className="col-auto">
+              <div className="d-flex align-items-center gap-2">
+                <FaRocket className="fs-4" />
+                <div>
+                  <div className="fw-bold fs-4">2025</div>
+                  <small>{t('batch')}</small>
                 </div>
-                <div className="photo-overlay">
-                  <span>{t('about.team.graduates')}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* قسم قصة المنصة */}
-      <section className="story-section">
-        <div className="container">
-          <div className="section-header">
-            <h2>{t('Our Story')}</h2>
-            <p>{t('We started our journey in 2025 as a team of ITI graduates, aiming to provide top-notch digital solutions.')}</p>
-          </div>
-          <div className="story-content">
-            <div className="story-text">
-              <p>{t('All of us are Full-Stack developers focused on quality, innovation, and client satisfaction.')}</p>
-              <p>{t('When we started, we noticed a big challenge: clients had difficulty finding reliable service providers who offered fair prices, were nearby, and had trustworthy ratings. Our goal with this website is to bridge that gap—connecting clients with the best providers based on location, reviews, and quality, making the process simple, transparent, and efficient.')}</p>
-              <div className="story-highlights">
-                <div className="highlight">
-                  <span className="highlight-number">2025</span>
-                  <span className="highlight-text">{t('Founded')}</span>
-                </div>
-                <div className="highlight">
-                  <span className="highlight-number">ITI</span>
-                  <span className="highlight-text">{t('Information Technology Institute')}</span>
-                </div>
-                <div className="highlight">
-                  <span className="highlight-number">6</span>
-                  <span className="highlight-text">{t('Team Members')}</span>
-                </div>
-              </div>
-            </div>
-            <div className="story-image">
-              <div className="team-photo-placeholder">
-                <FaGraduationCap className="graduation-icon" />
-                <p>{t('about.team.teamPhoto')}</p>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* قسم الإحصائيات */}
-      <section className="stats-section">
-        <div className="container">
-          <div className="section-header">
-            <h2>{t('Our Achievements in Numbers')}</h2>
-            <p>{t('Real impact, real growth — thanks to our clients and partners.')}</p>
+      {/* Our Story Section */}
+      <section className="container my-5">
+        <div className="text-center mb-5">
+          <h2 className="fw-bold text-primary mb-3">{t('Our Story')}</h2>
+          <p className="text-muted">
+            {t('We started our journey in 2025 as a team of ITI graduates, aiming to provide top-notch digital solutions.')}
+          </p>
           </div>
-          <div className="stats-grid">
+        <div className="row g-4 align-items-center">
+          <div className="col-lg-6">
+            <div className="about-card">
+              <p className="mb-3">
+                {t('All of us are Full-Stack developers focused on quality, innovation, and client satisfaction.')}
+              </p>
+              <p>
+                {t('When we started, we noticed a big challenge: clients had difficulty finding reliable service providers who offered fair prices, were nearby, and had trustworthy ratings. Our goal with this website is to bridge that gap—connecting clients with the best providers based on location, reviews, and quality, making the process simple, transparent, and efficient.')}
+              </p>
+            </div>
+              </div>
+          <div className="col-lg-6">
+            <div className="about-card text-center">
+              <FaGraduationCap className="display-1 text-primary mb-3" />
+              <h4 className="fw-bold text-primary">ITI Graduates 2025</h4>
+              <p className="text-muted">Information Technology Institute</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="container my-5">
+        <div className="text-center mb-5">
+          <h2 className="fw-bold text-primary mb-3">{t('Our Achievements in Numbers')}</h2>
+          <p className="text-muted">{t('Real impact, real growth — thanks to our clients and partners.')}</p>
+          </div>
+        <div className="row g-4">
             {stats.map((stat, index) => (
-              <div key={index} className="stat-card">
+            <div key={index} className="col-sm-6 col-lg-3">
+              <div className="stat-card">
                 <div className="stat-icon">{stat.icon}</div>
                 <div className="stat-number">{stat.number}</div>
                 <div className="stat-label">{stat.label}</div>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* قسم التقنيات */}
-      <section className="technologies-section">
-        <div className="container">
-          <div className="section-header">
-            <h2>{t('Our Technologies')}</h2>
-            <p>{t('We leverage modern technologies to build high-quality, scalable, and user-friendly applications. Our stack includes Python and Django for powerful backend solutions, React for interactive frontends, and PostgreSQL for reliable data management. By combining these tools with best practices, we ensure our platform is fast, secure, and adaptable to your needs.')}</p>
-          </div>
-          <div className="technologies-grid">
-            {technologies.map((tech, index) => (
-              <div key={index} className="technology-card" style={{ '--tech-color': tech.color }}>
-                <div className="tech-icon-container">
-                  {tech.icon}
-                </div>
-                <h3>{tech.name}</h3>
-                <p>{tech.description}</p>
               </div>
             ))}
-          </div>
         </div>
       </section>
 
-      {/* قسم الفريق */}
-      <section className="team-section">
-        <div className="container">
-          <div className="section-header">
-            <h2>{t('about.team.title')}</h2>
-            <p>{t('about.team.subtitle')}</p>
+      {/* Technologies Section */}
+      <section className="container my-5">
+        <div className="text-center mb-5">
+          <h2 className="fw-bold text-primary mb-3">{t('Our Technologies')}</h2>
+          <p className="text-muted">
+            {t('We leverage modern technologies to build high-quality, scalable, and user-friendly applications.')}
+          </p>
           </div>
-          <div className="team-grid">
+        <div className="row g-4">
+            {technologies.map((tech, index) => (
+            <div key={index} className="col-sm-6 col-lg-4">
+              <div className="tech-card">
+                <div className="tech-icon" style={{ color: tech.color }}>
+                  {tech.icon}
+                </div>
+                <h5 className="fw-bold mb-2">{tech.name}</h5>
+                <p className="text-muted small mb-0">{tech.description}</p>
+              </div>
+              </div>
+            ))}
+        </div>
+      </section>
+
+      {/* Team Section */}
+      <section className="container my-5">
+        <div className="text-center mb-5">
+          <h2 className="fw-bold text-primary mb-3">{t('about.team.title') || 'Meet Our Team'}</h2>
+          <p className="text-muted">{t('about.team.subtitle') || 'Talented developers working together to create amazing solutions'}</p>
+          </div>
+        <div className="row g-4">
             {team.map((member, index) => (
-              <div key={index} className="team-card">
-                <div className="card-header">
-                  <div className="member-image">
-                    <div className="avatar-placeholder">
+            <div key={index} className="col-sm-6 col-lg-4">
+              <div className="team-card">
+                <div className="team-avatar">
                       {member.name.split(' ').map(n => n[0]).join('')}
                     </div>
-                    <div className="status-indicator"></div>
-                  </div>
-                  <div className="member-info">
-                    <h3>{member.name}</h3>
-                    <p className="role">{member.role}</p>
-                    <div className="iti-badge">
-                      <FaGraduationCap className="graduation-icon" />
-                      <span>{member.iti}</span>
-                    </div>
-                  </div>
+                <h5 className="fw-bold mb-1">{member.name}</h5>
+                <p className="text-primary small fw-bold mb-2">{member.role}</p>
+                <div className="d-flex align-items-center justify-content-center gap-1 mb-3">
+                  <FaGraduationCap className="text-primary" />
+                  <small className="text-muted">ITI {member.iti}</small>
                 </div>
-                
-                <div className="card-body">
-                  <p className="bio">{member.bio}</p>
-                  
-                  <div className="skills-section">
-                    <h4 className="skills-title">المهارات</h4>
-                    <div className="skills">
+                <p className="text-muted small mb-3">{member.bio}</p>
+                <div className="d-flex flex-wrap gap-1 justify-content-center mb-3">
                       {member.skills.map((skill, i) => (
-                        <span key={i} className="skill-tag">
-                          <span className="skill-dot"></span>
+                    <span key={i} className="badge bg-light text-primary small">
                           {skill}
                         </span>
                       ))}
-                    </div>
-                  </div>
                 </div>
-                
-                <div className="card-footer">
-                  <div className="social-links">
-                    <a href={member.social.linkedin} aria-label="LinkedIn" className="social-link linkedin">
+                <div className="d-flex gap-2 justify-content-center">
+                  <a href={member.social.linkedin} className="btn btn-sm btn-outline-primary">
                       <FaLinkedin />
-                      <span>LinkedIn</span>
                     </a>
-                    <a href={member.social.github} aria-label="GitHub" className="social-link github">
+                  <a href={member.social.github} className="btn btn-sm btn-outline-dark">
                       <FaGithub />
-                      <span>GitHub</span>
                     </a>
                   </div>
                 </div>
               </div>
             ))}
-          </div>
         </div>
       </section>
 
-      {/* قسم القيم */}
-      <section className="values-section">
-        <div className="container">
-          <div className="section-header">
-            <h2>{t('about.values.title')}</h2>
-            <p>{t('about.values.subtitle')}</p>
+      {/* Values Section */}
+      <section className="container my-5">
+        <div className="text-center mb-5">
+          <h2 className="fw-bold text-primary mb-3">{t('about.values.title') || 'Our Values'}</h2>
+          <p className="text-muted">{t('about.values.subtitle') || 'The principles that guide our work and relationships'}</p>
           </div>
-          <div className="values-grid">
+        <div className="row g-4">
             {values.map((value, index) => (
-              <div key={index} className="value-card">
-                <div className="value-icon">{value.icon}</div>
-                <h3>{value.title}</h3>
-                <p>{value.description}</p>
+            <div key={index} className="col-lg-4">
+              <div className="about-card text-center">
+                <div className="text-primary mb-3" style={{ fontSize: '3rem' }}>
+                  {value.icon}
+                </div>
+                <h4 className="fw-bold mb-3">{value.title}</h4>
+                <p className="text-muted">{value.description}</p>
+              </div>
               </div>
             ))}
-          </div>
         </div>
       </section>
 
-      <section className="cta-section">
-        <div className="container">
-          <h2>{t('Join Our Community!')}</h2>
-          <p>{t('Sign Up Now! and be part of our family')}</p>
-          <div className="cta-buttons">
-            <button className="btn-primary" onClick={handleJoinAsProvider}>{t('join As Provider')}</button>
-            <button className="btn-secondary" onClick={handleExploreServices}>{t('explore Services')}</button>
+      {/* CTA Section */}
+      <section className="container my-5 text-center">
+        <div className="about-card">
+          <h2 className="fw-bold text-primary mb-3">{t('Join Our Community!')}</h2>
+          <p className="text-muted mb-4">{t('Sign Up Now! and be part of our family')}</p>
+          <div className="d-flex gap-3 justify-content-center flex-wrap">
+            <button className="btn btn-cta" onClick={handleJoinAsProvider}>
+              {t('join As Provider')}
+            </button>
+            <button className="btn btn-outline-primary" onClick={handleExploreServices}>
+              {t('explore Services')}
+            </button>
           </div>
         </div>
       </section>

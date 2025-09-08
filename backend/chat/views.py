@@ -6,7 +6,7 @@ import os
 import requests
 import json
 from .models import Conversation, Message
-from .serializers import ConversationSerializer, MessageSerializer
+from .serializers import ConversationSerializer, MessageSerializer, ConversationListSerializer
 from orders.models import Order
 from .chatbot_flow import chatbot_flows
 
@@ -62,7 +62,6 @@ class ChatbotRespondView(APIView):
         if not user_message:
             return Response({"error": "Message is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Use the flow-based chatbot system
         reply, next_state = self._process_flow_message(user_message, current_state, lang)
 
         return Response({
@@ -76,17 +75,14 @@ class ChatbotRespondView(APIView):
             user_message_lower = user_message.lower().strip()
             lang = lang or 'ar'
 
-            # Get current flow state
             current_flow = chatbot_flows.get(current_state, chatbot_flows["start"])
 
-            # Check if user wants to start over
             if any(word in user_message_lower for word in ['مرحبا', 'start', 'بداية', 'جديد', 'أهلا', 'هلا', 'hello']):
                 start_message = chatbot_flows["start"]["message"]
                 if isinstance(start_message, dict):
                     start_message = start_message.get(lang, start_message['ar'])
                 return start_message, "start"
 
-            # Check for matches in options
             if current_flow.get("options"):
                 for option_key, option_next_state in current_flow["options"].items():
                     if (option_key.lower() == user_message_lower or 
@@ -99,7 +95,6 @@ class ChatbotRespondView(APIView):
                             reply_message = reply_message.get(lang, reply_message['ar'])
                         return reply_message, option_next_state
 
-            # If no match found
             if lang == 'en':
                 return "Sorry, I didn't understand that. Please choose from the available options or type 'back' to return.", current_state
             else:
@@ -126,7 +121,6 @@ class ChatbotRespondView(APIView):
             "Always reply strictly in this language code: " + lang + ". "
             "If 'ar' then reply in Arabic; if 'en' then reply in English."
         )
-        # Common small model that runs locally. Users can pull: `ollama pull llama3.1:8b`
         model_name = os.getenv("OLLAMA_MODEL", "llama3.1:8b")
         url = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434") + "/api/chat"
 
@@ -145,18 +139,15 @@ class ChatbotRespondView(APIView):
             content = data.get("message", {}).get("content") or ""
             return content.strip() or None
         except Exception as e:
-            # If Ollama service isn't running, just return None to try next strategy
             print(f"Ollama not available: {e}")
             return None
 
     def _get_huggingface_response(self, user_message: str, lang: str | None = None) -> str:
         """Get response from Hugging Face's free Inference API"""
-        # Detect language if not provided
         if lang not in ("ar", "en"):
             has_arabic = any('\u0600' <= ch <= '\u06FF' for ch in user_message)
             lang = 'ar' if has_arabic else 'en'
 
-        # Create a context-aware prompt
         if lang == 'ar':
             system_context = "أنت مساعد ذكي لمنصة خدماتك. أنت مفيد ومهذب وتجيب باللغة العربية. تساعد المستخدمين في البحث عن الخدمات، إنشاء الطلبات، تتبع الطلبات، والفواتير."
             prompt = f"{system_context}\n\nالمستخدم: {user_message}\nالمساعد:"
@@ -164,9 +155,8 @@ class ChatbotRespondView(APIView):
             system_context = "You are a helpful assistant for the Khadamatak platform. You are friendly, polite, and respond in English. You help users with finding services, creating orders, tracking orders, and invoices."
             prompt = f"{system_context}\n\nUser: {user_message}\nAssistant:"
 
-        # Use Hugging Face's free Inference API with a better model
         API_URL = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-large"
-        headers = {"Authorization": "Bearer hf_free"}  # Free tier doesn't require auth
+        headers = {"Authorization": "Bearer hf_free"} 
 
         payload = {
             "inputs": prompt,
@@ -196,7 +186,6 @@ class ChatbotRespondView(APIView):
         except Exception as e:
             print(f"Hugging Face API call failed: {e}")
 
-        # Fallback to intelligent response
         return self._intelligent_fallback(user_message, lang)
 
     def _intelligent_fallback(self, text: str, lang: str | None = None) -> str:
@@ -208,7 +197,6 @@ class ChatbotRespondView(APIView):
         text_lower = text.lower()
 
         if lang == 'ar':
-            # Arabic responses
             if any(word in text_lower for word in ['مرحبا', 'السلام', 'أهلا', 'هلا', 'ازيك', 'إزيك', 'إزيكك', 'ازيكك']):
                 return "أهلاً وسهلاً! أنا بخير والحمد لله 😊\nإزيك إنت؟ إيه اللي ممكن أساعدك فيه النهاردة؟"
             elif any(word in text_lower for word in ['كيف', 'إزيك', 'ازيك', 'أخبارك', 'أخبار إيه']):
@@ -246,7 +234,6 @@ class ChatbotRespondView(APIView):
                 return f"سؤال حلو! 😊\n{text}\n\nبس أنا متخصص في مساعدتك في خدماتك - السباكة، الكهرباء، النظافة، التكييف، وغيرها.\nإيه نوع الخدمة اللي محتاجها؟ أو إيه اللي ممكن أساعدك فيه؟"
 
         else:
-            # English responses
             if any(word in text_lower for word in ['hello', 'hi', 'hey', 'good morning', 'good afternoon', 'how are you']):
                 return "Hello! I'm doing great, thank you! 😊\nHow are you? What can I help you with today?"
             elif any(word in text_lower for word in ['how are you', 'how do you do', 'what\'s up']):

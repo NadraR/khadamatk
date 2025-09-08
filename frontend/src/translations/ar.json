@@ -191,6 +191,8 @@
   "searchPlaceholder": "ابحث عن الخدمة...",
   "servicesTitle": "خدماتنا المتاحة",
   "servicesSubtitle": "اكتشف مجموعة واسعة من الخدمات المهنية",
+  "joinBannerText": "انضم إلى شبكة مزودي الخدمات لدينا",
+  "joinNowButton": "انضم الآن",
   "buttons": {
     "lightMode": "الوضع المضيء",
     "darkMode": "وضع الظلام"

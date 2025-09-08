@@ -54,7 +54,7 @@ class AuthService {
         first_name: responseData.first_name || responseData.user?.first_name || '',
         last_name: responseData.last_name || responseData.user?.last_name || '',
         username: responseData.username || responseData.user?.username || '',
-        profile_completed: responseData.profile_completed || false
+        profile_completed: responseData.profile_completed || (responseData.role === 'worker' ? false : true)
       };
       
       console.log('[DEBUG] handleLoginSuccess: Created user data:', userData);
@@ -70,7 +70,54 @@ class AuthService {
     throw new Error('لم يتم استلام التوكن من الخادم');
   }
 
-
+  // Check if worker profile is complete and get redirect path
+  async checkWorkerProfileAndGetRedirect(userData) {
+    console.log('[DEBUG] checkWorkerProfileAndGetRedirect: Checking for user:', userData);
+    
+    if (userData.role !== 'worker') {
+      console.log('[DEBUG] User is not a worker, no profile check needed');
+      return null;
+    }
+    
+    try {
+      // Check with backend if profile is truly complete
+      const profileResponse = await apiService.get('/api/accounts/worker/profile/');
+      const profile = profileResponse.profile || profileResponse;
+      
+      console.log('[DEBUG] Worker profile data:', profile);
+      
+      // Check if essential fields are filled
+      const hasJobTitle = profile.job_title && profile.job_title.trim();
+      const hasSkills = profile.skills && profile.skills.trim();
+      const hasServices = profile.services_provided && profile.services_provided.trim();
+      
+      const isComplete = hasJobTitle && hasSkills && hasServices;
+      console.log('[DEBUG] Profile completeness check:', {
+        hasJobTitle,
+        hasSkills,
+        hasServices,
+        isComplete
+      });
+      
+      // Update local user data with correct completion status
+      userData.profile_completed = isComplete;
+      this.saveUserToStorage(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      if (isComplete) {
+        console.log('[DEBUG] Worker profile is complete, redirect to HomeProvider');
+        return '/homeProvider';
+      } else {
+        console.log('[DEBUG] Worker profile is incomplete, redirect to WorkerProfileCompletion');
+        return '/worker-profile-completion';
+      }
+      
+    } catch (error) {
+      console.warn('[DEBUG] Could not fetch worker profile details:', error);
+      // If we can't fetch profile details, assume incomplete to be safe
+      return '/worker-profile-completion';
+    }
+  }
 
   // تسجيل الدخول بالبريد الإلكتروني وكلمة المرور
   async login(email, password) {
@@ -79,10 +126,14 @@ class AuthService {
       const data = await apiService.post('/api/accounts/login/', { email, password });
       const userData = this.handleLoginSuccess(data);
       
+      // Check worker profile completion and get redirect path
+      const redirectPath = await this.checkWorkerProfileAndGetRedirect(userData);
+      
       console.log('[DEBUG] AuthService: Login successful for:', email);
       return {
         success: true,
-        data: userData
+        data: userData,
+        redirectPath: redirectPath
       };
     } catch (error) {
       console.error('خطأ في تسجيل الدخول:', error);
@@ -128,9 +179,13 @@ class AuthService {
       console.log('[DEBUG] register: Received response:', data);
       const userDataResponse = this.handleLoginSuccess(data);
       
+      // Check worker profile completion and get redirect path
+      const redirectPath = await this.checkWorkerProfileAndGetRedirect(userDataResponse);
+      
       return {
         success: true,
-        data: userDataResponse
+        data: userDataResponse,
+        redirectPath: redirectPath
       };
     } catch (error) {
       console.error('خطأ في التسجيل:', error);
@@ -512,6 +567,46 @@ class AuthService {
     } catch (error) {
       console.error('خطأ في تأكيد إعادة تعيين كلمة المرور:', error);
       throw new Error('فشل في إعادة تعيين كلمة المرور');
+    }
+  }
+
+  // إكمال الملف الشخصي للعامل
+  async completeWorkerProfile(profileData) {
+    try {
+      console.log('[DEBUG] AuthService.completeWorkerProfile called with data:', profileData);
+      
+      if (!this.user) {
+        console.error('[DEBUG] No user found in authService');
+        throw new Error('لا يوجد مستخدم مسجل');
+      }
+      
+      console.log('[DEBUG] Current user:', this.user);
+      console.log('[DEBUG] Sending POST request to /api/accounts/worker/profile/');
+      
+      const response = await apiService.post('/api/accounts/worker/profile/', profileData);
+      
+      console.log('[DEBUG] Backend response:', response);
+      
+      // تحديث بيانات المستخدم المحلية based on backend response
+      if (this.user && response.profile_completed !== undefined) {
+        this.user.profile_completed = response.profile_completed;
+        this.saveUserToStorage(this.user);
+        console.log('[DEBUG] Updated user profile_completed flag to:', response.profile_completed);
+      }
+      
+      return {
+        success: true,
+        data: response,
+        profile_completed: response.profile_completed
+      };
+    } catch (error) {
+      console.error('[DEBUG] Error in completeWorkerProfile:', error);
+      console.error('[DEBUG] Error response:', error.response?.data);
+      console.error('[DEBUG] Error status:', error.response?.status);
+      return {
+        success: false,
+        message: error.response?.data?.detail || error.message || 'فشل في إكمال الملف الشخصي'
+      };
     }
   }
 }

@@ -178,6 +178,8 @@
   "searchPlaceholder": "Search for service...",
   "servicesTitle": "Our Available Services",
   "servicesSubtitle": "Discover a wide range of professional services",
+  "joinBannerText": "Join our service providers network!",
+  "joinNowButton": "Join Now",
   "buttons": {
     "lightMode": "Light Mode",
     "darkMode": "Dark Mode"

@@ -232,3 +232,6 @@ Font sizes automatically adjust based on screen size:
 - Monitor font loading times
 - Consider reducing font weights if needed
 - Use font-display: swap for better UX
+
+
+

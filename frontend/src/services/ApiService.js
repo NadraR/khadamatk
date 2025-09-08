@@ -1,7 +1,7 @@
 import axios from "axios";
 
 class ApiService {
-  constructor(baseURL = import.meta.env.VITE_API_URL || "http://localhost:8000/") {
+  constructor(baseURL = import.meta.env.VITE_API_URL || "http://localhost:8001") {
     this.baseURL = baseURL;
     this.retryCount = 0;
     this.maxRetries = 1;
