@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Container,
   Paper,
@@ -19,8 +19,21 @@ const AdminLogin = () => {
   const [formData, setFormData] = useState({ username: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const { login } = useAdminAuth();
+  const { login, isAuthenticated } = useAdminAuth();
   const navigate = useNavigate();
+
+  // Debug environment variables
+  console.log('AdminLogin: Environment variables:', {
+    VITE_API_URL: import.meta.env.VITE_API_URL,
+    NODE_ENV: import.meta.env.NODE_ENV
+  });
+
+  // Redirect to admin dashboard when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/admin");
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -30,10 +43,21 @@ const AdminLogin = () => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    console.log('AdminLogin: Starting login with:', { username: formData.username, password: '***' });
+    console.log('AdminLogin: Form data:', formData);
+    console.log('AdminLogin: Username field value:', formData.username);
+    console.log('AdminLogin: Password field value:', formData.password);
     try {
-      await login(formData.username, formData.password);
-      navigate("/admin");
+      const response = await login(formData.username, formData.password);
+      console.log('AdminLogin: Login successful, response:', response);
+      // Navigation will be handled by useEffect when isAuthenticated becomes true
     } catch (err) {
+      console.error('AdminLogin: Login error:', err);
+      console.error('AdminLogin: Error details:', {
+        status: err.response?.status,
+        data: err.response?.data,
+        message: err.message
+      });
       setError(
         err.response?.data?.detail || "اسم المستخدم أو كلمة المرور غير صحيحة"
       );

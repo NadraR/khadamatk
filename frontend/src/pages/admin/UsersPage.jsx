@@ -1,373 +1,621 @@
-// src/pages/admin/UsersPage.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
-  Paper,
+  Card,
+  CardContent,
   Typography,
   Button,
   Chip,
+  Avatar,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
   IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   TextField,
-  FormControlLabel,
-  Switch,
-  Alert,
-  CircularProgress,
-  Avatar
+  InputAdornment,
+  AppBar,
+  Toolbar,
+  Badge,
+  Menu,
+  MenuItem,
+  Divider
 } from '@mui/material';
 import {
+  Menu as MenuIcon,
+  Security as ShieldIcon,
+  Search as SearchIcon,
+  FilterList as FilterIcon,
+  Add as AddIcon,
+  Notifications as NotificationsIcon,
+  Help as HelpIcon,
+  Language as LanguageIcon,
+  LightMode as LightModeIcon,
+  KeyboardArrowDown as ArrowDownIcon,
+  Visibility as ViewIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Add as AddIcon,
-  PersonAdd as PersonAddIcon,
-  Search as SearchIcon,
-  Email as EmailIcon,
-  Person as PersonIcon,
-  CheckCircle as CheckCircleIcon,
-  Block as BlockIcon,
-  Group as GroupIcon
+  MoreVert as MoreVertIcon
 } from '@mui/icons-material';
-import InputAdornment from '@mui/material/InputAdornment';
-import { DataGrid } from '@mui/x-data-grid';
-import { adminApiService } from '../../services/adminApiService';
+import './UsersPage.css';
 
-const UsersPage = () => {
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedUser, setSelectedUser] = useState(null);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [error, setError] = useState(null);
-  // Advanced search state
-  const [search, setSearch] = useState({
-    username: '',
-    email: '',
-    status: '',
-    role: ''
+// Mock data
+const mockUsers = [
+  {
+    id: '1',
+    name: 'أحمد محمد',
+    email: 'ahmed@example.com',
+    phone: '+966501234567',
+    type: 'client',
+    verified: true,
+    createdAt: '2024-01-15',
+    totalBookings: 12,
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face'
+  },
+  {
+    id: '2',
+    name: 'سارة أحمد',
+    email: 'sara@example.com',
+    phone: '+966501234568',
+    type: 'provider',
+    verified: false,
+    createdAt: '2024-02-10',
+    totalBookings: 45,
+    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face'
+  },
+  {
+    id: '3',
+    name: 'محمد علي',
+    email: 'mohammed@example.com',
+    phone: '+966501234569',
+    type: 'provider',
+    verified: true,
+    createdAt: '2024-01-20',
+    totalBookings: 67,
+    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'
+  },
+  {
+    id: '4',
+    name: 'فاطمة السعيد',
+    email: 'fatima@example.com',
+    phone: '+966501234570',
+    type: 'client',
+    verified: true,
+    createdAt: '2024-01-25',
+    totalBookings: 8,
+    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face'
+  },
+  {
+    id: '5',
+    name: 'خالد النجار',
+    email: 'khalid@example.com',
+    phone: '+966501234571',
+    type: 'provider',
+    verified: false,
+    createdAt: '2024-02-05',
+    totalBookings: 23,
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face'
+  }
+];
+
+export default function UsersPage() {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState('all');
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [languageAnchor, setLanguageAnchor] = useState(null);
+
+  const handleMenuClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLanguageClick = (event) => {
+    setLanguageAnchor(event.currentTarget);
+  };
+
+  const handleLanguageClose = () => {
+    setLanguageAnchor(null);
+  };
+
+  const getUserTypeChip = (type) => {
+    const typeConfig = {
+      client: { 
+        color: '#E3F2FD', 
+        textColor: '#1976D2', 
+        label: 'عميل' 
+      },
+      provider: { 
+        color: '#E8F5E8', 
+        textColor: '#2E7D32', 
+        label: 'مزود خدمة' 
+      },
+      admin: { 
+        color: '#F3E5F5', 
+        textColor: '#7B1FA2', 
+        label: 'مشرف' 
+      }
+    };
+
+    const config = typeConfig[type] || typeConfig.client;
+    return (
+      <Chip
+        label={config.label}
+        sx={{
+          backgroundColor: config.color,
+          color: config.textColor,
+          fontWeight: 500,
+          fontSize: '0.75rem',
+          height: '24px',
+          '& .MuiChip-label': {
+            px: 1.5
+          }
+        }}
+      />
+    );
+  };
+
+  const getStatusChip = (verified) => {
+    if (verified) {
+  return (
+        <Chip
+          icon={<ViewIcon sx={{ fontSize: '14px !important' }} />}
+          label="موثق"
+          sx={{
+            backgroundColor: '#1A1A1A',
+            color: 'white',
+            fontWeight: 500,
+            fontSize: '0.75rem',
+            height: '24px',
+            '& .MuiChip-icon': {
+              color: 'white'
+            },
+            '& .MuiChip-label': {
+              px: 1.5
+            }
+          }}
+        />
+      );
+    } else {
+      return (
+        <Chip
+          label="غير موثق"
+          sx={{
+            backgroundColor: '#F5F5F5',
+            color: '#666666',
+            fontWeight: 500,
+            fontSize: '0.75rem',
+            height: '24px',
+            '& .MuiChip-label': {
+              px: 1.5
+            }
+          }}
+        />
+      );
+    }
+  };
+
+  const filteredUsers = mockUsers.filter(user => {
+    const matchesSearch = user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         user.email.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesFilter = filterType === 'all' || user.type === filterType;
+    return matchesSearch && matchesFilter;
   });
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
-    try {
-      const data = await adminApiService.getUsers();
-      setUsers(data);
-    } catch (err) {
-      setError('فشل في تحميل المستخدمين');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleActivateUser = async (userId) => {
-    try {
-      await adminApiService.activateUser(userId);
-      fetchUsers();
-    } catch (err) {
-      setError('فشل في تفعيل المستخدم');
-    }
-  };
-
-  const handleDeactivateUser = async (userId) => {
-    try {
-      await adminApiService.deactivateUser(userId);
-      fetchUsers();
-    } catch (err) {
-      setError('فشل في تعطيل المستخدم');
-    }
-  };
-
-  const handleSetStaff = async (userId, isStaff) => {
-    try {
-      await adminApiService.setUserStaff(userId, isStaff);
-      fetchUsers();
-    } catch (err) {
-      setError('فشل في تحديث صلاحيات المستخدم');
-    }
-  };
-
-  const columns = [
-    { field: 'id', headerName: 'ID', width: 70 },
-    { field: 'username', headerName: 'اسم المستخدم', width: 150 },
-    { field: 'email', headerName: 'البريد الإلكتروني', width: 200 },
-    { 
-      field: 'role', 
-      headerName: 'الدور', 
-      width: 120,
-      renderCell: (params) => (
-        <Chip 
-          label={params.value === 'worker' ? 'عامل' : 'عميل'} 
-          color={params.value === 'worker' ? 'primary' : 'secondary'}
-          size="small"
-        />
-      )
-    },
-    { 
-      field: 'is_active', 
-      headerName: 'الحالة', 
-      width: 120,
-      renderCell: (params) => (
-        <Chip 
-          label={params.value ? 'نشط' : 'معطل'} 
-          color={params.value ? 'success' : 'error'}
-          size="small"
-        />
-      )
-    },
-    { 
-      field: 'is_staff', 
-      headerName: 'Staff', 
-      width: 100,
-      renderCell: (params) => (
-        <Chip 
-          label={params.value ? 'نعم' : 'لا'} 
-          color={params.value ? 'warning' : 'default'}
-          size="small"
-        />
-      )
-    },
-    {
-      field: 'actions',
-      headerName: 'الإجراءات',
-      width: 200,
-      renderCell: (params) => (
-        <Box>
-          <IconButton 
-            size="small" 
-            onClick={() => handleActivateUser(params.row.id)}
-            disabled={params.row.is_active}
-          >
-            <EditIcon />
-          </IconButton>
-          <IconButton 
-            size="small" 
-            onClick={() => handleDeactivateUser(params.row.id)}
-            disabled={!params.row.is_active}
-          >
-            <DeleteIcon />
-          </IconButton>
-        </Box>
-      )
-    }
-  ];
-
-  if (loading) {
-    return (
-      <Box sx={{ p: 3, textAlign: 'center' }}>
-        <CircularProgress size={60} />
-        <Typography variant="h6" sx={{ mt: 2 }}>
-          جاري تحميل المستخدمين...
-        </Typography>
-      </Box>
-    );
-  }
-
-  // Filter users based on search
-  const filteredUsers = users.filter(u =>
-    (!search.username || u.username?.toLowerCase().includes(search.username.toLowerCase())) &&
-    (!search.email || u.email?.toLowerCase().includes(search.email.toLowerCase())) &&
-    (!search.status || (search.status === 'active' ? u.is_active : !u.is_active)) &&
-    (!search.role || u.role === search.role)
-  );
-
   return (
-    <Box sx={{ p: { xs: 1, md: 3 }, pr: { xs: 1, md: 0 } }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
-        <Typography variant="h4" sx={{ fontWeight: 700, color: '#1976d2'}}>إدارة المستخدمين</Typography>
-        {/* <Button
-          variant="contained"
-          startIcon={<PersonAddIcon />}
-          onClick={() => setDialogOpen(true)}
-          sx={{
-            borderRadius: 3,
-            fontWeight: 700,
-            fontSize: 18,
-            px: 3,
-            py: 1.2,
-            background: 'linear-gradient(90deg, #1976d2 60%, #64b5f6 100%)',
-            boxShadow: '0 4px 16px #1976d233',
-            transition: '0.2s',
-            '&:hover': {
-              background: 'linear-gradient(90deg, #1565c0 60%, #1976d2 100%)',
-              boxShadow: '0 8px 24px #1976d244',
-            },
-          }}
-        >
-          إضافة مستخدم جديد
-        </Button> */}
-      </Box>
-
-      {/* Advanced Search Bar */}
-      <Paper sx={{
-        p: 2.5,
-        mb: 3,
-        borderRadius: 5,
-        background: 'linear-gradient(120deg, #f5faff 60%, #e3f2fd 100%)',
-        boxShadow: '0 4px 24px 0 #1976d222',
-        border: '2px solid #90caf9',
-        borderTop: '4px solid #1976d2',
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: 2,
-        alignItems: 'center',
-        minHeight: 70,
-        transition: 'box-shadow 0.3s, border-color 0.3s',
-        '&:hover, &:focus-within': {
-          boxShadow: '0 8px 32px 0 #1976d244',
-          borderColor: '#1976d2',
-          background: 'linear-gradient(120deg, #e3f2fd 60%, #f5faff 100%)',
-        },
-      }}>
-        <TextField
-          label="بحث بالاسم"
-          value={search.username}
-          onChange={e => setSearch(s => ({ ...s, username: e.target.value }))}
-          size="small"
-          sx={{ minWidth: 180 }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <PersonIcon sx={{ color: '#1976d2' }} />
-              </InputAdornment>
-            )
-          }}
-        />
-        <TextField
-          label="بحث بالبريد الإلكتروني"
-          value={search.email}
-          onChange={e => setSearch(s => ({ ...s, email: e.target.value }))}
-          size="small"
-          sx={{ minWidth: 200 }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <EmailIcon sx={{ color: '#0288d1' }} />
-              </InputAdornment>
-            )
-          }}
-        />
-        <TextField
-          select
-          label="الحالة"
-          value={search.status}
-          onChange={e => setSearch(s => ({ ...s, status: e.target.value }))}
-          size="small"
-          sx={{ minWidth: 120 }}
-          SelectProps={{ native: true }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                {search.status === 'active' ? <CheckCircleIcon sx={{ color: 'success.main' }} /> : search.status === 'inactive' ? <BlockIcon sx={{ color: 'error.main' }} /> : <SearchIcon sx={{ color: '#888' }} />}
-              </InputAdornment>
-            )
-          }}
-        >
-          <option value="">الكل</option>
-          <option value="active">نشط</option>
-          <option value="inactive">معطل</option>
-        </TextField>
-        <TextField
-          select
-          label="الدور"
-          value={search.role}
-          onChange={e => setSearch(s => ({ ...s, role: e.target.value }))}
-          size="small"
-          sx={{ minWidth: 120 }}
-          SelectProps={{ native: true }}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <GroupIcon sx={{ color: '#8e24aa' }} />
-              </InputAdornment>
-            )
-          }}
-        >
-          <option value="">الكل</option>
-          <option value="worker">مقدم خدمة</option>
-          <option value="client">عميل</option>
-        </TextField>
-      </Paper>
-
-      {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
-          {error}
-        </Alert>
-      )}
-
-      <Box sx={{ mt: 2 }}>
-        <Box sx={{
-          display: 'grid',
-          gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' },
-          gap: 2.2,
-        }}>
-          {filteredUsers.map((user) => (
-            <Paper
-              key={user.id}
-              elevation={0}
-              sx={{
-                p: 3,
-                borderRadius: 5,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 2,
-                boxShadow: '0 4px 24px #1976d222',
-                background: '#fff',
-                minHeight: 180,
-                transition: 'box-shadow 0.22s, transform 0.22s',
-                '&:hover': {
-                  boxShadow: '0 8px 32px #1976d244',
-                  transform: 'scale(1.025)',
-                },
+    <Box sx={{ 
+      minHeight: '100vh', 
+      backgroundColor: '#FAFAFA',
+      direction: 'rtl'
+    }}>
+      {/* Top Navigation Bar */}
+      <AppBar 
+        position="static" 
+        elevation={0}
+        sx={{ 
+          backgroundColor: 'white',
+          borderBottom: '1px solid #E0E0E0'
+        }}
+      >
+        <Toolbar sx={{ justifyContent: 'space-between', px: 3 }}>
+          {/* Left Side */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <IconButton sx={{ color: '#666' }}>
+              <MenuIcon />
+            </IconButton>
+            <ShieldIcon sx={{ color: '#1976D2', fontSize: 28 }} />
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                color: '#333',
+                fontWeight: 600,
+                fontSize: '1.25rem'
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5, mb: 1 }}>
-                <Avatar sx={{ bgcolor: user.is_active ? 'primary.main' : 'grey.400', width: 54, height: 54, fontWeight: 700, fontSize: 24, boxShadow: 3 }}>
-                  {user.username?.charAt(0).toUpperCase()}
+              خدماتك
+            </Typography>
+          </Box>
+
+          {/* Center */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, justifyContent: 'center' }}>
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                color: '#1976D2',
+                fontWeight: 600,
+                fontSize: '1.1rem'
+              }}
+            >
+              لوحة التحكم
+            </Typography>
+        <TextField
+              placeholder="بحث فر"
+          size="small"
+              sx={{
+                width: 200,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  backgroundColor: '#F8F9FA',
+                  '& fieldset': {
+                    borderColor: '#E0E0E0'
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#1976D2'
+                  }
+                }
+              }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                    <SearchIcon sx={{ color: '#666', fontSize: 20 }} />
+              </InputAdornment>
+                ),
+              }}
+            />
+          </Box>
+
+          {/* Right Side */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <IconButton sx={{ color: '#666' }}>
+              <LightModeIcon />
+            </IconButton>
+            
+            <Button
+              onClick={handleLanguageClick}
+              endIcon={<ArrowDownIcon />}
+              sx={{ 
+                color: '#333',
+                textTransform: 'none',
+                fontSize: '0.9rem',
+                fontWeight: 500
+              }}
+            >
+              العربية
+            </Button>
+
+            <IconButton sx={{ color: '#666' }}>
+              <Badge badgeContent={2} color="error">
+                <NotificationsIcon />
+              </Badge>
+            </IconButton>
+
+            <IconButton sx={{ color: '#666' }}>
+              <HelpIcon />
+            </IconButton>
+
+            <IconButton onClick={handleMenuClick}>
+              <Avatar 
+                sx={{ 
+                  width: 32, 
+                  height: 32,
+                  backgroundColor: '#1976D2',
+                  fontSize: '0.9rem'
+                }}
+              >
+                م
+              </Avatar>
+            </IconButton>
+          </Box>
+        </Toolbar>
+      </AppBar>
+
+      {/* Main Content */}
+      <Box sx={{ p: 3 }}>
+        {/* Page Title */}
+        <Typography 
+          variant="h4" 
+          sx={{ 
+            fontWeight: 700,
+            color: '#333',
+            mb: 3,
+            fontSize: '2rem'
+          }}
+        >
+          إدارة المستخدمين
+        </Typography>
+
+        {/* Action Bar */}
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'center',
+          mb: 3
+        }}>
+          {/* Search and Filter */}
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+        <TextField
+              placeholder="بحث"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              sx={{
+                width: 300,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: '8px',
+                  backgroundColor: '#F8F9FA',
+                  '& fieldset': {
+                    borderColor: '#E0E0E0'
+                  },
+                  '&:hover fieldset': {
+                    borderColor: '#1976D2'
+                  }
+                }
+              }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                    <SearchIcon sx={{ color: '#666' }} />
+              </InputAdornment>
+                ),
+              }}
+            />
+            <Button
+              variant="outlined"
+              startIcon={<FilterIcon />}
+              sx={{
+                borderRadius: '8px',
+                borderColor: '#E0E0E0',
+                color: '#333',
+                textTransform: 'none',
+                fontWeight: 500,
+                px: 2
+              }}
+            >
+              تصفية
+            </Button>
+          </Box>
+
+          {/* Add User Button */}
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            sx={{
+              backgroundColor: '#1A1A1A',
+              borderRadius: '8px',
+              textTransform: 'none',
+              fontWeight: 600,
+              px: 3,
+              py: 1,
+              '&:hover': {
+                backgroundColor: '#333'
+              }
+            }}
+          >
+            إضافة مستخدم
+          </Button>
+        </Box>
+
+        {/* Users Table */}
+        <Card sx={{ 
+          borderRadius: '12px',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          overflow: 'hidden'
+        }}>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow sx={{ backgroundColor: '#F8F9FA' }}>
+                  <TableCell sx={{ 
+                    fontWeight: 600, 
+                    color: '#333',
+                    borderBottom: '1px solid #E0E0E0',
+                    py: 2
+                  }}>
+                    المستخدم
+                  </TableCell>
+                  <TableCell sx={{ 
+                    fontWeight: 600, 
+                    color: '#333',
+                    borderBottom: '1px solid #E0E0E0',
+                    py: 2
+                  }}>
+                    النوع
+                  </TableCell>
+                  <TableCell sx={{ 
+                    fontWeight: 600, 
+                    color: '#333',
+                    borderBottom: '1px solid #E0E0E0',
+                    py: 2
+                  }}>
+                    الحالة
+                  </TableCell>
+                  <TableCell sx={{ 
+                    fontWeight: 600, 
+                    color: '#333',
+                    borderBottom: '1px solid #E0E0E0',
+                    py: 2
+                  }}>
+                    الحجوزات
+                  </TableCell>
+                  <TableCell sx={{ 
+                    fontWeight: 600, 
+                    color: '#333',
+                    borderBottom: '1px solid #E0E0E0',
+                    py: 2
+                  }}>
+                    تاريخ التسجيل
+                  </TableCell>
+                  <TableCell sx={{ 
+                    fontWeight: 600, 
+                    color: '#333',
+                    borderBottom: '1px solid #E0E0E0',
+                    py: 2
+                  }}>
+                    الإجراءات
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredUsers.map((user, index) => (
+                  <TableRow 
+                    key={user.id}
+                    sx={{ 
+                      '&:hover': { backgroundColor: '#F8F9FA' },
+                      borderBottom: index < filteredUsers.length - 1 ? '1px solid #F0F0F0' : 'none'
+                    }}
+                  >
+                    <TableCell sx={{ py: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Avatar 
+                          src={user.avatar} 
+                          alt={user.name}
+                          sx={{ 
+                            width: 40, 
+                            height: 40,
+                            border: '2px solid #E0E0E0'
+                          }}
+                        >
+                          {user.name.charAt(0)}
                 </Avatar>
                 <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 800, fontSize: 22 }}>{user.username}</Typography>
-                  <Typography variant="body2" color="textSecondary" sx={{ fontSize: 16 }}>{user.email}</Typography>
+                          <Typography 
+                            variant="subtitle2" 
+                            sx={{ 
+                              fontWeight: 600,
+                              color: '#333',
+                              fontSize: '0.9rem'
+                            }}
+                          >
+                            {user.name}
+                          </Typography>
+                          <Typography 
+                            variant="caption" 
+                            sx={{ 
+                              color: '#666',
+                              fontSize: '0.8rem'
+                            }}
+                          >
+                            {user.email}
+                          </Typography>
                 </Box>
               </Box>
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1 }}>
-                <Chip label={user.role === 'worker' ? 'مقدم خدمة' : 'عميل'} color={user.role === 'worker' ? 'primary' : 'secondary'} size="medium" sx={{ fontWeight: 700, fontSize: 15 }} />
-                <Chip label={user.is_active ? 'نشط' : 'معطل'} color={user.is_active ? 'success' : 'error'} size="medium" sx={{ fontWeight: 700, fontSize: 15 }} />
-                <Chip label={user.is_staff ? 'ادمن' : 'مستخدم'} color={user.is_staff ? 'warning' : 'default'} size="medium" sx={{ fontWeight: 700, fontSize: 15 }} />
-              </Box>
-              <Box sx={{ display: 'flex', gap: 1.5, mt: 'auto', justifyContent: 'flex-end' }}>
-                <Button
+                    </TableCell>
+                    <TableCell sx={{ py: 2 }}>
+                      {getUserTypeChip(user.type)}
+                    </TableCell>
+                    <TableCell sx={{ py: 2 }}>
+                      {getStatusChip(user.verified)}
+                    </TableCell>
+                    <TableCell sx={{ py: 2 }}>
+                      <Typography 
+                        variant="body2" 
+                        sx={{ 
+                          fontWeight: 500,
+                          color: '#333'
+                        }}
+                      >
+                        {user.totalBookings}
+                      </Typography>
+                    </TableCell>
+                    <TableCell sx={{ py: 2 }}>
+                      <Typography 
+                        variant="body2" 
+                        sx={{ 
+                          color: '#666',
+                          fontSize: '0.9rem'
+                        }}
+                      >
+                        {user.createdAt}
+                      </Typography>
+                    </TableCell>
+                    <TableCell sx={{ py: 2 }}>
+                      <Box sx={{ display: 'flex', gap: 0.5 }}>
+                        <IconButton 
+                          size="small"
+                          sx={{ 
+                            color: '#666',
+                            '&:hover': { backgroundColor: '#F0F0F0' }
+                          }}
+                        >
+                          <ViewIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                        <IconButton 
                   size="small"
-                  variant="contained"
-                  color="success"
-                  startIcon={<EditIcon />}
-                  onClick={() => handleActivateUser(user.id)}
-                  disabled={user.is_active}
-                  sx={{ borderRadius: 2, fontWeight: 700, px: 2, fontSize: 15, boxShadow: '0 2px 8px #43a04722' }}
-                >
-                  تفعيل
-                </Button>
-                <Button
+                          sx={{ 
+                            color: '#666',
+                            '&:hover': { backgroundColor: '#F0F0F0' }
+                          }}
+                        >
+                          <EditIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                        <IconButton 
                   size="small"
-                  variant="contained"
-                  color="error"
-                  startIcon={<DeleteIcon />}
-                  onClick={() => handleDeactivateUser(user.id)}
-                  disabled={!user.is_active}
-                  sx={{ borderRadius: 2, fontWeight: 700, px: 2, fontSize: 15, boxShadow: '0 2px 8px #e5393522' }}
-                >
-                  تعطيل
-                </Button>
+                          sx={{ 
+                            color: '#666',
+                            '&:hover': { backgroundColor: '#F0F0F0' }
+                          }}
+                        >
+                          <MoreVertIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
               </Box>
-            </Paper>
+                    </TableCell>
+                  </TableRow>
           ))}
-        </Box>
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Card>
       </Box>
+
+      {/* User Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+        PaperProps={{
+          sx: {
+            mt: 1,
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+          }
+        }}
+      >
+        <MenuItem onClick={handleMenuClose}>الملف الشخصي</MenuItem>
+        <MenuItem onClick={handleMenuClose}>الإعدادات</MenuItem>
+        <Divider />
+        <MenuItem onClick={handleMenuClose}>تسجيل الخروج</MenuItem>
+      </Menu>
+
+      {/* Language Menu */}
+      <Menu
+        anchorEl={languageAnchor}
+        open={Boolean(languageAnchor)}
+        onClose={handleLanguageClose}
+        PaperProps={{
+          sx: {
+            mt: 1,
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
+          }
+        }}
+      >
+        <MenuItem onClick={handleLanguageClose}>العربية</MenuItem>
+        <MenuItem onClick={handleLanguageClose}>English</MenuItem>
+      </Menu>
     </Box>
   );
-};
-
-export default UsersPage;
+}

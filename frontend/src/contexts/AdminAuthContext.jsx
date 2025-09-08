@@ -35,9 +35,13 @@ export const AdminAuthProvider = ({ children }) => {
   }, []);
 
   const login = async (username, password) => {
+    console.log('AdminAuthContext: Starting login process');
     const response = await adminApiService.login(username, password);
+    console.log('AdminAuthContext: Login response received:', response);
     localStorage.setItem('adminToken', response.access);
     setUser(response.user);
+    console.log('AdminAuthContext: User set in context:', response.user);
+    return response; // Return the response for the login component
   };
 
   const logout = () => {

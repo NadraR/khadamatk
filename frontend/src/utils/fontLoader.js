@@ -30,11 +30,6 @@ export const loadGoogleFonts = () => {
     const existingLink = document.querySelector(`link[href*="${font.name}"]`);
     if (existingLink) return;
 
-    const link = document.createElement('link');
-    link.href = font.url;
-    link.rel = 'stylesheet';
-    link.crossOrigin = 'anonymous';
-    
     // Add preload for better performance
     const preloadLink = document.createElement('link');
     preloadLink.rel = 'preload';
@@ -42,8 +37,26 @@ export const loadGoogleFonts = () => {
     preloadLink.as = 'style';
     preloadLink.crossOrigin = 'anonymous';
     
+    // Add the actual stylesheet link
+    const link = document.createElement('link');
+    link.href = font.url;
+    link.rel = 'stylesheet';
+    link.crossOrigin = 'anonymous';
+    
+    // Add preload first, then stylesheet after a short delay to ensure preload is used
     document.head.appendChild(preloadLink);
-    document.head.appendChild(link);
+    
+    // Use the preload by adding the stylesheet after it's been preloaded
+    preloadLink.addEventListener('load', () => {
+      document.head.appendChild(link);
+    });
+    
+    // Fallback: if preload doesn't fire, add stylesheet after 100ms
+    setTimeout(() => {
+      if (!document.querySelector(`link[href="${font.url}"][rel="stylesheet"]`)) {
+        document.head.appendChild(link);
+      }
+    }, 100);
   });
 };
 

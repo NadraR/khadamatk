@@ -1,10 +1,17 @@
 
 import axios from 'axios';
 
-const ADMIN_API_BASE_URL = 'http://localhost:9000/api/admin';
+const ADMIN_API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+const ADMIN_API_URL = `${ADMIN_API_BASE_URL}/api/admin`;
+
+console.log('adminApiService: Environment variables:', {
+  VITE_API_URL: import.meta.env.VITE_API_URL,
+  ADMIN_API_BASE_URL,
+  ADMIN_API_URL
+});
 
 const adminApi = axios.create({
-  baseURL: ADMIN_API_BASE_URL,
+  baseURL: ADMIN_API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -39,8 +46,23 @@ adminApi.interceptors.response.use(
 export const adminApiService = {
   // Authentication
   login: async (username, password) => {
-    const response = await adminApi.post('/login/', { username, password });
-    return response.data;
+    console.log('adminApiService: Login attempt with:', { username, password: '***' });
+    console.log('adminApiService: Base URL:', adminApi.defaults.baseURL);
+    console.log('adminApiService: Full URL will be:', `${adminApi.defaults.baseURL}/login/`);
+    console.log('adminApiService: Request payload:', { username, password: '***' });
+    console.log('adminApiService: Actual username being sent:', username);
+    console.log('adminApiService: Actual password being sent:', password);
+    try {
+      const response = await adminApi.post('/login/', { username, password });
+      console.log('adminApiService: Login successful:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('adminApiService: Login error:', error);
+      console.error('adminApiService: Error response:', error.response?.data);
+      console.error('adminApiService: Request config:', error.config);
+      console.error('adminApiService: Request data:', error.config?.data);
+      throw error;
+    }
   },
 
   getMe: async () => {

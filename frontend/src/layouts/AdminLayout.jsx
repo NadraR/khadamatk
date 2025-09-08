@@ -59,6 +59,8 @@ const AdminLayout = () => {
     const handleResize = () => {
       if (window.innerWidth >= 900) {
         setSidebarOpen(true);
+      } else {
+        setSidebarOpen(false);
       }
     };
     window.addEventListener('resize', handleResize);
@@ -66,7 +68,7 @@ const AdminLayout = () => {
   }, []);
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'row', direction: 'rtl' }}>
+    <Box sx={{ display: 'flex', flexDirection: 'row', direction: 'rtl', height: '100vh', overflow: 'hidden' }}>
       {/* App Bar */}
       <AppBar
         position="fixed"
@@ -76,9 +78,9 @@ const AdminLayout = () => {
           ml: 0,
           zIndex: (theme) => theme.zIndex.drawer + 1,
           direction: 'rtl',
-          background: 'white',
-          borderBottom: '1px solid #e0e0e0',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+          background: 'linear-gradient(135deg, #ffffff 0%, #f9fbff 100%)',
+          borderBottom: '1px solid rgba(0,123,255,0.1)',
+          boxShadow: '0 4px 15px rgba(0,123,255,0.1)',
         }}
       >
         <Toolbar sx={{ minHeight: 64, px: { xs: 2, md: 3 }, justifyContent: 'space-between' }}>
@@ -88,12 +90,26 @@ const AdminLayout = () => {
               color="inherit"
               aria-label="toggle sidebar"
               onClick={handleSidebarToggle}
-              sx={{ color: '#666' }}
+              sx={{ 
+                color: '#0077ff',
+                '&:hover': {
+                  background: 'rgba(0,123,255,0.1)',
+                  transform: 'scale(1.05)',
+                },
+                transition: 'all 0.3s ease'
+              }}
             >
               <MenuIcon />
             </IconButton>
             <Badge badgeContent={2} color="error">
-              <Avatar sx={{ width: 40, height: 40, bgcolor: '#d32f2f', color: 'white', fontWeight: 700 }}>
+              <Avatar sx={{ 
+                width: 40, 
+                height: 40, 
+                background: 'linear-gradient(135deg, #0077ff 0%, #4da6ff 100%)', 
+                color: 'white', 
+                fontWeight: 700,
+                boxShadow: '0 4px 15px rgba(0,123,255,0.3)'
+              }}>
                 R
               </Avatar>
             </Badge>
@@ -123,16 +139,25 @@ const AdminLayout = () => {
               width: 300,
               '& .MuiOutlinedInput-root': {
                 borderRadius: 3,
-                backgroundColor: '#f5f5f5',
+                backgroundColor: 'rgba(0,123,255,0.05)',
+                border: '1px solid rgba(0,123,255,0.1)',
                 '& fieldset': { border: 'none' },
                 '&:hover fieldset': { border: 'none' },
                 '&.Mui-focused fieldset': { border: 'none' },
+                '&:hover': {
+                  backgroundColor: 'rgba(0,123,255,0.08)',
+                  border: '1px solid rgba(0,123,255,0.2)',
+                },
+                '&.Mui-focused': {
+                  backgroundColor: 'rgba(0,123,255,0.1)',
+                  border: '1px solid rgba(0,123,255,0.3)',
+                }
               }
             }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SearchIcon sx={{ color: '#666' }} />
+                  <SearchIcon sx={{ color: '#0077ff' }} />
                 </InputAdornment>
               ),
             }}
@@ -140,7 +165,7 @@ const AdminLayout = () => {
 
           {/* Right side - User info */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="body2" sx={{ color: '#666', fontWeight: 500 }}>
+            <Typography variant="body2" sx={{ color: '#0077ff', fontWeight: 600 }}>
               {user?.username} مشرف النظام
             </Typography>
             <IconButton
@@ -150,8 +175,21 @@ const AdminLayout = () => {
               aria-controls="primary-search-account-menu"
               aria-haspopup="true"
               onClick={handleProfileMenuOpen}
+              sx={{
+                '&:hover': {
+                  transform: 'scale(1.05)',
+                },
+                transition: 'all 0.3s ease'
+              }}
             >
-              <Avatar sx={{ width: 40, height: 40, bgcolor: '#d32f2f', color: 'white', fontWeight: 700 }}>
+              <Avatar sx={{ 
+                width: 40, 
+                height: 40, 
+                background: 'linear-gradient(135deg, #0077ff 0%, #4da6ff 100%)', 
+                color: 'white', 
+                fontWeight: 700,
+                boxShadow: '0 4px 15px rgba(0,123,255,0.3)'
+              }}>
                 {user?.username?.charAt(0).toUpperCase()}
               </Avatar>
             </IconButton>
@@ -188,11 +226,10 @@ const AdminLayout = () => {
           flexGrow: 1,
           p: { xs: 1, md: 3 },
           width: '100%',
-          pr: { md: sidebarOpen ? '260px' : '0px' }, // زيادة المسافة اليمنى للمحتوى الرئيسي
           direction: 'rtl',
-          minHeight: '100vh',
-          background: 'var(--background-main)',
-          transition: 'padding 0.3s',
+          height: '100vh',
+          overflow: 'auto',
+          background: 'linear-gradient(180deg, #f9fbff 0%, #ffffff 100%)',
         }}
       >
         <Toolbar />
