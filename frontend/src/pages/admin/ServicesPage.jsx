@@ -16,7 +16,8 @@ import {
   Business as BusinessIcon,
 } from '@mui/icons-material';
 import { DataGrid } from '@mui/x-data-grid';
-import { adminApiService } from '../../services/adminApiService';
+import { servicesApi } from '../../services/adminApiService';
+import '../../styles/adminCommon.css';
 
 const ServicesPage = () => {
   const [services, setServices] = useState([]);
@@ -29,8 +30,13 @@ const ServicesPage = () => {
 
   const fetchServices = async () => {
     try {
-      const data = await adminApiService.getServices();
-      setServices(data);
+      const response = await servicesApi.getServices();
+      if (response.success) {
+        const data = response.data;
+        setServices(data);
+      } else {
+        setError(response.error);
+      }
     } catch (err) {
       setError('فشل في تحميل الخدمات');
     } finally {
@@ -40,8 +46,12 @@ const ServicesPage = () => {
 
   const handleToggleActive = async (serviceId) => {
     try {
-      await adminApiService.toggleServiceActive(serviceId);
-      fetchServices();
+      const response = await servicesApi.toggleServiceActive(serviceId);
+      if (response.success) {
+        fetchServices();
+      } else {
+        setError(response.error);
+      }
     } catch (err) {
       setError('فشل في تحديث حالة الخدمة');
     }

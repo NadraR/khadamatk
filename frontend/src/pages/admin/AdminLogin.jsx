@@ -14,6 +14,7 @@ import { motion } from "framer-motion";
 import { Lock, Person } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useAdminAuth } from "../../contexts/AdminAuthContext";
+import { adminAuth } from "../../services/adminApiService";
 
 const AdminLogin = () => {
   const [formData, setFormData] = useState({ username: "", password: "" });
@@ -43,24 +44,20 @@ const AdminLogin = () => {
     e.preventDefault();
     setLoading(true);
     setError("");
-    console.log('AdminLogin: Starting login with:', { username: formData.username, password: '***' });
-    console.log('AdminLogin: Form data:', formData);
-    console.log('AdminLogin: Username field value:', formData.username);
-    console.log('AdminLogin: Password field value:', formData.password);
+    
     try {
-      const response = await login(formData.username, formData.password);
-      console.log('AdminLogin: Login successful, response:', response);
-      // Navigation will be handled by useEffect when isAuthenticated becomes true
+      const result = await adminAuth.login(formData.username, formData.password);
+      
+      if (result.success) {
+        // استخدام context للتعامل مع تسجيل الدخول
+        await login(result.data);
+        navigate("/admin");
+      } else {
+        setError(result.error);
+      }
     } catch (err) {
-      console.error('AdminLogin: Login error:', err);
-      console.error('AdminLogin: Error details:', {
-        status: err.response?.status,
-        data: err.response?.data,
-        message: err.message
-      });
-      setError(
-        err.response?.data?.detail || "اسم المستخدم أو كلمة المرور غير صحيحة"
-      );
+      console.error('Login error:', err);
+      setError('خطأ في الاتصال بالخادم');
     } finally {
       setLoading(false);
     }

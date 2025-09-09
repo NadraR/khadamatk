@@ -29,10 +29,12 @@ import {
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
 import AdminSidebar from '../components/admin/AdminSidebar';
+import { notificationsApi } from '../services/adminApiService';
 
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 900);
   const [anchorEl, setAnchorEl] = useState(null);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
   const { user, logout } = useAdminAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -66,6 +68,25 @@ const AdminLayout = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // جلب عدد الإشعارات غير المقروءة
+  React.useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const count = await notificationsApi.getUnreadCount();
+        setUnreadNotifications(count);
+      } catch (error) {
+        console.error('Error fetching unread notifications count:', error);
+      }
+    };
+
+    if (user) {
+      fetchUnreadCount();
+      // تحديث العدد كل 30 ثانية
+      const interval = setInterval(fetchUnreadCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'row', direction: 'rtl', height: '100vh', overflow: 'hidden' }}>
@@ -101,7 +122,7 @@ const AdminLayout = () => {
             >
               <MenuIcon />
             </IconButton>
-            <Badge badgeContent={2} color="error">
+            <Badge badgeContent={unreadNotifications} color="error">
               <Avatar sx={{ 
                 width: 40, 
                 height: 40, 
@@ -110,7 +131,7 @@ const AdminLayout = () => {
                 fontWeight: 700,
                 boxShadow: '0 4px 15px rgba(0,123,255,0.3)'
               }}>
-                R
+                {user?.username?.charAt(0).toUpperCase() || 'A'}
               </Avatar>
             </Badge>
             <FormControl size="small" sx={{ minWidth: 100 }}>
@@ -230,6 +251,7 @@ const AdminLayout = () => {
           height: '100vh',
           overflow: 'auto',
           background: 'linear-gradient(180deg, #f9fbff 0%, #ffffff 100%)',
+          ml: { xs: 0, sm: 0, md: 0, lg: 0, xl: 0 },
         }}
       >
         <Toolbar />

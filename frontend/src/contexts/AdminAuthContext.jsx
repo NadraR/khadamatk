@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { adminApiService } from '../services/adminApiService';
+import { adminAuth } from '../services/adminApiService';
 
 const AdminAuthContext = createContext();
 
@@ -16,17 +16,17 @@ export const AdminAuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('adminToken');
+    const token = localStorage.getItem('admin_access_token');
     console.log('AdminAuthContext: Token found:', !!token);
     if (token) {
-      adminApiService.getMe()
-        .then((user) => {
-          console.log('AdminAuthContext: User loaded:', user);
-          setUser(user);
+      adminAuth.getMe()
+        .then((userData) => {
+          console.log('AdminAuthContext: User loaded:', userData);
+          setUser(userData);
         })
         .catch((error) => {
           console.log('AdminAuthContext: Error loading user:', error);
-          localStorage.removeItem('adminToken');
+          adminAuth.logout();
         })
         .finally(() => setLoading(false));
     } else {
@@ -34,18 +34,16 @@ export const AdminAuthProvider = ({ children }) => {
     }
   }, []);
 
-  const login = async (username, password) => {
+  const login = async (loginData) => {
     console.log('AdminAuthContext: Starting login process');
-    const response = await adminApiService.login(username, password);
-    console.log('AdminAuthContext: Login response received:', response);
-    localStorage.setItem('adminToken', response.access);
-    setUser(response.user);
-    console.log('AdminAuthContext: User set in context:', response.user);
-    return response; // Return the response for the login component
+    // البيانات تأتي من AdminLogin مع tokens محفوظة بالفعل
+    setUser(loginData.user);
+    console.log('AdminAuthContext: User set in context:', loginData.user);
+    return loginData;
   };
 
   const logout = () => {
-    localStorage.removeItem('adminToken');
+    adminAuth.logout();
     setUser(null);
   };
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Card,
@@ -22,7 +22,14 @@ import {
   Badge,
   Menu,
   MenuItem,
-  Divider
+  Divider,
+  CircularProgress,
+  Alert,
+  Snackbar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -40,68 +47,15 @@ import {
   Delete as DeleteIcon,
   MoreVert as MoreVertIcon
 } from '@mui/icons-material';
-import './UsersPage.css';
+import { usersApi } from '../../services/adminApiService';
+import '../../styles/adminCommon.css';
 
-// Mock data
-const mockUsers = [
-  {
-    id: '1',
-    name: 'أحمد محمد',
-    email: 'ahmed@example.com',
-    phone: '+966501234567',
-    type: 'client',
-    verified: true,
-    createdAt: '2024-01-15',
-    totalBookings: 12,
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face'
-  },
-  {
-    id: '2',
-    name: 'سارة أحمد',
-    email: 'sara@example.com',
-    phone: '+966501234568',
-    type: 'provider',
-    verified: false,
-    createdAt: '2024-02-10',
-    totalBookings: 45,
-    avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face'
-  },
-  {
-    id: '3',
-    name: 'محمد علي',
-    email: 'mohammed@example.com',
-    phone: '+966501234569',
-    type: 'provider',
-    verified: true,
-    createdAt: '2024-01-20',
-    totalBookings: 67,
-    avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face'
-  },
-  {
-    id: '4',
-    name: 'فاطمة السعيد',
-    email: 'fatima@example.com',
-    phone: '+966501234570',
-    type: 'client',
-    verified: true,
-    createdAt: '2024-01-25',
-    totalBookings: 8,
-    avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face'
-  },
-  {
-    id: '5',
-    name: 'خالد النجار',
-    email: 'khalid@example.com',
-    phone: '+966501234571',
-    type: 'provider',
-    verified: false,
-    createdAt: '2024-02-05',
-    totalBookings: 23,
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face'
-  }
-];
 
 export default function UsersPage() {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState('all');
   const [anchorEl, setAnchorEl] = useState(null);
@@ -121,6 +75,58 @@ export default function UsersPage() {
 
   const handleLanguageClose = () => {
     setLanguageAnchor(null);
+  };
+
+  // جلب المستخدمين من الباك إند
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const response = await usersApi.getUsers();
+      if (response.success) {
+        setUsers(response.data);
+      } else {
+        setError(response.error || 'فشل في تحميل المستخدمين');
+      }
+    } catch (err) {
+      setError('فشل في تحميل المستخدمين');
+      console.error('Error fetching users:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleVerification = async (userId) => {
+    try {
+      const response = await usersApi.toggleUserVerification(userId);
+      if (response.success) {
+        setSnackbar({ open: true, message: 'تم تحديث حالة التحقق بنجاح', severity: 'success' });
+        fetchUsers(); // إعادة تحميل البيانات
+      } else {
+        setSnackbar({ open: true, message: response.error || 'فشل في تحديث حالة التحقق', severity: 'error' });
+      }
+    } catch (err) {
+      setSnackbar({ open: true, message: 'فشل في تحديث حالة التحقق', severity: 'error' });
+      console.error('Error toggling verification:', err);
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    try {
+      const response = await usersApi.deleteUser(userId);
+      if (response.success) {
+        setSnackbar({ open: true, message: 'تم حذف المستخدم بنجاح', severity: 'success' });
+        fetchUsers(); // إعادة تحميل البيانات
+      } else {
+        setSnackbar({ open: true, message: response.error || 'فشل في حذف المستخدم', severity: 'error' });
+      }
+    } catch (err) {
+      setSnackbar({ open: true, message: 'فشل في حذف المستخدم', severity: 'error' });
+      console.error('Error deleting user:', err);
+    }
   };
 
   const getUserTypeChip = (type) => {
@@ -160,18 +166,23 @@ export default function UsersPage() {
     );
   };
 
-  const getStatusChip = (verified) => {
+  const getStatusChip = (verified, userId) => {
     if (verified) {
-  return (
+      return (
         <Chip
           icon={<ViewIcon sx={{ fontSize: '14px !important' }} />}
           label="موثق"
+          onClick={() => handleToggleVerification(userId)}
           sx={{
             backgroundColor: '#1A1A1A',
             color: 'white',
             fontWeight: 500,
             fontSize: '0.75rem',
             height: '24px',
+            cursor: 'pointer',
+            '&:hover': {
+              backgroundColor: '#333333'
+            },
             '& .MuiChip-icon': {
               color: 'white'
             },
@@ -185,12 +196,17 @@ export default function UsersPage() {
       return (
         <Chip
           label="غير موثق"
+          onClick={() => handleToggleVerification(userId)}
           sx={{
             backgroundColor: '#F5F5F5',
             color: '#666666',
             fontWeight: 500,
             fontSize: '0.75rem',
             height: '24px',
+            cursor: 'pointer',
+            '&:hover': {
+              backgroundColor: '#E0E0E0'
+            },
             '& .MuiChip-label': {
               px: 1.5
             }
@@ -200,19 +216,54 @@ export default function UsersPage() {
     }
   };
 
-  const filteredUsers = mockUsers.filter(user => {
+  const filteredUsers = users.filter(user => {
     const matchesSearch = user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFilter = filterType === 'all' || user.type === filterType;
     return matchesSearch && matchesFilter;
   });
 
+  // Loading state
+  if (loading) {
+    return (
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '50vh',
+        direction: 'rtl'
+      }}>
+        <CircularProgress size={60} />
+        <Typography sx={{ ml: 2, color: '#666666' }}>
+          جاري تحميل المستخدمين...
+        </Typography>
+      </Box>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <Box sx={{ p: 3, direction: 'rtl' }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+        <Button 
+          variant="contained" 
+          onClick={fetchUsers}
+          sx={{ 
+            backgroundColor: '#0077ff',
+            '&:hover': { backgroundColor: '#0056b3' }
+          }}
+        >
+          إعادة المحاولة
+        </Button>
+      </Box>
+    );
+  }
+
   return (
-    <Box sx={{ 
-      minHeight: '100vh', 
-      backgroundColor: '#FAFAFA',
-      direction: 'rtl'
-    }}>
+    <Box className="admin-page-container">
       {/* Top Navigation Bar */}
       <AppBar 
         position="static" 
@@ -518,7 +569,7 @@ export default function UsersPage() {
                       {getUserTypeChip(user.type)}
                     </TableCell>
                     <TableCell sx={{ py: 2 }}>
-                      {getStatusChip(user.verified)}
+                      {getStatusChip(user.verified, user.id)}
                     </TableCell>
                     <TableCell sx={{ py: 2 }}>
                       <Typography 
@@ -546,6 +597,10 @@ export default function UsersPage() {
                       <Box sx={{ display: 'flex', gap: 0.5 }}>
                         <IconButton 
                           size="small"
+                          onClick={() => {
+                            // عرض تفاصيل المستخدم
+                            setSnackbar({ open: true, message: `عرض تفاصيل ${user.name}`, severity: 'info' });
+                          }}
                           sx={{ 
                             color: '#666',
                             '&:hover': { backgroundColor: '#F0F0F0' }
@@ -554,7 +609,11 @@ export default function UsersPage() {
                           <ViewIcon sx={{ fontSize: 18 }} />
                         </IconButton>
                         <IconButton 
-                  size="small"
+                          size="small"
+                          onClick={() => {
+                            // تعديل المستخدم
+                            setSnackbar({ open: true, message: `تعديل ${user.name}`, severity: 'info' });
+                          }}
                           sx={{ 
                             color: '#666',
                             '&:hover': { backgroundColor: '#F0F0F0' }
@@ -563,13 +622,19 @@ export default function UsersPage() {
                           <EditIcon sx={{ fontSize: 18 }} />
                         </IconButton>
                         <IconButton 
-                  size="small"
+                          size="small"
+                          onClick={() => {
+                            // حذف المستخدم
+                            if (window.confirm(`هل أنت متأكد من حذف ${user.name}؟`)) {
+                              handleDeleteUser(user.id);
+                            }
+                          }}
                           sx={{ 
                             color: '#666',
                             '&:hover': { backgroundColor: '#F0F0F0' }
                           }}
                         >
-                          <MoreVertIcon sx={{ fontSize: 18 }} />
+                          <DeleteIcon sx={{ fontSize: 18 }} />
                         </IconButton>
               </Box>
                     </TableCell>
@@ -616,6 +681,22 @@ export default function UsersPage() {
         <MenuItem onClick={handleLanguageClose}>العربية</MenuItem>
         <MenuItem onClick={handleLanguageClose}>English</MenuItem>
       </Menu>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={() => setSnackbar({ ...snackbar, open: false })} 
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Paper, Typography, Chip, CircularProgress, Alert } from '@mui/material';
 import StarIcon from '@mui/icons-material/Star';
-import { adminApiService } from '../../services/adminApiService';
+import { ratingsApi } from '../../services/adminApiService';
+import '../../styles/adminCommon.css';
 
 const RatingsPage = () => {
   const [ratings, setRatings] = useState([]);
@@ -9,7 +10,7 @@ const RatingsPage = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    adminApiService.getRatings()
+    ratingsApi.getRatings()
       .then(setRatings)
       .catch(() => setError('فشل في تحميل التقييمات'))
       .finally(() => setLoading(false));

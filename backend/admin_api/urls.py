@@ -5,7 +5,8 @@ from .views import (
     UserViewSet, ServiceViewSet, OrderViewSet, ReviewViewSet, RatingViewSet,
     InvoiceViewSet, AdminActionLogViewSet, AdminNotificationViewSet,
     AdminStatsView, AdminMeView, CategoryViewSet, FinancialReportView,
-    PlatformSettingViewSet, AdminLoginView, AdminRegisterView
+    PlatformSettingViewSet, AdminLoginView, AdminRegisterView,OrdersTrendView, RecentOrdersView,
+    SettingsViewSet
 )
 
 router = DefaultRouter()
@@ -18,12 +19,14 @@ router.register("ratings", RatingViewSet, basename="ratings")
 router.register("invoices", InvoiceViewSet, basename="invoices")
 router.register("logs", AdminActionLogViewSet, basename="logs")
 router.register("notifications", AdminNotificationViewSet, basename="notifications")
-router.register("settings", PlatformSettingViewSet, basename="settings")
+router.register("settings", SettingsViewSet, basename="settings")
 
 urlpatterns = [
     path("login/", AdminLoginView.as_view(), name="admin-login"),
     path("register/", AdminRegisterView.as_view(), name="admin-register"),
     path("stats/", AdminStatsView.as_view(), name="admin-stats"),
+    path("orders-trend/", OrdersTrendView.as_view(), name="orders-trend"),
+    path("recent-orders/", RecentOrdersView.as_view(), name="recent-orders"),
     path("financial-report/", FinancialReportView.as_view(), name="financial-report"),
     path("me/", AdminMeView.as_view(), name="admin-me"),
     path("", include(router.urls)),

@@ -22,7 +22,8 @@ import {
   PersonAdd as PersonAddIcon,
 } from '@mui/icons-material';
 import { DataGrid } from '@mui/x-data-grid';
-import { adminApiService } from '../../services/adminApiService';
+import { ordersApi, usersApi } from '../../services/adminApiService';
+import '../../styles/adminCommon.css';
 
 const OrdersPage = () => {
   const [orders, setOrders] = useState([]);
@@ -41,7 +42,8 @@ const OrdersPage = () => {
 
   const fetchOrders = async () => {
     try {
-      const data = await adminApiService.getOrders();
+      const response = await ordersApi.getOrders();
+      const data = response.success ? response.data : [];
       setOrders(data);
     } catch (err) {
       setError('فشل في تحميل الطلبات');
@@ -52,7 +54,8 @@ const OrdersPage = () => {
 
   const fetchProviders = async () => {
     try {
-      const data = await adminApiService.getUsers();
+      const response = await usersApi.getUsers();
+      const data = response.success ? response.data : [];
       // Filter only workers/providers
       const workers = data.filter(user => user.role === 'worker');
       setProviders(workers);
@@ -63,7 +66,7 @@ const OrdersPage = () => {
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {
-      await adminApiService.setOrderStatus(orderId, newStatus);
+      await ordersApi.setOrderStatus(orderId, newStatus);
       fetchOrders();
     } catch (err) {
       setError('فشل في تحديث حالة الطلب');
@@ -78,7 +81,7 @@ const OrdersPage = () => {
 
   const handleConfirmAssignment = async () => {
     try {
-      await adminApiService.assignProvider(selectedOrder.id, selectedProvider);
+      await ordersApi.assignProvider(selectedOrder.id, selectedProvider);
       setSnackbar({ open: true, message: 'تم تعيين مقدم الخدمة بنجاح', severity: 'success' });
       setAssignDialogOpen(false);
       fetchOrders();

@@ -29,7 +29,8 @@ import {
   Delete as DeleteIcon,
   Visibility as ViewIcon,
 } from '@mui/icons-material';
-import { adminApiService } from '../../services/adminApiService';
+import { categoriesApi } from '../../services/adminApiService';
+import '../../styles/adminCommon.css';
 
 const CategoriesPage = () => {
   const [categories, setCategories] = useState([]);
@@ -50,7 +51,7 @@ const CategoriesPage = () => {
   const fetchCategories = async () => {
     try {
       setLoading(true);
-      const response = await adminApiService.getCategories();
+      const response = await categoriesApi.getCategories();
       setCategories(response.data);
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -74,10 +75,10 @@ const CategoriesPage = () => {
     e.preventDefault();
     try {
       if (editingCategory) {
-        await adminApiService.updateCategory(editingCategory.id, formData);
+        await categoriesApi.updateCategory(editingCategory.id, formData);
         showSnackbar('تم تحديث التصنيف بنجاح');
       } else {
-        await adminApiService.createCategory(formData);
+        await categoriesApi.createCategory(formData);
         showSnackbar('تم إنشاء التصنيف بنجاح');
       }
       handleClose();
@@ -101,7 +102,7 @@ const CategoriesPage = () => {
   const handleDelete = async (id) => {
     if (window.confirm('هل أنت متأكد من حذف هذا التصنيف؟')) {
       try {
-        await adminApiService.deleteCategory(id);
+        await categoriesApi.deleteCategory(id);
         showSnackbar('تم حذف التصنيف بنجاح');
         fetchCategories();
       } catch (error) {
@@ -113,7 +114,7 @@ const CategoriesPage = () => {
 
   const handleToggleActive = async (category) => {
     try {
-      await adminApiService.updateCategory(category.id, {
+      await categoriesApi.updateCategory(category.id, {
         ...category,
         is_active: !category.is_active,
       });

@@ -34,6 +34,7 @@ import {
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
+import { notificationsApi } from '../../services/adminApiService';
 
 const drawerWidth = 180;
 
@@ -43,6 +44,7 @@ const AdminSidebar = ({ open, onClose }) => {
   const { user, logout } = useAdminAuth();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const [unreadNotifications, setUnreadNotifications] = React.useState(0);
 
   // Professional menu items with better organization
   const menuItems = [
@@ -54,7 +56,7 @@ const AdminSidebar = ({ open, onClose }) => {
     { text: 'التقييمات', icon: <StarIcon />, path: '/admin/ratings', color: '#f97316', show: true, section: 'finance' },
     { text: 'التقارير', icon: <AssessmentIcon />, path: '/admin/reviews', color: '#8b5cf6', show: true, section: 'finance' },
     { text: 'الإحصائيات', icon: <TrendingUpIcon />, path: '/admin/stats', color: '#06b6d4', show: true, section: 'analytics' },
-    { text: 'الإشعارات', icon: <NotificationsIcon />, path: '/admin/notifications', color: '#0077ff', show: true, section: 'settings', badge: 3 },
+    { text: 'الإشعارات', icon: <NotificationsIcon />, path: '/admin/notifications', color: '#0077ff', show: true, section: 'settings', badge: unreadNotifications },
     { text: 'الإعدادات', icon: <SettingsIcon />, path: '/admin/settings', color: '#6b7280', show: true, section: 'settings' },
     { text: 'الملف الشخصي', icon: <AccountCircleIcon />, path: '/admin/profile', color: '#8b5cf6', show: true, section: 'settings' },
   ];
@@ -63,6 +65,25 @@ const AdminSidebar = ({ open, onClose }) => {
     logout();
     navigate('/admin/login');
   };
+
+  // جلب عدد الإشعارات غير المقروءة
+  React.useEffect(() => {
+    const fetchUnreadCount = async () => {
+      try {
+        const count = await notificationsApi.getUnreadCount();
+        setUnreadNotifications(count);
+      } catch (error) {
+        console.error('Error fetching unread notifications count:', error);
+      }
+    };
+
+    if (user) {
+      fetchUnreadCount();
+      // تحديث العدد كل 30 ثانية
+      const interval = setInterval(fetchUnreadCount, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
 
   const drawerContent = (
     <Box sx={{

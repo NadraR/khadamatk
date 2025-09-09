@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Paper, Typography, Chip, Button, CircularProgress, Alert } from '@mui/material';
 import RateReviewIcon from '@mui/icons-material/RateReview';
-import { adminApiService } from '../../services/adminApiService';
+import { reviewsApi } from '../../services/adminApiService';
+import '../../styles/adminCommon.css';
 
 const ReviewsPage = () => {
   const [reviews, setReviews] = useState([]);
@@ -9,7 +10,7 @@ const ReviewsPage = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    adminApiService.getReviews()
+    reviewsApi.getReviews()
       .then((data) => {
         console.log('API /reviews/ data:', data);
         setReviews(data);
@@ -20,7 +21,7 @@ const ReviewsPage = () => {
 
   const handleSoftDelete = async (id) => {
     try {
-      await adminApiService.softDeleteReview(id);
+      await reviewsApi.softDeleteReview(id);
       setReviews(reviews => reviews.filter(r => r.id !== id));
     } catch {
       setError('فشل في حذف التقييم');

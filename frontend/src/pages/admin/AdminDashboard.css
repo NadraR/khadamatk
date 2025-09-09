@@ -1,6 +1,4 @@
-/* Admin Dashboard Custom Styles - Unified with Sidebar */
-
-/* Stat Card Styles */
+/* 
 .stat-card {
   transition: all 0.3s ease !important;
   border: 1px solid rgba(0,123,255,0.1) !important;
@@ -17,7 +15,6 @@
   border: 1px solid rgba(0,123,255,0.2) !important;
 }
 
-/* System Status and Recent Bookings Cards */
 .MuiCard-root {
   background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(249,251,255,0.9) 100%) !important;
   border: 1px solid rgba(0,123,255,0.1) !important;
@@ -33,7 +30,6 @@
   border: 1px solid rgba(0,123,255,0.2) !important;
 }
 
-/* Button Styles - Unified with Sidebar */
 .MuiButton-root {
   transition: all 0.2s ease !important;
   border-radius: 8px !important;
@@ -63,7 +59,6 @@
   transform: translateY(-1px) !important;
 }
 
-/* Icon Button Styles */
 .MuiIconButton-root {
   transition: all 0.2s ease !important;
   border-radius: 8px !important;
@@ -74,26 +69,48 @@
   transform: scale(1.02) !important;
 }
 
-/* Typography Improvements */
 .MuiTypography-h4 {
   letter-spacing: -0.02em !important;
-  color: #1e293b !important;
+  color: #666666 !important;
 }
 
 .MuiTypography-h6 {
   letter-spacing: 0.01em !important;
-  color: #334155 !important;
+  color: #666666 !important;
 }
 
 .MuiTypography-body1 {
-  color: #475569 !important;
+  color: #666666 !important;
 }
 
 .MuiTypography-body2 {
-  color: #64748b !important;
+  color: #666666 !important;
 }
 
-/* Custom Scrollbar - Unified with Sidebar */
+.MuiTypography-root {
+  color: #666666 !important;
+}
+
+.admin-dashboard-container .MuiTypography-root {
+  color: #666666 !important;
+}
+
+.admin-dashboard-container .MuiTypography-h4 {
+  color: #666666 !important;
+}
+
+.admin-dashboard-container .MuiTypography-h6 {
+  color: #666666 !important;
+}
+
+.admin-dashboard-container .MuiTypography-body1 {
+  color: #666666 !important;
+}
+
+.admin-dashboard-container .MuiTypography-body2 {
+  color: #666666 !important;
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -113,7 +130,6 @@
   background: #94a3b8;
 }
 
-/* Custom Focus Styles */
 .MuiButton-root:focus,
 .MuiIconButton-root:focus,
 .MuiTextField-root .MuiOutlinedInput-root:focus {
@@ -121,14 +137,13 @@
   outline-offset: 2px !important;
 }
 
-/* Animation for stat cards */
 @keyframes fadeInUp {
-  from {
-    opacity: 0;
+    from {
+        opacity: 0;
     transform: translateY(30px);
-  }
-  to {
-    opacity: 1;
+    }
+    to {
+        opacity: 1;
     transform: translateY(0);
   }
 }
@@ -137,7 +152,6 @@
   animation: fadeInUp 0.6s ease-out !important;
 }
 
-/* Status Indicators - Unified Colors */
 .status-indicator {
   width: 12px !important;
   height: 12px !important;
@@ -161,7 +175,6 @@
   box-shadow: 0 0 8px rgba(245, 158, 11, 0.4) !important;
 }
 
-/* Chip Styles */
 .MuiChip-root {
   border-radius: 6px !important;
   font-weight: 500 !important;
@@ -179,7 +192,6 @@
   background: rgba(0,123,255,0.05) !important;
 }
 
-/* Responsive Adjustments */
 @media (max-width: 768px) {
   .stat-card {
     margin-bottom: 16px !important;
@@ -216,24 +228,20 @@
   }
 }
 
-/* Override any conflicting styles */
 .stat-card * {
   box-sizing: border-box !important;
 }
 
-/* Ensure proper spacing and alignment */
 .stat-card-content > * {
   margin-left: auto !important;
   margin-right: auto !important;
 }
 
-/* Icon specific styling */
 .stat-icon {
   display: block !important;
   margin: 0 auto 8px auto !important;
 }
 
-/* Background gradient for main container */
 .admin-dashboard-container {
   background: linear-gradient(180deg, #f9fbff 0%, #ffffff 100%) !important;
   min-height: 100vh !important;
@@ -246,7 +254,6 @@
   box-sizing: border-box !important;
 }
 
-/* Main content wrapper */
 .admin-dashboard-container > div {
   width: 100% !important;
   max-width: 100% !important;
@@ -259,7 +266,6 @@
   box-sizing: border-box !important;
 }
 
-/* Grid containers */
 .MuiGrid-container {
   width: 100% !important;
   max-width: 100% !important;
@@ -267,14 +273,12 @@
   box-sizing: border-box !important;
 }
 
-/* Statistics grid */
 .MuiGrid-container:first-of-type {
   max-width: 100% !important;
   margin: 0 auto !important;
   flex-shrink: 0 !important;
 }
 
-/* System status grid */
 .MuiGrid-container:nth-of-type(2) {
   max-width: 100% !important;
   margin: 0 !important;
@@ -285,7 +289,6 @@
   margin-bottom: 16px !important;
 }
 
-/* Recent bookings grid */
 .MuiGrid-container:nth-of-type(3) {
   max-width: 100% !important;
   margin: 0 !important;
@@ -295,7 +298,6 @@
   justify-content: stretch !important;
 }
 
-/* System status card */
 .MuiGrid-item:first-of-type {
   display: flex !important;
   width: 100% !important;
@@ -309,7 +311,6 @@
   min-height: 400px !important;
 }
 
-/* Recent bookings card */
 .MuiGrid-item:last-of-type {
   display: flex !important;
   width: 100% !important;
@@ -323,7 +324,6 @@
   min-height: 400px !important;
 }
 
-/* Full width distribution for different screen sizes */
 @media (min-width: 1200px) {
   .MuiGrid-item:first-of-type {
     flex: 0 0 33.333333% !important;
@@ -366,7 +366,6 @@
   }
 }
 
-/* Ensure full width usage */
 .MuiGrid-container:nth-of-type(2) .MuiGrid-item {
   padding-left: 12px !important;
   padding-right: 12px !important;
@@ -380,7 +379,6 @@
   padding-right: 0 !important;
 }
 
-/* Action buttons container */
 .admin-dashboard-container .MuiBox-root:first-of-type {
   width: 100% !important;
   display: flex !important;
@@ -389,7 +387,6 @@
   flex-shrink: 0 !important;
 }
 
-/* Prevent horizontal scroll */
 * {
   box-sizing: border-box !important;
 }
@@ -398,7 +395,6 @@ body, html {
   overflow-x: hidden !important;
 }
 
-/* Responsive adjustments for better distribution */
 @media (max-width: 1200px) {
   .MuiGrid-item {
     padding: 8px !important;
@@ -431,4 +427,47 @@ body, html {
   .MuiCard-root {
     margin: 0 !important;
   }
+} */
+
+
+/* Typography Improvements */
+.MuiTypography-h4 {
+  color: #666666 !important; /* رمادي داكن */
+}
+
+.MuiTypography-h6 {
+  color: #666666 !important; /* رمادي داكن */
+}
+
+.MuiTypography-body1 {
+  color: #666666 !important; /* رمادي داكن */
+}
+
+.MuiTypography-body2 {
+  color: #666666 !important; /* رمادي داكن */
+}
+
+.MuiTypography-root {
+  color: #666666 !important; /* رمادي داكن */
+}
+
+/* Specific overrides for dashboard elements */
+.admin-dashboard-container .MuiTypography-root {
+  color: #666666 !important; /* رمادي داكن */
+}
+
+.admin-dashboard-container .MuiTypography-h4 {
+  color: #666666 !important; /* رمادي داكن */
+}
+
+.admin-dashboard-container .MuiTypography-h6 {
+  color: #666666 !important; /* رمادي داكن */
+}
+
+.admin-dashboard-container .MuiTypography-body1 {
+  color: #666666 !important; /* رمادي داكن */
+}
+
+.admin-dashboard-container .MuiTypography-body2 {
+  color: #666666 !important; /* رمادي داكن */
 }

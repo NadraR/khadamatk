@@ -1,26 +1,18 @@
-
+// frontend/src/services/adminApiService.js
 import axios from 'axios';
 
-const ADMIN_API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-const ADMIN_API_URL = `${ADMIN_API_BASE_URL}/api/admin`;
-
-console.log('adminApiService: Environment variables:', {
-  VITE_API_URL: import.meta.env.VITE_API_URL,
-  ADMIN_API_BASE_URL,
-  ADMIN_API_URL
-});
-
+// إنشاء instance من axios مع الإعدادات الافتراضية
 const adminApi = axios.create({
-  baseURL: ADMIN_API_URL,
+  baseURL: '/api/admin/',
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request interceptor to add admin auth token
+// إضافة interceptor لإضافة token للطلبات
 adminApi.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('adminToken');
+    const token = localStorage.getItem('admin_access_token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -31,188 +23,751 @@ adminApi.interceptors.request.use(
   }
 );
 
-// Response interceptor to handle admin auth errors
+// إضافة interceptor للتعامل مع الأخطاء
 adminApi.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('adminToken');
+      // إزالة token من localStorage وإعادة توجيه للصفحة الرئيسية
+      localStorage.removeItem('admin_access_token');
+      localStorage.removeItem('admin_refresh_token');
       window.location.href = '/admin/login';
     }
     return Promise.reject(error);
   }
 );
 
-export const adminApiService = {
-  // Authentication
+// ==================== Authentication ====================
+export const adminAuth = {
+  // تسجيل الدخول
   login: async (username, password) => {
-    console.log('adminApiService: Login attempt with:', { username, password: '***' });
-    console.log('adminApiService: Base URL:', adminApi.defaults.baseURL);
-    console.log('adminApiService: Full URL will be:', `${adminApi.defaults.baseURL}/login/`);
-    console.log('adminApiService: Request payload:', { username, password: '***' });
-    console.log('adminApiService: Actual username being sent:', username);
-    console.log('adminApiService: Actual password being sent:', password);
     try {
-      const response = await adminApi.post('/login/', { username, password });
-      console.log('adminApiService: Login successful:', response.data);
+      const response = await adminApi.post('login/', {
+        username,
+        password,
+      });
+      
+      const { access, refresh, user } = response.data;
+      
+      // حفظ tokens في localStorage
+      localStorage.setItem('admin_access_token', access);
+      localStorage.setItem('admin_refresh_token', refresh);
+      localStorage.setItem('admin_user', JSON.stringify(user));
+      
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في تسجيل الدخول',
+      };
+    }
+  },
+
+  // تسجيل الخروج
+  logout: () => {
+    localStorage.removeItem('admin_access_token');
+    localStorage.removeItem('admin_refresh_token');
+    localStorage.removeItem('admin_user');
+  },
+
+  // جلب معلومات المستخدم الحالي
+  getMe: async () => {
+    try {
+      const response = await adminApi.get('me/');
       return response.data;
     } catch (error) {
-      console.error('adminApiService: Login error:', error);
-      console.error('adminApiService: Error response:', error.response?.data);
-      console.error('adminApiService: Request config:', error.config);
-      console.error('adminApiService: Request data:', error.config?.data);
+      console.error('Error fetching user info:', error);
       throw error;
     }
   },
 
+  // الحصول على معلومات المستخدم الحالي
+  getCurrentUser: () => {
+    const user = localStorage.getItem('admin_user');
+    return user ? JSON.parse(user) : null;
+  },
+
+  // التحقق من صحة token
+  isAuthenticated: () => {
+    return !!localStorage.getItem('admin_access_token');
+  },
+
+  // الحصول على معلومات المستخدم من الباك إند
   getMe: async () => {
-    const response = await adminApi.get('/me/');
-    return response.data;
+    try {
+      const response = await adminApi.get('me/');
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في الحصول على معلومات المستخدم',
+      };
+    }
   },
+};
 
-  // Stats
+// ==================== Dashboard Stats ====================
+export const dashboardApi = {
+  // الحصول على إحصائيات لوحة التحكم
   getStats: async () => {
-    const response = await adminApi.get('/stats/');
-    return response.data;
+    try {
+      const response = await adminApi.get('stats/');
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في الحصول على الإحصائيات',
+      };
+    }
   },
 
-  // Users
-  getUsers: async () => {
-    const response = await adminApi.get('/users/');
-    return response.data;
+  // الحصول على اتجاهات الطلبات
+  getOrdersTrend: async () => {
+    try {
+      const response = await adminApi.get('orders-trend/');
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في الحصول على اتجاهات الطلبات',
+      };
+    }
   },
 
-  activateUser: async (userId) => {
-    await adminApi.post(`/users/${userId}/activate/`);
+  // الحصول على الطلبات الأخيرة
+  getRecentOrders: async () => {
+    try {
+      const response = await adminApi.get('recent-orders/');
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في الحصول على الطلبات الأخيرة',
+      };
+    }
   },
 
-  deactivateUser: async (userId) => {
-    await adminApi.post(`/users/${userId}/deactivate/`);
+  // الحصول على اتجاهات الطلبات
+  getOrdersTrend: async () => {
+    try {
+      const response = await adminApi.get('orders-trend/');
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في الحصول على اتجاهات الطلبات',
+      };
+    }
   },
 
-  setUserStaff: async (userId, isStaff) => {
-    await adminApi.post(`/users/${userId}/set_staff/`, { is_staff: isStaff });
-  },
-
-  // Services
-  getServices: async () => {
-    const response = await adminApi.get('/services/');
-    return response.data;
-  },
-
-  toggleServiceActive: async (serviceId) => {
-    const response = await adminApi.post(`/services/${serviceId}/toggle_active/`);
-    return response.data;
-  },
-
-  // Orders
-  getOrders: async () => {
-    const response = await adminApi.get('/orders/');
-    return response.data;
-  },
-
-  setOrderStatus: async (orderId, status) => {
-    const response = await adminApi.post(`/orders/${orderId}/set_status/`, { status });
-    return response.data;
-  },
-
-  assignProvider: async (orderId, providerId) => {
-    const response = await adminApi.post(`/orders/${orderId}/assign_provider/`, { provider_id: providerId });
-    return response.data;
-  },
-
-  // Reviews
-  getReviews: async () => {
-    const response = await adminApi.get('/reviews/');
-    return response.data;
-  },
-
-  softDeleteReview: async (reviewId) => {
-    const response = await adminApi.post(`/reviews/${reviewId}/soft_delete/`);
-    return response.data;
-  },
-
-  // Ratings
-  getRatings: async () => {
-    const response = await adminApi.get('/ratings/');
-    return response.data;
-  },
-
-  // Notifications
-  getNotifications: async () => {
-    const response = await adminApi.get('/notifications/');
-    return response.data;
-  },
-
-  getUnreadNotifications: async () => {
-    const response = await adminApi.get('/notifications/unread/');
-    return response.data;
-  },
-
-  // Settings (Platform Settings)
-  getSettings: async () => {
-    const response = await adminApi.get('/platformsettings/');
-    return response.data;
-  },
-
-  updateSetting: async (settingId, value) => {
-    const response = await adminApi.patch(`/platformsettings/${settingId}/`, { value });
-    return response.data;
-  },
-
-  // Logs
-  getAdminLogs: async () => {
-    const response = await adminApi.get('/adminactionlogs/');
-    return response.data;
-  },
-
-  // Categories
-  getCategories: async () => {
-    const response = await adminApi.get('/categories/');
-    return response.data;
-  },
-
-  createCategory: async (categoryData) => {
-    const response = await adminApi.post('/categories/', categoryData);
-    return response.data;
-  },
-
-  updateCategory: async (categoryId, categoryData) => {
-    const response = await adminApi.patch(`/categories/${categoryId}/`, categoryData);
-    return response.data;
-  },
-
-  deleteCategory: async (categoryId) => {
-    await adminApi.delete(`/categories/${categoryId}/`);
-  },
-
-  // Me (admin profile & permissions)
-  getAdminMe: async () => {
-    const response = await adminApi.get('/me/');
-    return response.data;
-  },
-
-  // Financial Report
-  getInvoices: async () => {
-    const response = await adminApi.get('/invoices/');
-    return response.data;
-  },
-
-  markInvoicePaid: async (invoiceId) => {
-    const response = await adminApi.post(`/invoices/${invoiceId}/mark_paid/`);
-    return response.data;
-  },
-
-  exportInvoicesCSV: async () => {
-    const response = await adminApi.get('/invoices/export_csv/', { responseType: 'blob' });
-    return response.data;
-  },
-
-  // Financial Report
+  // الحصول على التقرير المالي
   getFinancialReport: async () => {
-    const response = await adminApi.get('/financial-report/');
-    return response.data;
-  }
+    try {
+      const response = await adminApi.get('financial-report/');
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في الحصول على التقرير المالي',
+      };
+    }
+  },
+};
+
+// ==================== Users Management ====================
+export const usersApi = {
+  // الحصول على قائمة المستخدمين
+  getUsers: async (params = {}) => {
+    try {
+      const response = await adminApi.get('users/', { params });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في الحصول على المستخدمين',
+      };
+    }
+  },
+
+  // الحصول على مستخدم واحد
+  getUser: async (id) => {
+    try {
+      const response = await adminApi.get(`users/${id}/`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في الحصول على المستخدم',
+      };
+    }
+  },
+
+  // إنشاء مستخدم جديد
+  createUser: async (userData) => {
+    try {
+      const response = await adminApi.post('users/', userData);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في إنشاء المستخدم',
+      };
+    }
+  },
+
+  // تحديث مستخدم
+  updateUser: async (id, userData) => {
+    try {
+      const response = await adminApi.patch(`users/${id}/`, userData);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في تحديث المستخدم',
+      };
+    }
+  },
+
+  // حذف مستخدم
+  deleteUser: async (id) => {
+    try {
+      await adminApi.delete(`users/${id}/`);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في حذف المستخدم',
+      };
+    }
+  },
+
+  // تفعيل مستخدم
+  activateUser: async (id) => {
+    try {
+      const response = await adminApi.post(`users/${id}/activate/`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في تفعيل المستخدم',
+      };
+    }
+  },
+
+  // إلغاء تفعيل مستخدم
+  deactivateUser: async (id) => {
+    try {
+      const response = await adminApi.post(`users/${id}/deactivate/`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في إلغاء تفعيل المستخدم',
+      };
+    }
+  },
+
+  // تعيين مستخدم كموظف
+  setStaff: async (id, isStaff) => {
+    try {
+      const response = await adminApi.post(`users/${id}/set_staff/`, { is_staff: isStaff });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في تعيين المستخدم كموظف',
+      };
+    }
+  },
+};
+
+// ==================== Categories Management ====================
+export const categoriesApi = {
+  // الحصول على قائمة الفئات
+  getCategories: async (params = {}) => {
+    try {
+      const response = await adminApi.get('categories/', { params });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في الحصول على الفئات',
+      };
+    }
+  },
+
+  // الحصول على فئة واحدة
+  getCategory: async (id) => {
+    try {
+      const response = await adminApi.get(`categories/${id}/`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في الحصول على الفئة',
+      };
+    }
+  },
+
+  // إنشاء فئة جديدة
+  createCategory: async (categoryData) => {
+    try {
+      const response = await adminApi.post('categories/', categoryData);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في إنشاء الفئة',
+      };
+    }
+  },
+
+  // تحديث فئة
+  updateCategory: async (id, categoryData) => {
+    try {
+      const response = await adminApi.patch(`categories/${id}/`, categoryData);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في تحديث الفئة',
+      };
+    }
+  },
+
+  // حذف فئة
+  deleteCategory: async (id) => {
+    try {
+      await adminApi.delete(`categories/${id}/`);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في حذف الفئة',
+      };
+    }
+  },
+};
+
+// ==================== Services Management ====================
+export const servicesApi = {
+  // الحصول على قائمة الخدمات
+  getServices: async (params = {}) => {
+    try {
+      const response = await adminApi.get('services/', { params });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في الحصول على الخدمات',
+      };
+    }
+  },
+
+  // الحصول على خدمة واحدة
+  getService: async (id) => {
+    try {
+      const response = await adminApi.get(`services/${id}/`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في الحصول على الخدمة',
+      };
+    }
+  },
+
+  // إنشاء خدمة جديدة
+  createService: async (serviceData) => {
+    try {
+      const response = await adminApi.post('services/', serviceData);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في إنشاء الخدمة',
+      };
+    }
+  },
+
+  // تحديث خدمة
+  updateService: async (id, serviceData) => {
+    try {
+      const response = await adminApi.patch(`services/${id}/`, serviceData);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في تحديث الخدمة',
+      };
+    }
+  },
+
+  // حذف خدمة
+  deleteService: async (id) => {
+    try {
+      await adminApi.delete(`services/${id}/`);
+      return { success: true };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في حذف الخدمة',
+      };
+    }
+  },
+
+  // تبديل حالة الخدمة
+  toggleServiceActive: async (id) => {
+    try {
+      const response = await adminApi.post(`services/${id}/toggle_active/`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في تبديل حالة الخدمة',
+      };
+    }
+  },
+};
+
+// ==================== Orders Management ====================
+export const ordersApi = {
+  // الحصول على قائمة الطلبات
+  getOrders: async (params = {}) => {
+    try {
+      const response = await adminApi.get('orders/', { params });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في الحصول على الطلبات',
+      };
+    }
+  },
+
+  // الحصول على طلب واحد
+  getOrder: async (id) => {
+    try {
+      const response = await adminApi.get(`orders/${id}/`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في الحصول على الطلب',
+      };
+    }
+  },
+
+  // تحديث حالة الطلب
+  setOrderStatus: async (id, status) => {
+    try {
+      const response = await adminApi.post(`orders/${id}/set_status/`, { status });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في تحديث حالة الطلب',
+      };
+    }
+  },
+
+  // تعيين مزود خدمة للطلب
+  assignProvider: async (id, providerId) => {
+    try {
+      const response = await adminApi.post(`orders/${id}/assign_provider/`, { provider_id: providerId });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في تعيين مزود الخدمة',
+      };
+    }
+  },
+};
+
+// ==================== Reviews Management ====================
+export const reviewsApi = {
+  // الحصول على قائمة التقييمات
+  getReviews: async (params = {}) => {
+    try {
+      const response = await adminApi.get('reviews/', { params });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في الحصول على التقييمات',
+      };
+    }
+  },
+
+  // حذف تقييم (soft delete)
+  softDeleteReview: async (id) => {
+    try {
+      const response = await adminApi.post(`reviews/${id}/soft_delete/`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في حذف التقييم',
+      };
+    }
+  },
+};
+
+
+// ==================== Logs ====================
+export const logsApi = {
+  // الحصول على سجل الإجراءات
+  getLogs: async (params = {}) => {
+    try {
+      const response = await adminApi.get('logs/', { params });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في الحصول على سجل الإجراءات',
+      };
+    }
+  },
+};
+
+
+// ==================== Invoices ====================
+export const invoicesApi = {
+  // الحصول على قائمة الفواتير
+  getInvoices: async (params = {}) => {
+    try {
+      const response = await adminApi.get('invoices/', { params });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في الحصول على الفواتير',
+      };
+    }
+  },
+
+  // تعيين فاتورة كمقبوضة
+  markInvoicePaid: async (id) => {
+    try {
+      const response = await adminApi.post(`invoices/${id}/mark_paid/`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في تعيين الفاتورة كمقبوضة',
+      };
+    }
+  },
+
+  // تصدير الفواتير كـ CSV
+  exportInvoicesCSV: async () => {
+    try {
+      const response = await adminApi.get('invoices/export_csv/', { responseType: 'blob' });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في تصدير الفواتير',
+      };
+    }
+  },
+};
+
+// ==================== Ratings ====================
+export const ratingsApi = {
+  // الحصول على قائمة التقييمات
+  getRatings: async (params = {}) => {
+    try {
+      const response = await adminApi.get('ratings/', { params });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في الحصول على التقييمات',
+      };
+    }
+  },
+};
+
+// ==================== Settings ====================
+export const settingsApi = {
+  // الحصول على جميع الإعدادات
+  getSettings: async () => {
+    try {
+      const response = await adminApi.get('settings/');
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في الحصول على الإعدادات',
+      };
+    }
+  },
+
+  // الحصول على إعدادات محددة
+  getSetting: async (key) => {
+    try {
+      const response = await adminApi.get(`settings/${key}/`);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في الحصول على الإعداد',
+      };
+    }
+  },
+
+  // تحديث إعداد
+  updateSetting: async (key, value) => {
+    try {
+      const response = await adminApi.put(`settings/${key}/`, { value });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في تحديث الإعداد',
+      };
+    }
+  },
+
+  // تحديث عدة إعدادات
+  updateSettings: async (settings) => {
+    try {
+      const response = await adminApi.put('settings/bulk/', settings);
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في تحديث الإعدادات',
+      };
+    }
+  },
+
+  // إعادة تعيين الإعدادات للقيم الافتراضية
+  resetSettings: async () => {
+    try {
+      const response = await adminApi.post('settings/reset/');
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في إعادة تعيين الإعدادات',
+      };
+    }
+  },
+
+  // تصدير الإعدادات
+  exportSettings: async () => {
+    try {
+      const response = await adminApi.get('settings/export/', { responseType: 'blob' });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في تصدير الإعدادات',
+      };
+    }
+  },
+
+  // استيراد الإعدادات
+  importSettings: async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      const response = await adminApi.post('settings/import/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return { success: true, data: response.data };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.detail || 'خطأ في استيراد الإعدادات',
+      };
+    }
+  },
+};
+
+// ==================== Notifications ====================
+export const notificationsApi = {
+  // جلب جميع الإشعارات
+  getNotifications: async (params = {}) => {
+    try {
+      const response = await adminApi.get('notifications/', { params });
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      throw error;
+    }
+  },
+
+  // جلب عدد الإشعارات غير المقروءة
+  getUnreadCount: async () => {
+    try {
+      const response = await adminApi.get('notifications/unread_count/');
+      return response.data.unread_count;
+    } catch (error) {
+      console.error('Error fetching unread count:', error);
+      return 0;
+    }
+  },
+
+  // الحصول على الإشعارات غير المقروءة
+  getUnreadNotifications: async () => {
+    try {
+      const response = await adminApi.get('notifications/unread/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching unread notifications:', error);
+      throw error;
+    }
+  },
+
+  // تحديد إشعار كمقروء
+  markAsRead: async (notificationId) => {
+    try {
+      const response = await adminApi.post(`notifications/${notificationId}/mark_as_read/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      throw error;
+    }
+  },
+
+  // تحديث حالة الإشعار كمقروء (طريقة بديلة)
+  updateNotification: async (id, data) => {
+    try {
+      const response = await adminApi.patch(`notifications/${id}/`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating notification:', error);
+      throw error;
+    }
+  },
+
+  // تحديد جميع الإشعارات كمقروءة
+  markAllAsRead: async () => {
+    try {
+      const response = await adminApi.post('notifications/mark_all_as_read/');
+      return response.data;
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      throw error;
+    }
+  },
+
+  // حذف إشعار
+  deleteNotification: async (notificationId) => {
+    try {
+      const response = await adminApi.delete(`notifications/${notificationId}/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting notification:', error);
+      throw error;
+    }
+  },
 };
 
 export default adminApi;

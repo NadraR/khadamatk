@@ -1,0 +1,498 @@
+/* ========================================
+   Admin Common Styles - Unified Design System
+   ======================================== */
+
+/* ==================== Base Styles ==================== */
+.admin-page-container {
+  min-height: 100vh;
+  background-color: #FAFAFA;
+  direction: rtl;
+  font-family: 'Cairo', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* ==================== Typography ==================== */
+.admin-page-title {
+  font-weight: 700 !important;
+  color: #666666 !important;
+  margin-bottom: 24px !important;
+  font-size: 2rem !important;
+  letter-spacing: -0.02em !important;
+}
+
+.admin-page-subtitle {
+  font-weight: 600 !important;
+  color: #666666 !important;
+  margin-bottom: 16px !important;
+  font-size: 1.25rem !important;
+}
+
+.admin-text-primary {
+  color: #666666 !important;
+}
+
+.admin-text-secondary {
+  color: #999999 !important;
+}
+
+.admin-text-muted {
+  color: #CCCCCC !important;
+}
+
+/* ==================== Cards ==================== */
+.admin-card {
+  background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(249,251,255,0.9) 100%) !important;
+  border: 1px solid rgba(0,123,255,0.1) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 2px 8px rgba(0,123,255,0.08) !important;
+  backdrop-filter: blur(10px) !important;
+  transition: all 0.3s ease !important;
+}
+
+.admin-card:hover {
+  box-shadow: 0 4px 16px rgba(0,123,255,0.12) !important;
+  transform: translateY(-2px) !important;
+}
+
+.admin-card-header {
+  padding: 20px 24px 16px 24px !important;
+  border-bottom: 1px solid rgba(0,123,255,0.1) !important;
+}
+
+.admin-card-content {
+  padding: 20px 24px !important;
+}
+
+.admin-card-actions {
+  padding: 16px 24px 20px 24px !important;
+  border-top: 1px solid rgba(0,123,255,0.1) !important;
+}
+
+/* ==================== Buttons ==================== */
+.admin-btn-primary {
+  background: linear-gradient(135deg, #0077ff 0%, #0056b3 100%) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 10px 20px !important;
+  font-weight: 600 !important;
+  font-size: 0.9rem !important;
+  text-transform: none !important;
+  box-shadow: 0 2px 8px rgba(0,123,255,0.2) !important;
+  transition: all 0.3s ease !important;
+}
+
+.admin-btn-primary:hover {
+  background: linear-gradient(135deg, #0056b3 0%, #004080 100%) !important;
+  box-shadow: 0 4px 12px rgba(0,123,255,0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+.admin-btn-secondary {
+  background: transparent !important;
+  color: #0077ff !important;
+  border: 2px solid #0077ff !important;
+  border-radius: 8px !important;
+  padding: 8px 18px !important;
+  font-weight: 600 !important;
+  font-size: 0.9rem !important;
+  text-transform: none !important;
+  transition: all 0.3s ease !important;
+}
+
+.admin-btn-secondary:hover {
+  background: #0077ff !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(0,123,255,0.2) !important;
+}
+
+.admin-btn-danger {
+  background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 10px 20px !important;
+  font-weight: 600 !important;
+  font-size: 0.9rem !important;
+  text-transform: none !important;
+  box-shadow: 0 2px 8px rgba(255,68,68,0.2) !important;
+  transition: all 0.3s ease !important;
+}
+
+.admin-btn-danger:hover {
+  background: linear-gradient(135deg, #cc0000 0%, #990000 100%) !important;
+  box-shadow: 0 4px 12px rgba(255,68,68,0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+.admin-btn-success {
+  background: linear-gradient(135deg, #00aa44 0%, #008833 100%) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 8px !important;
+  padding: 10px 20px !important;
+  font-weight: 600 !important;
+  font-size: 0.9rem !important;
+  text-transform: none !important;
+  box-shadow: 0 2px 8px rgba(0,170,68,0.2) !important;
+  transition: all 0.3s ease !important;
+}
+
+.admin-btn-success:hover {
+  background: linear-gradient(135deg, #008833 0%, #006622 100%) !important;
+  box-shadow: 0 4px 12px rgba(0,170,68,0.3) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* ==================== Form Elements ==================== */
+.admin-input {
+  background: rgba(255,255,255,0.8) !important;
+  border: 1px solid rgba(0,123,255,0.2) !important;
+  border-radius: 8px !important;
+  padding: 12px 16px !important;
+  font-size: 0.9rem !important;
+  color: #666666 !important;
+  transition: all 0.3s ease !important;
+}
+
+.admin-input:focus {
+  border-color: #0077ff !important;
+  box-shadow: 0 0 0 3px rgba(0,123,255,0.1) !important;
+  background: white !important;
+}
+
+.admin-select {
+  background: rgba(255,255,255,0.8) !important;
+  border: 1px solid rgba(0,123,255,0.2) !important;
+  border-radius: 8px !important;
+  color: #666666 !important;
+  transition: all 0.3s ease !important;
+}
+
+.admin-select:focus {
+  border-color: #0077ff !important;
+  box-shadow: 0 0 0 3px rgba(0,123,255,0.1) !important;
+}
+
+/* ==================== Tables ==================== */
+.admin-table {
+  background: white !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 0 2px 8px rgba(0,123,255,0.08) !important;
+}
+
+.admin-table-header {
+  background: linear-gradient(135deg, #f8f9ff 0%, #e8f2ff 100%) !important;
+  color: #666666 !important;
+  font-weight: 600 !important;
+  font-size: 0.9rem !important;
+  padding: 16px !important;
+  border-bottom: 1px solid rgba(0,123,255,0.1) !important;
+}
+
+.admin-table-cell {
+  padding: 16px !important;
+  border-bottom: 1px solid rgba(0,123,255,0.05) !important;
+  color: #666666 !important;
+  font-size: 0.9rem !important;
+}
+
+.admin-table-row:hover {
+  background: rgba(0,123,255,0.02) !important;
+}
+
+/* ==================== Chips & Badges ==================== */
+.admin-chip-primary {
+  background: linear-gradient(135deg, #0077ff 0%, #0056b3 100%) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  font-size: 0.8rem !important;
+  border-radius: 16px !important;
+  padding: 4px 12px !important;
+}
+
+.admin-chip-success {
+  background: linear-gradient(135deg, #00aa44 0%, #008833 100%) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  font-size: 0.8rem !important;
+  border-radius: 16px !important;
+  padding: 4px 12px !important;
+}
+
+.admin-chip-warning {
+  background: linear-gradient(135deg, #ffaa00 0%, #ff8800 100%) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  font-size: 0.8rem !important;
+  border-radius: 16px !important;
+  padding: 4px 12px !important;
+}
+
+.admin-chip-danger {
+  background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%) !important;
+  color: white !important;
+  font-weight: 600 !important;
+  font-size: 0.8rem !important;
+  border-radius: 16px !important;
+  padding: 4px 12px !important;
+}
+
+.admin-chip-neutral {
+  background: #f5f5f5 !important;
+  color: #666666 !important;
+  font-weight: 600 !important;
+  font-size: 0.8rem !important;
+  border-radius: 16px !important;
+  padding: 4px 12px !important;
+}
+
+/* ==================== Loading States ==================== */
+.admin-loading-container {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  height: 50vh !important;
+  direction: rtl !important;
+}
+
+.admin-loading-text {
+  margin-left: 16px !important;
+  color: #666666 !important;
+  font-size: 1rem !important;
+}
+
+/* ==================== Error States ==================== */
+.admin-error-container {
+  padding: 24px !important;
+  direction: rtl !important;
+}
+
+.admin-error-alert {
+  margin-bottom: 16px !important;
+  border-radius: 8px !important;
+}
+
+/* ==================== Empty States ==================== */
+.admin-empty-container {
+  text-align: center !important;
+  margin-top: 48px !important;
+  padding: 48px 24px !important;
+}
+
+.admin-empty-icon {
+  color: #cccccc !important;
+  font-size: 60px !important;
+  margin-bottom: 16px !important;
+}
+
+.admin-empty-text {
+  color: #999999 !important;
+  font-size: 1.1rem !important;
+  font-weight: 500 !important;
+}
+
+/* ==================== Responsive Design ==================== */
+@media (max-width: 768px) {
+  .admin-page-title {
+    font-size: 1.5rem !important;
+  }
+  
+  .admin-card {
+    margin: 8px !important;
+  }
+  
+  .admin-card-content {
+    padding: 16px !important;
+  }
+  
+  .admin-table-cell {
+    padding: 12px 8px !important;
+    font-size: 0.8rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-page-container {
+    padding: 8px !important;
+  }
+  
+  .admin-card {
+    margin: 4px !important;
+    border-radius: 8px !important;
+  }
+  
+  .admin-btn-primary,
+  .admin-btn-secondary,
+  .admin-btn-danger,
+  .admin-btn-success {
+    padding: 8px 16px !important;
+    font-size: 0.8rem !important;
+  }
+}
+
+/* ==================== Dark Theme Support ==================== */
+@media (prefers-color-scheme: dark) {
+  .admin-page-container {
+    background-color: #1a1a1a !important;
+  }
+  
+  .admin-card {
+    background: linear-gradient(135deg, rgba(30,30,30,0.9) 0%, rgba(40,40,40,0.9) 100%) !important;
+    border-color: rgba(0,123,255,0.2) !important;
+  }
+  
+  .admin-text-primary {
+    color: #e0e0e0 !important;
+  }
+  
+  .admin-text-secondary {
+    color: #b0b0b0 !important;
+  }
+  
+  .admin-table {
+    background: #2a2a2a !important;
+  }
+  
+  .admin-table-header {
+    background: linear-gradient(135deg, #3a3a3a 0%, #4a4a4a 100%) !important;
+    color: #e0e0e0 !important;
+  }
+  
+  .admin-table-cell {
+    color: #e0e0e0 !important;
+    border-bottom-color: rgba(0,123,255,0.1) !important;
+  }
+  
+  .admin-input {
+    background: rgba(40,40,40,0.8) !important;
+    border-color: rgba(0,123,255,0.3) !important;
+    color: #e0e0e0 !important;
+  }
+  
+  .admin-input:focus {
+    background: #404040 !important;
+  }
+}
+
+/* ==================== Animation Classes ==================== */
+.admin-fade-in {
+  animation: adminFadeIn 0.5s ease-in-out !important;
+}
+
+.admin-slide-up {
+  animation: adminSlideUp 0.3s ease-out !important;
+}
+
+.admin-scale-in {
+  animation: adminScaleIn 0.2s ease-out !important;
+}
+
+@keyframes adminFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes adminSlideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes adminScaleIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* ==================== Utility Classes ==================== */
+.admin-text-center {
+  text-align: center !important;
+}
+
+.admin-text-right {
+  text-align: right !important;
+}
+
+.admin-text-left {
+  text-align: left !important;
+}
+
+.admin-mb-1 {
+  margin-bottom: 8px !important;
+}
+
+.admin-mb-2 {
+  margin-bottom: 16px !important;
+}
+
+.admin-mb-3 {
+  margin-bottom: 24px !important;
+}
+
+.admin-mb-4 {
+  margin-bottom: 32px !important;
+}
+
+.admin-mt-1 {
+  margin-top: 8px !important;
+}
+
+.admin-mt-2 {
+  margin-top: 16px !important;
+}
+
+.admin-mt-3 {
+  margin-top: 24px !important;
+}
+
+.admin-mt-4 {
+  margin-top: 32px !important;
+}
+
+.admin-p-1 {
+  padding: 8px !important;
+}
+
+.admin-p-2 {
+  padding: 16px !important;
+}
+
+.admin-p-3 {
+  padding: 24px !important;
+}
+
+.admin-p-4 {
+  padding: 32px !important;
+}
+
+.admin-rounded {
+  border-radius: 8px !important;
+}
+
+.admin-rounded-lg {
+  border-radius: 12px !important;
+}
+
+.admin-shadow {
+  box-shadow: 0 2px 8px rgba(0,123,255,0.08) !important;
+}
+
+.admin-shadow-lg {
+  box-shadow: 0 4px 16px rgba(0,123,255,0.12) !important;
+}
+

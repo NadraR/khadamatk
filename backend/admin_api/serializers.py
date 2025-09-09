@@ -71,9 +71,11 @@ class AdminActionLogSerializer(serializers.ModelSerializer):
 
 # ---------------- Notifications ----------------
 class AdminNotificationSerializer(serializers.ModelSerializer):
+    admin_username = serializers.CharField(source='admin.username', read_only=True)
+    
     class Meta:
         model = AdminNotification
-        fields = "__all__"
+        fields = ['id', 'admin', 'admin_username', 'title', 'message', 'type', 'is_read', 'created_at']
 
 # ---------------- Platform Settings ----------------
 class PlatformSettingSerializer(serializers.ModelSerializer):
