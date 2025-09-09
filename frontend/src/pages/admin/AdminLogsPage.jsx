@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Paper, Typography, Chip, CircularProgress, Alert } from '@mui/material';
 import ListAltIcon from '@mui/icons-material/ListAlt';
-import { adminApiService } from '../../services/adminApiService';
+import { logsApi } from '../../services/adminApiService';
+import '../../styles/adminCommon.css';
 
 const AdminLogsPage = () => {
   const [logs, setLogs] = useState([]);
@@ -9,7 +10,7 @@ const AdminLogsPage = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    adminApiService.getAdminLogs()
+    logsApi.getLogs()
       .then(setLogs)
       .catch(() => setError('فشل في تحميل السجلات'))
       .finally(() => setLoading(false));

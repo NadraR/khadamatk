@@ -1,0 +1,411 @@
+/* Settings Page Styles */
+.settings-page {
+  transition: all 0.3s ease;
+  min-height: 100vh;
+  overflow: auto;
+  background: linear-gradient(180deg, #f9fbff 0%, #ffffff 100%);
+}
+
+/* Dark Theme Support */
+[data-theme="dark"] .settings-page {
+  background-color: #121212;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .settings-page .MuiCard-root {
+  background-color: #1e1e1e;
+  border: 1px solid #333;
+}
+
+[data-theme="dark"] .settings-page .MuiTextField-root .MuiInputBase-root {
+  background-color: #2d2d2d;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .settings-page .MuiTextField-root .MuiInputLabel-root {
+  color: #b0b0b0;
+}
+
+[data-theme="dark"] .settings-page .MuiTextField-root .MuiInputBase-input {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .settings-page .MuiSelect-root {
+  background-color: #2d2d2d;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .settings-page .MuiFormControlLabel-label {
+  color: #ffffff;
+}
+
+[data-theme="dark"] .settings-page .MuiSwitch-root .MuiSwitch-track {
+  background-color: #555;
+}
+
+[data-theme="dark"] .settings-page .MuiSwitch-root .MuiSwitch-thumb {
+  background-color: #ffffff;
+}
+
+[data-theme="dark"] .settings-page .MuiButton-outlined {
+  border-color: #555;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .settings-page .MuiButton-outlined:hover {
+  border-color: #777;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Light Theme Support */
+[data-theme="light"] .settings-page {
+  background-color: #ffffff;
+  color: #333333;
+}
+
+[data-theme="light"] .settings-page .MuiCard-root {
+  background-color: #ffffff;
+  border: 1px solid #e0e0e0;
+}
+
+/* RTL Support */
+[dir="rtl"] .settings-page {
+  text-align: right;
+}
+
+[dir="rtl"] .settings-page .MuiFormControlLabel-root {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .settings-page .MuiFormControlLabel-label {
+  margin-right: 8px;
+  margin-left: 0;
+}
+
+/* LTR Support */
+[dir="ltr"] .settings-page {
+  text-align: left;
+}
+
+[dir="ltr"] .settings-page .MuiFormControlLabel-root {
+  flex-direction: row;
+}
+
+[dir="ltr"] .settings-page .MuiFormControlLabel-label {
+  margin-left: 8px;
+  margin-right: 0;
+}
+
+/* Color Picker Styles */
+.color-picker {
+  width: 100%;
+  height: 40px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+[data-theme="dark"] .color-picker {
+  background-color: #2d2d2d;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .settings-page .MuiGrid-container {
+    flex-direction: column;
+  }
+  
+  .settings-page .MuiButton-root {
+    min-width: auto;
+    padding: 8px 16px;
+  }
+}
+
+/* Animation for theme changes */
+/* .theme-transition {
+  transition: background-color 0.3s ease, color 0.3s ease;
+} */
+
+/* Custom scrollbar for dark theme */
+[data-theme="dark"] ::-webkit-scrollbar {
+  width: 8px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: #2d2d2d;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 4px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: #777;
+}
+
+/* Custom scrollbar for light theme */
+[data-theme="light"] ::-webkit-scrollbar {
+  width: 8px;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Settings Card Styles - Blue Theme */
+.stat-card {
+  /* transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important; */
+  border: none !important;
+  background: linear-gradient(145deg, #ffffff 0%, #f0f8ff 50%, #e6f3ff 100%) !important;
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 123, 255, 0.1),
+    0 2px 4px -1px rgba(0, 123, 255, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  border-radius: 20px !important;
+  backdrop-filter: blur(20px) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+/* .stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #0077ff 0%, #4da6ff 50%, #80b3ff 100%);
+  border-radius: 20px 20px 0 0;
+} */
+
+/* .stat-card:hover {
+  transform: translateY(-4px) scale(1.02) !important;
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 123, 255, 0.15),
+    0 10px 10px -5px rgba(0, 123, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  background: linear-gradient(145deg, #ffffff 0%, #e6f3ff 50%, #cce7ff 100%) !important;
+} */
+
+/* Settings Button Styles - Blue Theme */
+.MuiButton-root {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  border-radius: 12px !important;
+  font-weight: 600 !important;
+  text-transform: none !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.MuiButton-outlined {
+  border: 2px solid transparent !important;
+  background: linear-gradient(145deg, #ffffff, #f0f8ff) padding-box,
+              linear-gradient(135deg, #0077ff, #4da6ff) border-box !important;
+  color: #1e40af !important;
+  box-shadow: 0 2px 4px rgba(0, 123, 255, 0.1) !important;
+}
+
+.MuiButton-outlined:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 8px 16px rgba(0, 123, 255, 0.2) !important;
+  background: linear-gradient(145deg, #fff7f0, #e6f3ff) padding-box,
+              linear-gradient(135deg, #0077ff, #4da6ff) border-box !important;
+  color: #1e3a8a !important;
+}
+
+.MuiButton-contained {
+  background: linear-gradient(135deg, #0077ff 0%, #4da6ff 50%, #80b3ff 100%) !important;
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3) !important;
+  border: none !important;
+  color: white !important;
+}
+
+.MuiButton-contained:hover {
+  background: linear-gradient(135deg, #0056cc 0%, #3d8bff 50%, #66a3ff 100%) !important;
+  box-shadow: 0 8px 20px rgba(0, 123, 255, 0.4) !important;
+  transform: translateY(-2px) !important;
+}
+
+.MuiButton-contained::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+/* .MuiButton-contained:hover::before {
+  left: 100%;
+} */
+
+/* Settings Typography - Blue Theme */
+.MuiTypography-h4 {
+  letter-spacing: -0.02em !important;
+  color: #1e3a8a !important;
+  font-weight: 700 !important;
+  background: linear-gradient(135deg, #0077ff, #4da6ff) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+.MuiTypography-h6 {
+  letter-spacing: 0.01em !important;
+  color: #1e40af !important;
+  font-weight: 600 !important;
+  position: relative !important;
+}
+
+.MuiTypography-h6::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 30px;
+  height: 2px;
+  background: linear-gradient(90deg, #0077ff, #4da6ff);
+  border-radius: 1px;
+}
+
+.MuiTypography-body1 {
+  color: #1e40af !important;
+  font-weight: 500 !important;
+}
+
+.MuiTypography-body2 {
+  color: #3b82f6 !important;
+  font-weight: 400 !important;
+}
+
+/* Icon Styling */
+.MuiSvgIcon-root {
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1)) !important;
+}
+
+/* Form Controls Enhancement - Blue Theme */
+.MuiTextField-root .MuiOutlinedInput-root {
+  border-radius: 12px !important;
+  transition: all 0.3s ease !important;
+}
+
+.MuiTextField-root .MuiOutlinedInput-root:hover {
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1) !important;
+}
+
+.MuiTextField-root .MuiOutlinedInput-root.Mui-focused {
+  box-shadow: 0 4px 12px rgba(0, 123, 255, 0.2) !important;
+}
+
+.MuiSwitch-root .MuiSwitch-track {
+  background: #1e40af !important;
+  border-radius: 12px !important;
+}
+
+.MuiSwitch-root .MuiSwitch-thumb {
+  background: linear-gradient(135deg, #0077ff, #4da6ff) !important;
+  box-shadow: 0 2px 4px rgba(0, 123, 255, 0.2) !important;
+}
+
+.MuiSwitch-root.Mui-checked .MuiSwitch-track {
+  background: linear-gradient(135deg, #0077ff, #4da6ff) !important;
+}
+
+.MuiSelect-root {
+  border-radius: 12px !important;
+}
+
+/* Additional Card Enhancements */
+/* .stat-card .MuiCardContent-root {
+  padding: 24px !important;
+  position: relative !important;
+  z-index: 1 !important;
+} */
+
+/* .stat-card .MuiDivider-root {
+  background: linear-gradient(90deg, transparent, #cce7ff, transparent) !important;
+  height: 1px !important;
+  margin: 16px 0 !important;
+} */
+
+/* Form Control Labels - Blue Theme */
+.MuiFormControlLabel-label {
+  font-weight: 500 !important;
+  color: #1e40af !important;
+  transition: color 0.3s ease !important;
+}
+
+.MuiFormControlLabel-root:hover .MuiFormControlLabel-label {
+  color: #1e3a8a !important;
+}
+
+/* Color Preview Boxes - Blue Theme */
+.color-preview {
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 6px !important;
+  border: 2px solid #ffd4cc !important;
+  box-shadow: 0 2px 4px rgba(0, 123, 255, 0.1) !important;
+  transition: all 0.3s ease !important;
+}
+
+.color-preview:hover {
+  transform: scale(1.1) !important;
+  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.15) !important;
+}
+
+/* Loading Animation */
+@keyframes shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: calc(200px + 100%) 0;
+  }
+}
+
+.loading-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200px 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+/* Dark Theme Adjustments - Blue Theme */
+[data-theme="dark"] .stat-card {
+  background: linear-gradient(145deg, #0f172a 0%, #1e293b 50%, #334155 100%) !important;
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 123, 255, 0.2),
+    0 2px 4px -1px rgba(0, 123, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+[data-theme="dark"] .stat-card:hover {
+  background: linear-gradient(145deg, #1e293b 0%, #334155 50%, #475569 100%) !important;
+  box-shadow: 
+    0 20px 25px -5px rgba(0, 123, 255, 0.3),
+    0 10px 10px -5px rgba(0, 123, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="dark"] .MuiTypography-h4 {
+  background: linear-gradient(135deg, #60a5fa, #93c5fd) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  background-clip: text !important;
+}
+
+[data-theme="dark"] .MuiTypography-h6::after {
+  background: linear-gradient(90deg, #60a5fa, #93c5fd) !important;
+}

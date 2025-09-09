@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { FaScrewdriver, FaBell, FaSun, FaMoon, FaGlobe, FaHeart, FaComments, FaStar, FaBars, FaSignInAlt, FaSignOutAlt, FaEnvelope, FaEnvelopeOpen } from 'react-icons/fa';
 import './Navbar.css';
 import Sidebar from './Sidebar';
@@ -21,6 +21,7 @@ const Navbar = () => {
   const [messageLoading, setMessageLoading] = useState(false); // حالة تحميل الرسائل
   const { t, i18n } = useTranslation();
   const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Check if user is logged in with proper validation
@@ -210,33 +211,43 @@ const Navbar = () => {
   const fetchMessageCount = async () => {
     if (!isLoggedIn) return;
     
-    try {
-      setMessageLoading(true);
-      const result = await chatService.getUnreadMessageCount();
-      
-      if (result.success) {
-        const { unread_count, has_unread } = result.data;
-        setMessageCount(unread_count);
-        setUnreadMessages(has_unread);
-        console.log(`[DEBUG] Navbar: Fetched ${unread_count} unread messages`);
-      } else {
-        console.warn('Failed to fetch message count:', result.error);
-        // Fallback to 0 if API fails
-        setMessageCount(0);
-        setUnreadMessages(false);
-      }
-    } catch (error) {
-      console.error('Error fetching message count:', error);
-      setMessageCount(0);
-      setUnreadMessages(false);
-    } finally {
-      setMessageLoading(false);
-    }
+    // Temporarily disabled - chat service not available
+    setMessageCount(0);
+    setUnreadMessages(false);
+    setMessageLoading(false);
+    return;
+    
+    // try {
+    //   setMessageLoading(true);
+    //   const result = await chatService.getUnreadMessageCount();
+    //   
+    //   if (result.success) {
+    //     const { unread_count, has_unread } = result.data;
+    //     setMessageCount(unread_count);
+    //     setUnreadMessages(has_unread);
+    //     console.log(`[DEBUG] Navbar: Fetched ${unread_count} unread messages`);
+    //   } else {
+    //     console.warn('Failed to fetch message count:', result.error);
+    //     // Fallback to 0 if API fails
+    //     setMessageCount(0);
+    //     setUnreadMessages(false);
+    //   }
+    // } catch (error) {
+    //   console.error('Error fetching message count:', error);
+    //   setMessageCount(0);
+    //   setUnreadMessages(false);
+    // } finally {
+    //   setMessageLoading(false);
+    // }
   };
 
-  // Fetch recent messages for dropdown
+  // Fetch recent messages for dropdown - Temporarily disabled
   const fetchRecentMessages = async () => {
     if (!isLoggedIn) return;
+    
+    // Temporarily disabled - chat service not available
+    setRecentMessages([]);
+    return;
     
     try {
       const result = await chatService.getRecentMessages(3); // Get 3 recent messages
@@ -905,6 +916,51 @@ const Navbar = () => {
     return 'U';
   };
 
+  // Handle profile navigation
+  const handleProfileClick = () => {
+    if (userRole === 'client') {
+      // Get user data from localStorage to get the client ID
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+          const clientId = user.id || user.user_id;
+          if (clientId) {
+            navigate(`/homeClient/${clientId}`);
+          } else {
+            navigate('/homeClient');
+          }
+        } catch (error) {
+          console.error('Error parsing user data:', error);
+          navigate('/homeClient');
+        }
+      } else {
+        navigate('/homeClient');
+      }
+    } else if (userRole === 'worker') {
+      // Get worker ID similarly
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+          const workerId = user.id || user.user_id;
+          if (workerId) {
+            navigate(`/homeProvider/${workerId}`);
+          } else {
+            navigate('/homeProvider');
+          }
+        } catch (error) {
+          console.error('Error parsing user data:', error);
+          navigate('/homeProvider');
+        }
+      } else {
+        navigate('/homeProvider');
+      }
+    } else if (userRole === 'admin') {
+      navigate('/adminDashboard');
+    }
+  };
+
   return (
     <>
       <nav className={`navbar ${scrolled ? 'scrolled' : ''} ${sidebarOpen ? 'sidebar-open' : ''}`}>
@@ -1005,9 +1061,26 @@ const Navbar = () => {
             <div className={`user-section ${isLoggedIn ? 'user-logged-in' : 'user-not-logged-in'}`}>
               {isLoggedIn ? (
                 <div className="user-info">
-                  <div className="user-avatar">
-                    <span className="avatar-initials">{getAvatarInitials(username)}</span>
-                  </div>
+                  <button
+  className="btn btn-primary rounded-circle d-flex align-items-center justify-content-center"
+  style={{ 
+    width: "40px", 
+    height: "40px", 
+    minWidth: "40px", 
+    minHeight: "40px",
+    padding: "0",
+    border: "none"
+  }}
+  onClick={handleProfileClick}
+  title={i18n.language === "ar" ? "عرض الملف الشخصي" : "View Profile"}
+>
+  {username
+    ? username.charAt(0).toUpperCase()
+    : (localStorage.getItem("user")
+        ? JSON.parse(localStorage.getItem("user"))?.email?.charAt(0).toUpperCase()
+        : "?")}
+</button>
+
                   <div className="user-details">
                     <span className="username">{username}</span>
                     <span className="user-role">

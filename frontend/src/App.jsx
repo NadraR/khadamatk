@@ -1,49 +1,51 @@
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import FontProvider from './components/FontProvider';
-import ErrorBoundary from './components/ErrorBoundary';
+import React from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+import FontProvider from "./components/FontProvider";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 // Auth & Layout
-import AuthPage from './pages/AuthPage';
-import Layout from './Layout';
+import AuthPage from "./pages/AuthPage";
+import Layout from "./Layout";
 import OAuthCallback from "./pages/OAuthCallback";
 
 // Home pages
-import Home from './pages/Home';
-import HomeClient from './pages/HomeClient';
-import HomeProvider from './pages/HomeProvider';
-import About from './pages/About';
+import Home from "./pages/Home";
+import HomeClient from "./pages/HomeClient";
+import HomeProvider from "./pages/HomeProvider";
+import About from "./pages/About";
 
 // Admin pages
-import AdminLogin from './pages/admin/AdminLogin';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import UsersPage from './pages/admin/UsersPage';
-import ServicesPage from './pages/admin/ServicesPage';
-import OrdersPage from './pages/admin/OrdersPage';
-import ReviewsPage from './pages/admin/ReviewsPage';
-import RatingsPage from './pages/admin/RatingsPage';
-import SettingsPage from './pages/admin/SettingsPage';
-import AdminNotifications from './pages/admin/AdminNotifications';
-import InvoicesPage from './pages/admin/InvoicesPage';
-import AdminLayout from './layouts/AdminLayout';
-import { AdminAuthProvider, useAdminAuth } from './contexts/AdminAuthContext';
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminLogin from "./pages/admin/AdminLogin";
+import UsersPage from "./pages/admin/UsersPage";
+import ServicesPage from "./pages/admin/ServicesPage";
+import OrdersPage from "./pages/admin/OrdersPage";
+import ReviewsPage from "./pages/admin/ReviewsPage";
+import RatingsPage from "./pages/admin/RatingsPage";
+import InvoicesPage from "./pages/admin/InvoicesPage";
+import AdminNotifications from "./pages/admin/AdminNotifications";
+import SettingsPage from "./pages/admin/SettingsPage";
+import AdminLogsPage from "./pages/admin/AdminLogsPage";
+import CategoriesPage from "./pages/admin/CategoriesPage";
+import AdminLayout from "./layouts/AdminLayout";
+import { AdminAuthProvider, useAdminAuth } from "./contexts/AdminAuthContext";
 
 // Service-related pages
-import ServiceDetails from './pages/ServiceDetails';
-import Services from './pages/Services';
-import Orders from './pages/Orders';
-import OrderPage from './pages/OrderPage';
-import Reviews from './pages/Reviews';
-import Ratings from './pages/Ratings';
+import ServiceDetails from "./pages/ServiceDetails";
+import Services from "./pages/Services";
+import Orders from "./pages/Orders";
+import OrderPage from "./pages/OrderPage";
+import Reviews from "./pages/Reviews";
+import Ratings from "./pages/Ratings";
 
 // General pages
-import Clients from './pages/Clients';
-import Settings from './pages/Settings';
-import Painting from './pages/Painting';
-import Carpentry from './pages/Carpentry';
-import Electricity from './pages/Electricity';
-import Plumbing from './pages/Plumbing';
-import LocationPage from './pages/LocationPage';
+import Clients from "./pages/Clients";
+import Settings from "./pages/Settings";
+import Painting from "./pages/Painting";
+import Carpentry from "./pages/Carpentry";
+import Electricity from "./pages/Electricity";
+import Plumbing from "./pages/Plumbing";
+import LocationPage from "./pages/LocationPage";
 import MessagesPage from "./pages/MessagesPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import InvoiceDetails from "./pages/InvoiceDetails";
@@ -64,9 +66,10 @@ const ProtectedAdminRoute = ({ children }) => {
 function App() {
   // redirect handling (optional from your second file)
   React.useEffect(() => {
-    const isAuthenticated = localStorage.getItem('access') && localStorage.getItem('user');
-    if (window.location.pathname === '/auth' && isAuthenticated) {
-      window.history.replaceState(null, '', '/');
+    const isAuthenticated =
+      localStorage.getItem("access") && localStorage.getItem("user");
+    if (window.location.pathname === "/auth" && isAuthenticated) {
+      window.history.replaceState(null, "", "/");
     }
   }, []);
 
@@ -78,15 +81,71 @@ function App() {
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/oauth2callback" element={<OAuthCallback />} />
           <Route path="/worker" element={<WorkerProfileCompletion />} />
-          <Route path="/worker-profile-completion" element={<WorkerProfileCompletion />} />
+          <Route
+            path="/worker-profile-completion"
+            element={<WorkerProfileCompletion />}
+          />
 
           {/* Home */}
-          <Route path="/" element={<Layout><Home /></Layout>} />
+          <Route
+            path="/"
+            element={
+              <Layout>
+                <Home />
+              </Layout>
+            }
+          />
+          <Route
+            path="/home"
+            element={
+              <Layout>
+                <Home />
+              </Layout>
+            }
+          />
+          <Route
+            path="/homeClient"
+            element={
+              <Layout>
+                <HomeClient />
+              </Layout>
+            }
+          />
+          {/* <Route path="/homeClient/:id" element={<Layout><HomeClient /></Layout>} /> */}
+          {/* <Route path="/home-client" element={<Layout><HomeClient /></Layout>} /> */}
+          {/* <Route path="/homeProvider" element={<Layout><HomeProvider /></Layout>} /> */}
+          {/* <Route path="/homeProvider/:id" element={<Layout><HomeProvider /></Layout>} /> */}
+          <Route
+            path="/worker/:id"
+            element={
+              <Layout>
+                <HomeProvider />
+              </Layout>
+            }
+          />
+          <Route
+            path="/adminDashboard"
+            element={
+              <Layout>
+                <AdminDashboard />
+              </Layout>
+            }
+          />
+          <Route
+            path="/about"
+            element={
+              <Layout>
+                <About />
+              </Layout>
+            }
+          />
+          {/* Home */}
+          {/* <Route path="/" element={<Layout><Home /></Layout>} />
           <Route path="/home" element={<Layout><Home /></Layout>} />
           <Route path="/homeClient" element={<Layout><HomeClient /></Layout>} />
           <Route path="/home-client" element={<Layout><HomeClient /></Layout>} />
           <Route path="/homeProvider" element={<Layout><HomeProvider /></Layout>} />
-          <Route path="/about" element={<Layout><About /></Layout>} />
+          <Route path="/about" element={<Layout><About /></Layout>} /> */}
 
           {/* Admin */}
           <Route path="/admin/login" element={<AdminLogin />} />
@@ -101,49 +160,184 @@ function App() {
             <Route index element={<AdminDashboard />} />
             <Route path="users" element={<UsersPage />} />
             <Route path="services" element={<ServicesPage />} />
+            <Route path="categories" element={<CategoriesPage />} />
             <Route path="orders" element={<OrdersPage />} />
-            <Route path="reviews" element={<ReviewsPage/>} />
-            <Route path="ratings" element={<RatingsPage/>} />
+            <Route path="reviews" element={<ReviewsPage />} />
+            <Route path="ratings" element={<RatingsPage />} />
             <Route path="invoices" element={<InvoicesPage />} />
-            <Route path="settings" element={<SettingsPage/>} />
-            <Route path="notifications" element={<AdminNotifications/>} />
+            <Route path="notifications" element={<AdminNotifications />} />
+            <Route path="settings" element={<SettingsPage />} />
+            <Route path="logs" element={<AdminLogsPage />} />
           </Route>
           <Route path="/adminDashboard" element={<Navigate to="/admin" />} />
 
           {/* Services */}
-          <Route path="/service/:id" element={<Layout><ServiceDetails /></Layout>} />
-          <Route path="/services" element={<Layout><Services /></Layout>} />
-          <Route path="/order" element={<Layout><OrderPage /></Layout>} />
-          <Route path="/order-page" element={<Layout><OrderPage /></Layout>} />
-          <Route path="/orders" element={<Layout><Orders /></Layout>} />
-          <Route path="/reviews/:serviceId" element={<Layout><Reviews /></Layout>} />
-          <Route path="/ratings/:serviceId" element={<Layout><Ratings /></Layout>} />
+          <Route
+            path="/service/:id"
+            element={
+              <Layout>
+                <ServiceDetails />
+              </Layout>
+            }
+          />
+          <Route
+            path="/services"
+            element={
+              <Layout>
+                <Services />
+              </Layout>
+            }
+          />
+          <Route
+            path="/order"
+            element={
+              <Layout>
+                <OrderPage />
+              </Layout>
+            }
+          />
+          <Route
+            path="/order-page"
+            element={
+              <Layout>
+                <OrderPage />
+              </Layout>
+            }
+          />
+          <Route
+            path="/orders"
+            element={
+              <Layout>
+                <Orders />
+              </Layout>
+            }
+          />
+          <Route
+            path="/reviews/:serviceId"
+            element={
+              <Layout>
+                <Reviews />
+              </Layout>
+            }
+          />
+          <Route
+            path="/ratings/:serviceId"
+            element={
+              <Layout>
+                <Ratings />
+              </Layout>
+            }
+          />
 
           {/* General */}
-          <Route path="/clients" element={<Layout><Clients /></Layout>} />
-          <Route path="/settings" element={<Layout><Settings /></Layout>} />
+          <Route
+            path="/clients"
+            element={
+              <Layout>
+                <Clients />
+              </Layout>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <Layout>
+                <Settings />
+              </Layout>
+            }
+          />
 
           {/* Categories */}
-          <Route path="/category/painting" element={<Layout><Painting /></Layout>} />
-          <Route path="/category/carpentry" element={<Layout><Carpentry /></Layout>} />
-          <Route path="/category/electricity" element={<Layout><Electricity /></Layout>} />
-          <Route path="/category/plumbing" element={<Layout><Plumbing /></Layout>} />
+          <Route
+            path="/category/painting"
+            element={
+              <Layout>
+                <Painting />
+              </Layout>
+            }
+          />
+          <Route
+            path="/category/carpentry"
+            element={
+              <Layout>
+                <Carpentry />
+              </Layout>
+            }
+          />
+          <Route
+            path="/category/electricity"
+            element={
+              <Layout>
+                <Electricity />
+              </Layout>
+            }
+          />
+          <Route
+            path="/category/plumbing"
+            element={
+              <Layout>
+                <Plumbing />
+              </Layout>
+            }
+          />
 
           {/* Location */}
-          <Route path="/location" element={<ErrorBoundary><LocationPage /></ErrorBoundary>} />
-          <Route path="/location/my-location" element={<ErrorBoundary><LocationPage /></ErrorBoundary>} />
+          <Route
+            path="/location"
+            element={
+              <ErrorBoundary>
+                <LocationPage />
+              </ErrorBoundary>
+            }
+          />
+          <Route
+            path="/location/my-location"
+            element={
+              <ErrorBoundary>
+                <LocationPage />
+              </ErrorBoundary>
+            }
+          />
 
           {/* Messages */}
-          <Route path="/messages" element={<Layout><MessagesPage /></Layout>} />
+          <Route
+            path="/messages"
+            element={
+              <Layout>
+                <MessagesPage />
+              </Layout>
+            }
+          />
 
           {/* Notifications */}
-          <Route path="/notifications" element={<Layout><NotificationsPage /></Layout>} />
+          <Route
+            path="/notifications"
+            element={
+              <Layout>
+                <NotificationsPage />
+              </Layout>
+            }
+          />
 
           {/* Invoice Details */}
-          <Route path="/invoice/:id" element={<Layout><InvoiceDetails /></Layout>} />
+          <Route
+            path="/invoice/:id"
+            element={
+              <Layout>
+                <InvoiceDetails />
+              </Layout>
+            }
+          />
 
           {/* Font Test (Development) */}
-          <Route path="/font-test" element={<Layout><FontTest /></Layout>} />
+          <Route
+            path="/font-test"
+            element={
+              <Layout>
+                <FontTest />
+              </Layout>
+            }
+          />
         </Routes>
       </AdminAuthProvider>
     </FontProvider>

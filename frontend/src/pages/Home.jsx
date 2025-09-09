@@ -15,6 +15,7 @@ import cleaningImg from "../images/cleaning.jpg";
 import repairsImg from "../images/repairs.jpg";
 import paintingImg from "../images/Painting.jpg";
 import searchImage from "../images/search.jpg";
+import apiService from "../services/ApiService";
 
 const services = [
   { key: "assembly", title: "Assembly", icon: <BsTools />, img: assemblyImg, desc: "Assemble or disassemble furniture items with care." },
@@ -46,6 +47,101 @@ const Home = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [activeService, setActiveService] = useState(() => services[0]);
+   const [client, setClients] = useState([]);
+   const [worker, setWorkers] = useState([]);
+
+     const [selectedClient, setSelectedClient] = useState(null);
+     const [selectedWorker, setSelectedWorker] = useState(null);
+     const [errorMsg, setErrorMsg] = useState("");
+
+     useEffect(() => {
+      const fetchClientProfile = async () => {
+      try {
+      // للـ Home page نستخدم الـ current user profile
+      const url = `api/accounts/client/profile/`;
+      const data = await apiService.get(url);
+      setClient(data);
+      } catch (err) {
+      console.error("❌ Error fetching client profile:", err);
+      setErrorMsg("فشل في تحميل بيانات البروفايل");
+      }
+      };
+      fetchClientProfile();
+      }, []); // No dependencies needed
+
+  const fetchWorkerDetails = (id) => {
+    fetch(`http://127.0.0.1:8000/api/accounts/workers/${id}/`)
+      .then((res) => res.json())
+      .then((data) => setSelectedWorker(data))
+      .catch((err) => console.error("Error fetching worker details:", err));
+  };
+
+
+  // useEffect(() => {
+  //   const fetchClients = async () => {
+  //     try {
+  //       const data = await apiService.get("api/accounts/users/");
+  //       console.log("DEBUG RESPONSE:", data);
+  
+  //       if (Array.isArray(data)) {
+  //         const clientUsers = data.filter((user) => user.role === "client");
+  //         setClients(clientUsers);
+  //       } else {
+  //         console.error("Unexpected response:", data);
+  //       }
+  //     } catch (err) {
+  //       console.error("❌ Error fetching clients:", err);
+  //     }
+  //   };
+  
+  //   fetchClients();
+  // }, []);
+  
+  
+  // useEffect(() => {
+  //   const fetchWorkers = async () => {
+  //     try {
+  //       const data = await apiService.get("api/accounts/workers/");
+  //       console.log("DEBUG WORKERS RESPONSE:", data);
+    
+  //       if (Array.isArray(data)) {
+  //         setWorkers(data); // دول profiles بتوع العمال
+  //       } else {
+  //         console.error("Unexpected response:", data);
+  //       }
+  //     } catch (err) {
+  //       console.error("❌ Error fetching workers:", err);
+  //     }
+  //   };
+    
+
+  //   fetchWorkers();
+  // }, []);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const data = await apiService.get("api/accounts/users/");
+        console.log("DEBUG USERS RESPONSE:", data);
+  
+        if (Array.isArray(data)) {
+          const clientUsers = data.filter((user) => user.role === "client");
+          const workerUsers = data.filter((user) => user.role === "worker");
+  
+          setClients(clientUsers);
+          setWorkers(workerUsers);
+        } else {
+          console.error("Unexpected response:", data);
+        }
+      } catch (err) {
+        console.error("❌ Error fetching users:", err);
+      }
+    };
+  
+    fetchUsers();
+  }, []);
+  
+  
 
   useEffect(() => {
     if (injected.current) return;
@@ -466,8 +562,72 @@ const Home = () => {
           <div className="col-md-4"><Testimonial name="أحمد" quote="أفضل منصة حجز خدمات منزلية." /></div>
         </div>
       </section>
+
+      {/* <div>
+  <h2>Clients</h2>
+  <ul>
+    {clients.map((client) => (
+      <li key={client.id} style={{ marginBottom: "10px" }}>
+        {client.username}{" "}
+        <button
+          className="btn btn-sm btn-outline-primary"
+          onClick={() => navigate(`/homeClient/${client.id}`)}
+        >
+          View
+        </button>
+      </li>
+    ))}
+  </ul>
+
+  <h2>Workers</h2>
+  <ul>
+  {workers.map((worker) => (
+  <li key={worker.id} style={{ marginBottom: "10px" }}>
+    {worker.username}
+    <button
+  className="btn btn-sm btn-outline-primary"
+  onClick={() => navigate(`/worker/${worker.id}`)}
+>
+  View
+</button>
+
+  </li>
+))}
+
+</ul>
+
+
+  {selectedClient && (
+    <div className="mt-4 p-3 border rounded shadow-sm bg-white">
+      <h4>Client Details</h4>
+      <p><strong>ID:</strong> {selectedClient.id}</p>
+      <p><strong>Username:</strong> {selectedClient.username}</p>
+      <p><strong>Email:</strong> {selectedClient.email}</p>
+      <p><strong>First Name:</strong> {selectedClient.first_name || "-"}</p>
+      <p><strong>Last Name:</strong> {selectedClient.last_name || "-"}</p>
+    </div>
+  )}
+
+{selectedWorker && (
+  <div className="mt-4 p-3 border rounded shadow-sm bg-white">
+    <h4>Worker Details</h4>
+    <p><strong>ID:</strong> {selectedWorker.id}</p>
+    <p><strong>Username:</strong> {selectedWorker.username}</p>
+    <p><strong>Email:</strong> {selectedWorker.email}</p>
+    <p><strong>First Name:</strong> {selectedWorker.first_name || "-"}</p>
+    <p><strong>Last Name:</strong> {selectedWorker.last_name || "-"}</p>
+    <p><strong>Specialty:</strong> {selectedWorker.specialty || "-"}</p>
+  </div>
+)}
+
+</div> */}
+
+
+      
     </div>
   );
 };
 
 export default Home;
+
+

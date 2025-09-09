@@ -1,285 +1,473 @@
-
-:root {
-    /* نظام الألوان المحسن */
-    --primary-color: #2c3e50;        /* أزرق-رمادي داكن */
-    --primary-light: #34495e;
-    --primary-dark: #1a252f;
-    --success-color: #27ae60;        /* أخضر احترافي */
-    --warning-color: #e67e22;        /* برتقالي احترافي */
-    --error-color: #c0392b;          /* أحمر احترافي */
-    --info-color: #2980b9;           /* أزرق احترافي */
-    --secondary-color: #8e44ad;      /* بنفسجي احترافي */
-    --accent-color: #f39c12;         /* ذهبي احترافي */
-    --background-light: #f8f9fa;
-    --text-primary: #2c3e50;
-    --text-secondary: #7f8c8d;
-    --border-color: #ecf0f1;
-    
-    /* نظام الظلال المحسن */
-    --shadow-light: 0 2px 4px rgba(44, 62, 80, 0.1);
-    --shadow-medium: 0 4px 8px rgba(44, 62, 80, 0.12);
-    --shadow-heavy: 0 8px 16px rgba(44, 62, 80, 0.15);
-    
-    /* نظام التدرجات المحسن */
-    --gradient-primary: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
-    --gradient-success: linear-gradient(135deg, var(--success-color) 0%, #2ecc71 100%);
-    --gradient-warning: linear-gradient(135deg, var(--warning-color) 0%, var(--accent-color) 100%);
-    --gradient-error: linear-gradient(135deg, var(--error-color) 0%, #e74c3c 100%);
-    --gradient-info: linear-gradient(135deg, var(--info-color) 0%, #3498db 100%);
-    --gradient-secondary: linear-gradient(135deg, var(--secondary-color) 0%, #9b59b6 100%);
-    
-    /* أنيميشن متغيرات */
-    --transition-slow: 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-normal: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-fast: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+/* 
+.stat-card {
+  transition: all 0.3s ease !important;
+  border: 1px solid rgba(0,123,255,0.1) !important;
+  background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(249,251,255,0.9) 100%) !important;
+  box-shadow: 0 2px 8px rgba(0,123,255,0.08) !important;
+  border-radius: 12px !important;
+  backdrop-filter: blur(10px) !important;
 }
 
-/* تحسينات الحركات والأنيميشن */
+.stat-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 16px rgba(0,123,255,0.15) !important;
+  background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(249,251,255,0.95) 100%) !important;
+  border: 1px solid rgba(0,123,255,0.2) !important;
+}
+
+.MuiCard-root {
+  background: linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(249,251,255,0.9) 100%) !important;
+  border: 1px solid rgba(0,123,255,0.1) !important;
+  box-shadow: 0 2px 8px rgba(0,123,255,0.08) !important;
+  border-radius: 12px !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+.MuiCard-root:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 16px rgba(0,123,255,0.15) !important;
+  background: linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(249,251,255,0.95) 100%) !important;
+  border: 1px solid rgba(0,123,255,0.2) !important;
+}
+
+.MuiButton-root {
+  transition: all 0.2s ease !important;
+  border-radius: 8px !important;
+}
+
+.MuiButton-outlined {
+  border: 1px solid rgba(0,123,255,0.2) !important;
+  color: #0077ff !important;
+  background: rgba(0,123,255,0.05) !important;
+}
+
+.MuiButton-outlined:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 8px rgba(0,123,255,0.15) !important;
+  background: rgba(0,123,255,0.1) !important;
+  border: 1px solid rgba(0,123,255,0.3) !important;
+}
+
+.MuiButton-contained {
+  background: linear-gradient(135deg, #0077ff 0%, #4da6ff 100%) !important;
+  box-shadow: 0 2px 8px rgba(0,123,255,0.3) !important;
+}
+
+.MuiButton-contained:hover {
+  background: linear-gradient(135deg, #0056cc 0%, #3d8bff 100%) !important;
+  box-shadow: 0 4px 12px rgba(0,123,255,0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+.MuiIconButton-root {
+  transition: all 0.2s ease !important;
+  border-radius: 8px !important;
+}
+
+.MuiIconButton-root:hover {
+  background: rgba(0,123,255,0.08) !important;
+  transform: scale(1.02) !important;
+}
+
+.MuiTypography-h4 {
+  letter-spacing: -0.02em !important;
+  color: #666666 !important;
+}
+
+.MuiTypography-h6 {
+  letter-spacing: 0.01em !important;
+  color: #666666 !important;
+}
+
+.MuiTypography-body1 {
+  color: #666666 !important;
+}
+
+.MuiTypography-body2 {
+  color: #666666 !important;
+}
+
+.MuiTypography-root {
+  color: #666666 !important;
+}
+
+.admin-dashboard-container .MuiTypography-root {
+  color: #666666 !important;
+}
+
+.admin-dashboard-container .MuiTypography-h4 {
+  color: #666666 !important;
+}
+
+.admin-dashboard-container .MuiTypography-h6 {
+  color: #666666 !important;
+}
+
+.admin-dashboard-container .MuiTypography-body1 {
+  color: #666666 !important;
+}
+
+.admin-dashboard-container .MuiTypography-body2 {
+  color: #666666 !important;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.MuiButton-root:focus,
+.MuiIconButton-root:focus,
+.MuiTextField-root .MuiOutlinedInput-root:focus {
+  outline: 2px solid #0077ff !important;
+  outline-offset: 2px !important;
+}
+
 @keyframes fadeInUp {
     from {
         opacity: 0;
-        transform: translate3d(0, 30px, 0);
+    transform: translateY(30px);
     }
     to {
         opacity: 1;
-        transform: translate3d(0, 0, 0);
-    }
+    transform: translateY(0);
+  }
 }
 
-@keyframes slideInRight {
-    from {
-        opacity: 0;
-        transform: translate3d(30px, 0, 0);
-    }
-    to {
-        opacity: 1;
-        transform: translate3d(0, 0, 0);
-    }
+.stat-card-animated {
+  animation: fadeInUp 0.6s ease-out !important;
 }
 
-@keyframes pulse {
-    0% {
-        box-shadow: 0 0 0 0 rgba(25, 118, 210, 0.2);
-    }
-    70% {
-        box-shadow: 0 0 0 10px rgba(25, 118, 210, 0.05);
-    }
-    100% {
-        box-shadow: 0 0 0 0 rgba(25, 118, 210, 0);
-    }
+.status-indicator {
+  width: 12px !important;
+  height: 12px !important;
+  border-radius: 50% !important;
+  display: inline-block !important;
+  margin-left: 8px !important;
 }
 
-@keyframes shimmer {
-    0% {
-        background-position: -200px 0;
-    }
-    100% {
-        background-position: calc(200px + 100%) 0;
-    }
+.status-online {
+  background-color: #10b981 !important;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4) !important;
 }
 
-@keyframes cardHoverShine {
-    0% {
-        left: -100%;
-    }
-    100% {
-        left: 100%;
-    }
+.status-offline {
+  background-color: #ef4444 !important;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.4) !important;
 }
 
-/* تأثيرات البطاقات المحسنة */
-.dashboard-card {
-    transition: all var(--transition-normal);
-    position: relative;
-    overflow: hidden;
-    box-shadow: var(--shadow-light);
-    border-radius: 8px;
-    background: white;
+.status-warning {
+  background-color: #f59e0b !important;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.4) !important;
 }
 
-.dashboard-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(
-        90deg,
-        transparent,
-        rgba(255, 255, 255, 0.3),
-        transparent
-    );
-    transition: var(--transition-slow);
+.MuiChip-root {
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+  font-size: 0.75rem !important;
 }
 
-.dashboard-card:hover::before {
-    animation: cardHoverShine 0.8s ease;
+.MuiChip-filled {
+  background: rgba(0,123,255,0.1) !important;
+  color: #0077ff !important;
 }
 
-.dashboard-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--shadow-heavy);
+.MuiChip-outlined {
+  border: 1px solid rgba(0,123,255,0.2) !important;
+  color: #0077ff !important;
+  background: rgba(0,123,255,0.05) !important;
 }
 
-/* هيكل الهيكل العظمي للتحميل */
-.skeleton-shimmer {
-    background: linear-gradient(
-        90deg,
-        #f0f0f0 25%,
-        #e0e0e0 50%,
-        #f0f0f0 75%
-    );
-    background-size: 200px 100%;
-    animation: shimmer 1.5s infinite;
-    border-radius: 4px;
-}
-
-/* تحسينات حاوية الرسم البياني */
-.chart-container {
-    position: relative;
-    background: white;
-    border-radius: 8px;
-    box-shadow: var(--shadow-light);
-    overflow: hidden;
-    transition: all var(--transition-normal);
-}
-
-.chart-container:hover {
-    box-shadow: var(--shadow-medium);
-}
-
-.chart-container::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, var(--info-color), #42a5f5, var(--info-color));
-    background-size: 200% 100%;
-    animation: shimmer 2s infinite linear;
-}
-
-/* تحسينات الطباعة */
-.dashboard-title {
-    background: var(--gradient-primary);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    font-weight: 700;
-    margin-bottom: 1rem;
-}
-
-/* تحسينات الاستجابة */
 @media (max-width: 768px) {
-    .dashboard-card {
-        margin-bottom: 16px;
-    }
-    
-    .chart-container {
-        margin-bottom: 16px;
-    }
-    
-    .dashboard-title {
-        font-size: 1.5rem;
-    }
+  .stat-card {
+    margin-bottom: 16px !important;
+  }
+  
+  .MuiCard-root {
+    margin-bottom: 16px !important;
+  }
+  
+  .MuiTypography-h4 {
+    font-size: 1.75rem !important;
+  }
+  
+  .MuiTypography-h6 {
+    font-size: 1.1rem !important;
+  }
 }
 
 @media (max-width: 480px) {
-    :root {
-        font-size: 14px;
-    }
-    
-    .dashboard-title {
-        font-size: 1.25rem;
-    }
+  .stat-card {
+    padding: 16px !important;
+  }
+  
+  .MuiCard-root {
+    padding: 16px !important;
+  }
+  
+  .MuiTypography-h4 {
+    font-size: 1.5rem !important;
+  }
+  
+  .MuiTypography-h6 {
+    font-size: 1rem !important;
+  }
 }
 
-/* تحسينات RTL */
-[dir="rtl"] .dashboard-card {
-    text-align: right;
+.stat-card * {
+  box-sizing: border-box !important;
 }
 
-[dir="rtl"] .chart-container {
-    direction: rtl;
+.stat-card-content > * {
+  margin-left: auto !important;
+  margin-right: auto !important;
 }
 
-/* تحسينات إمكانية الوصول */
-.dashboard-card:focus {
-    outline: 2px solid var(--primary-color);
-    outline-offset: 2px;
+.stat-icon {
+  display: block !important;
+  margin: 0 auto 8px auto !important;
 }
 
-.dashboard-card:focus:not(:focus-visible) {
-    outline: none;
+.admin-dashboard-container {
+  background: linear-gradient(180deg, #f9fbff 0%, #ffffff 100%) !important;
+  min-height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
-/* أنماط الطباعة */
-@media print {
-    .dashboard-card {
-        break-inside: avoid;
-        box-shadow: none;
-        border: 1px solid #ccc;
-    }
-    
-    .chart-container {
-        break-inside: avoid;
-    }
-    
-    .dashboard-card::before,
-    .chart-container::before {
-        display: none;
-    }
+.admin-dashboard-container > div {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  height: 100% !important;
+  overflow: auto !important;
+  box-sizing: border-box !important;
 }
 
-/* تأثيرات إضافية للبطاقات حسب النوع */
-.dashboard-card.primary {
-    border-top: 4px solid var(--primary-color);
+.MuiGrid-container {
+  width: 100% !important;
+  max-width: 100% !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
 }
 
-.dashboard-card.success {
-    border-top: 4px solid var(--success-color);
+.MuiGrid-container:first-of-type {
+  max-width: 100% !important;
+  margin: 0 auto !important;
+  flex-shrink: 0 !important;
 }
 
-.dashboard-card.warning {
-    border-top: 4px solid var(--warning-color);
+.MuiGrid-container:nth-of-type(2) {
+  max-width: 100% !important;
+  margin: 0 !important;
+  flex: 1 !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  justify-content: stretch !important;
+  margin-bottom: 16px !important;
 }
 
-.dashboard-card.error {
-    border-top: 4px solid var(--error-color);
+.MuiGrid-container:nth-of-type(3) {
+  max-width: 100% !important;
+  margin: 0 !important;
+  flex: 1 !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  justify-content: stretch !important;
 }
 
-.dashboard-card.info {
-    border-top: 4px solid var(--info-color);
+.MuiGrid-item:first-of-type {
+  display: flex !important;
+  width: 100% !important;
 }
 
-.dashboard-card.secondary {
-    border-top: 4px solid var(--secondary-color);
+.MuiGrid-item:first-of-type .MuiCard-root {
+  height: 100% !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 400px !important;
 }
 
-/* تأثيرات تحميل متقدمة */
-.loading-pulse {
-    animation: pulse 2s infinite;
+.MuiGrid-item:last-of-type {
+  display: flex !important;
+  width: 100% !important;
 }
 
-/* تحسينات الأداء */
-@media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-        scroll-behavior: auto !important;
-    }
+.MuiGrid-item:last-of-type .MuiCard-root {
+  height: 100% !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 400px !important;
 }
 
-/* تأثيرات الظل للنصوص لتحسين إمكانية القراءة */
-.text-shadow {
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+@media (min-width: 1200px) {
+  .MuiGrid-item:first-of-type {
+    flex: 0 0 33.333333% !important;
+    max-width: 33.333333% !important;
+    width: 33.333333% !important;
+  }
+  
+  .MuiGrid-item:last-of-type {
+    flex: 0 0 66.666667% !important;
+    max-width: 66.666667% !important;
+    width: 66.666667% !important;
+  }
 }
 
-.text-shadow-heavy {
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+@media (min-width: 900px) and (max-width: 1199px) {
+  .MuiGrid-item:first-of-type {
+    flex: 0 0 40% !important;
+    max-width: 40% !important;
+    width: 40% !important;
+  }
+  
+  .MuiGrid-item:last-of-type {
+    flex: 0 0 60% !important;
+    max-width: 60% !important;
+    width: 60% !important;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 899px) {
+  .MuiGrid-item:first-of-type {
+    flex: 0 0 50% !important;
+    max-width: 50% !important;
+    width: 50% !important;
+  }
+  
+  .MuiGrid-item:last-of-type {
+    flex: 0 0 50% !important;
+    max-width: 50% !important;
+    width: 50% !important;
+  }
+}
+
+.MuiGrid-container:nth-of-type(2) .MuiGrid-item {
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+}
+
+.MuiGrid-container:nth-of-type(2) .MuiGrid-item:first-of-type {
+  padding-left: 0 !important;
+}
+
+.MuiGrid-container:nth-of-type(2) .MuiGrid-item:last-of-type {
+  padding-right: 0 !important;
+}
+
+.admin-dashboard-container .MuiBox-root:first-of-type {
+  width: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
+  flex-wrap: wrap !important;
+  flex-shrink: 0 !important;
+}
+
+* {
+  box-sizing: border-box !important;
+}
+
+body, html {
+  overflow-x: hidden !important;
+}
+
+@media (max-width: 1200px) {
+  .MuiGrid-item {
+    padding: 8px !important;
+  }
+  
+  .MuiCard-root {
+    margin: 0 !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-dashboard-container {
+    padding: 0 !important;
+  }
+  
+  .MuiGrid-container {
+    padding: 0 8px !important;
+  }
+  
+  .MuiCard-root {
+    margin: 0 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .MuiGrid-container {
+    padding: 0 4px !important;
+  }
+  
+  .MuiCard-root {
+    margin: 0 !important;
+  }
+} */
+
+
+/* Typography Improvements */
+.MuiTypography-h4 {
+  color: #666666 !important; /* رمادي داكن */
+}
+
+.MuiTypography-h6 {
+  color: #666666 !important; /* رمادي داكن */
+}
+
+.MuiTypography-body1 {
+  color: #666666 !important; /* رمادي داكن */
+}
+
+.MuiTypography-body2 {
+  color: #666666 !important; /* رمادي داكن */
+}
+
+.MuiTypography-root {
+  color: #666666 !important; /* رمادي داكن */
+}
+
+/* Specific overrides for dashboard elements */
+.admin-dashboard-container .MuiTypography-root {
+  color: #666666 !important; /* رمادي داكن */
+}
+
+.admin-dashboard-container .MuiTypography-h4 {
+  color: #666666 !important; /* رمادي داكن */
+}
+
+.admin-dashboard-container .MuiTypography-h6 {
+  color: #666666 !important; /* رمادي داكن */
+}
+
+.admin-dashboard-container .MuiTypography-body1 {
+  color: #666666 !important; /* رمادي داكن */
+}
+
+.admin-dashboard-container .MuiTypography-body2 {
+  color: #666666 !important; /* رمادي داكن */
 }

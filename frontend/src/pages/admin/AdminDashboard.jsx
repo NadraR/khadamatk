@@ -1,196 +1,459 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Box,
-  Grid,
   Card,
   CardContent,
   Typography,
-  CircularProgress,
-  Paper,
-  Divider,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
+  Grid,
+  Button,
   Chip,
-} from "@mui/material";
+  LinearProgress,
+  Alert,
+  Snackbar
+} from '@mui/material';
 import {
-  People as PeopleIcon,
-  Build as ServicesIcon,
-  ShoppingCart as OrdersIcon,
-  RateReview as ReviewsIcon,
-  Assignment as AssignmentIcon,
-  Receipt as ReceiptIcon,
-  TrendingUp as TrendingUpIcon,
-} from "@mui/icons-material";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
-import CancelIcon from "@mui/icons-material/Cancel";
-import { adminApiService } from "../../services/adminApiService";
+  Settings as SettingsIcon,
+  Download as DownloadIcon,
+  Star as StarIcon,
+  DollarSign as DollarIcon,
+  Calendar as CalendarIcon,
+  Home as HomeIcon,
+  Wrench as BuildIcon,
+  Users as UsersIcon,
+  TrendingUp as TrendingUpIcon
+} from 'lucide-react';
+import { motion } from 'framer-motion';
+import { dashboardApi } from '../../services/adminApiService';
+import GrowthChart from '../../components/admin/GrowthChart';
+import FinancialStats from '../../components/admin/FinancialStats';
+import './AdminDashboard.css';
 
-// إعداد الكروت
-const statsConfig = [
-  { key: "users_count", title: "المستخدمين", icon: <PeopleIcon sx={{ fontSize: 28 }} />, color: "#3B82F6" },
-  { key: "services_count", title: "الخدمات", icon: <ServicesIcon sx={{ fontSize: 28 }} />, color: "#06B6D4" },
-  { key: "orders_count", title: "الطلبات", icon: <OrdersIcon sx={{ fontSize: 28 }} />, color: "#10B981" },
-  { key: "bookings_count", title: "الحجوزات", icon: <AssignmentIcon sx={{ fontSize: 28 }} />, color: "#e67e22" },
-  { key: "reviews_count", title: "المراجعات", icon: <ReviewsIcon sx={{ fontSize: 28 }} />, color: "#F59E0B" },
-  { key: "invoices_count", title: "الفواتير", icon: <ReceiptIcon sx={{ fontSize: 28 }} />, color: "#c0392b" },
-  { key: "avg_rating", title: "متوسط التقييم", icon: <TrendingUpIcon sx={{ fontSize: 28 }} />, color: "#2980b9", suffix: "⭐" },
+// Mock data
+const mockBookings = [
+  {
+    id: '1',
+    clientName: 'أحمد محمد',
+    service: 'إصلاح سباكة',
+    status: 'completed',
+    price: 150
+  },
+  {
+    id: '2',
+    clientName: 'سارة أحمد',
+    service: 'تركيب كهرباء',
+    status: 'pending',
+    price: 200
+  },
+  {
+    id: '3',
+    clientName: 'فاطمة علي',
+    service: 'إصلاح أثاث',
+    status: 'confirmed',
+    price: 120
+  }
 ];
 
-const AdminDashboard = () => {
-  const [stats, setStats] = useState({});
+export default function AdminDashboard() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [chartData, setChartData] = useState([]);
+  const [stats, setStats] = useState(null);
   const [recentOrders, setRecentOrders] = useState([]);
+  const [error, setError] = useState(null);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchDashboardData = async () => {
+      setLoading(true);
+      setError(null);
+      
       try {
-        setLoading(true);
-        const { stats, trend, recent } = await adminApiService.getDashboardData();
-        setStats(stats || {});
-        setChartData(trend || []);
-        setRecentOrders(recent || []);
+        const statsResponse = await dashboardApi.getStats();
+        if (statsResponse.success) {
+          setStats(statsResponse.data);
+        } else {
+          setError(statsResponse.error);
+        }
+
+        const ordersResponse = await dashboardApi.getRecentOrders();
+        if (ordersResponse.success) {
+          setRecentOrders(ordersResponse.data);
+        } else {
+          setError(ordersResponse.error);
+        }
       } catch (err) {
-        console.error("Error fetching dashboard data", err);
+        setError('خطأ في تحميل البيانات');
+        console.error('Dashboard data fetch error:', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
+
+    fetchDashboardData();
   }, []);
 
+  const calculateGrowthRate = () => {
+    if (!stats) return 0;
+    return Math.round((stats.bookings_count / Math.max(stats.users_count, 1)) * 10);
+  };
+
+  const getStatusChip = (status) => {
+    const statusConfig = {
+      pending: { color: 'black', backgroundColor: '#FFF3E0', label: 'قيد الانتظار' },
+      confirmed: { color: 'black', backgroundColor: '#E3F2FD', label: 'مؤكد' },
+      completed: { color: 'black', backgroundColor: '#E8F5E8', label: 'مكتمل' }
+    };
+
+    const config = statusConfig[status] || statusConfig.pending;
+    return (
+      <Chip
+        label={config.label}
+        sx={{
+          backgroundColor: config.backgroundColor,
+          color: config.color,
+          fontWeight: 500,
+          fontSize: '0.75rem',
+          height: '24px',
+          '& .MuiChip-label': { px: 1.5 }
+        }}
+      />
+    );
+  };
+
+  const handleExportReport = () => {
+    const reportData = {
+      stats: stats,
+      recentOrders: recentOrders,
+      generatedAt: new Date().toLocaleString('ar-SA')
+    };
+
+    const dataStr = JSON.stringify(reportData, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `admin-report-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    setError('تم تصدير التقرير بنجاح');
+    setSnackbarOpen(true);
+  };
+
+  const StatCard = ({ title, value, icon, iconColor, subtitle }) => (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+      <Card
+        sx={{
+          height: '100%',
+          borderRadius: '12px',
+          boxShadow: '0 2px 8px rgba(0,123,255,0.08)',
+          border: '1px solid rgba(0,123,255,0.1)',
+          background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(249,251,255,0.9) 100%)',
+          backdropFilter: 'blur(10px)'
+        }}
+      >
+        <CardContent sx={{ p: 2, textAlign: 'center' }}>
+          <Box sx={{ mb: 1, display: 'flex', justifyContent: 'center' }}>
+            {React.cloneElement(icon, { size: 20, color: iconColor })}
+          </Box>
+          <Typography variant="h4" component="div" sx={{ fontWeight: 500, color: '#666666', fontSize: '1.2rem', mb: 0.5 }}>
+            {value}
+          </Typography>
+          <Typography variant="body2" sx={{ color: '#666666', fontSize: '0.9rem', fontWeight: 500 }}>
+            {title}
+          </Typography>
+          {subtitle && (
+            <Typography variant="caption" sx={{ color: '#666666', fontSize: '0.8rem' }}>
+              {subtitle}
+            </Typography>
+          )}
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+
+  if (loading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+        <Box sx={{ width: '100%' }}>
+          <LinearProgress />
+          <Typography variant="h6" sx={{ textAlign: 'center', mt: 2, color: '#666666' }}>
+            جاري تحميل البيانات...
+          </Typography>
+        </Box>
+      </Box>
+    );
+  }
+
+  if (error) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+        <Button variant="contained" onClick={() => window.location.reload()} sx={{ mt: 2 }}>
+          إعادة المحاولة
+        </Button>
+      </Box>
+    );
+  }
+
   return (
-    <Box sx={{ px: { xs: 2, md: 4 }, py: 4, backgroundColor: "#f3f4f6" }}>
-      {/* Cards */}
-      <Grid container spacing={3} mb={5}>
-        {statsConfig.map((item) => (
-          <Grid xs={12} sm={6} md={4} lg={2.4} key={item.key}>
-            <Card
-              sx={{
-                borderRadius: 4,
-                overflow: "visible",
-                backgroundColor: "#fff",
-                boxShadow: "0 8px 30px rgba(0,0,0,0.07)",
-                transition: "0.4s",
-                "&:hover": {
-                  transform: "translateY(-8px)",
-                  boxShadow: "0 12px 40px rgba(0,0,0,0.15)",
-                },
-              }}
-            >
-              {/* Gradient Top */}
-              <Box sx={{ height: 8, background: `linear-gradient(90deg, ${item.color} 0%, ${item.color}80 100%)` }} />
-              <CardContent sx={{ display: "flex", alignItems: "center", gap: 3 }}>
-                <Box
-                  sx={{
-                    width: 60,
-                    height: 60,
-                    borderRadius: "50%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    background: `radial-gradient(circle at 30% 30%, ${item.color}40, ${item.color}10)`,
-                    boxShadow: `0 0 20px ${item.color}55, 0 4px 10px ${item.color}33 inset`,
-                    color: "#fff",
-                    fontSize: 28,
-                  }}
-                >
-                  {item.icon}
-                </Box>
-                <Box>
-                  <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "#374151" }}>{item.title}</Typography>
-                  {loading ? (
-                    <CircularProgress size={18} sx={{ mt: 1 }} />
-                  ) : (
-                    <Typography variant="h5" sx={{ fontWeight: 800, color: "#111827", mt: 0.5 }}>
-                      {stats[item.key] ?? 0} {item.suffix || ""}
-                    </Typography>
-                  )}
-                </Box>
-              </CardContent>
-            </Card>
-          </Grid>
-        ))}
+    <>
+      <Box
+        className="admin-dashboard-container"
+        sx={{
+          minHeight: '100vh',
+          background: 'linear-gradient(180deg, #f9fbff 0%, #ffffff 100%)',
+          direction: 'rtl',
+          overflowX: 'hidden',
+          overflowY: 'auto',
+          maxWidth: '1200px',
+          mx: 'auto',
+          px: { xs: 1, sm: 2 }
+        }}
+      >
+
+        <Box
+          sx={{
+            p: { xs: 1, sm: 1.5, md: 2 },
+            maxWidth: '100%',
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2
+          }}
+        >
+ {/* Statistics + Action Buttons */}
+<Grid container spacing={2} sx={{ mt: 2 }}>
+  <Grid item xs={12}>
+    <Grid 
+      container 
+      spacing={2} 
+      sx={{ 
+        display: 'flex', 
+        alignItems: 'stretch' 
+      }}
+    >
+      {/* الزرارين */}
+      <Grid item xs={12} sm={6} md={2}>
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, height: '100%', justifyContent: 'flex-end' }}>
+          <Button
+            variant="outlined"
+            startIcon={<SettingsIcon />}
+            onClick={() => navigate('/admin/settings')}
+            sx={{
+              borderRadius: '8px',
+              borderColor: '#E0E0E0',
+              color: 'black',
+              textTransform: 'none',
+              fontWeight: 500,
+              px: 2,
+              py: 0.8,
+              fontSize: '0.85rem',
+              '&:hover': {
+                borderColor: '#0077ff',
+                color: '#0077ff',
+                backgroundColor: 'rgba(0, 119, 255, 0.05)'
+              }
+            }}
+          >
+            الإعدادات
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<DownloadIcon />}
+            onClick={handleExportReport}
+            sx={{
+              borderRadius: '8px',
+              borderColor: '#E0E0E0',
+              color: 'black',
+              textTransform: 'none',
+              fontWeight: 500,
+              px: 2,
+              py: 0.8,
+              fontSize: '0.85rem',
+              '&:hover': {
+                borderColor: '#10b981',
+                color: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.05)'
+              }
+            }}
+          >
+            تصدير التقرير
+          </Button>
+        </Box>
       </Grid>
 
-      {/* Chart */}
-      <Paper sx={{ p: { xs: 2, md: 3 }, mb: 5, borderRadius: 4, boxShadow: "0 12px 36px rgba(0,0,0,0.06)", background: "#fff", overflow: "visible" }}>
-        <Typography variant="h6" gutterBottom sx={{ fontWeight: "bold" }}>إحصائيات الطلبات والخدمات</Typography>
-        <Divider sx={{ mb: 2 }} />
-        {loading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", py: 6 }}>
-            <CircularProgress />
-          </Box>
-        ) : chartData.length === 0 ? (
-          <Box sx={{ textAlign: "center", py: 6, color: "#6b7280" }}>
-            <Typography variant="body1">لا توجد بيانات للعرض حالياً 📊</Typography>
-          </Box>
-        ) : (
-          <ResponsiveContainer width="100%" height={Math.max(300, chartData.length * 50)}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="4 4" stroke="#e0e0e0" />
-              <XAxis dataKey="name" tick={{ fill: "#374151", fontWeight: 600 }} />
-              <YAxis tick={{ fill: "#374151", fontWeight: 600 }} />
-              <Tooltip contentStyle={{ borderRadius: 10, border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }} />
-              <Line type="monotone" dataKey="orders" stroke="#3B82F6" strokeWidth={3} dot={{ r: 4 }} />
-              <Line type="monotone" dataKey="services" stroke="#06B6D4" strokeWidth={3} dot={{ r: 4 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        )}
-      </Paper>
+      {/* كروت الـ Stats */}
+      <Grid item xs={12} sm={6} md={2}>
+        <StatCard
+          title="متوسط التقييم"
+          value={stats?.avg_rating?.toFixed(1) || '0.0'}
+          icon={<StarIcon />}
+          iconColor="#f97316"
+        />
+      </Grid>
+      <Grid item xs={12} sm={6} md={2}>
+        <StatCard
+          title="إجمالي الفواتير"
+          value={stats?.invoices_count?.toLocaleString() || '0'}
+          icon={<DollarIcon />}
+          iconColor="#ef4444"
+        />
+      </Grid>
+      <Grid item xs={12} sm={6} md={2}>
+        <StatCard
+          title="إجمالي الحجوزات"
+          value={stats?.bookings_count?.toLocaleString() || '0'}
+          icon={<CalendarIcon />}
+          iconColor="#f59e0b"
+        />
+      </Grid>
+      <Grid item xs={12} sm={6} md={2}>
+        <StatCard
+          title="العملاء"
+          value={stats?.users_count?.toLocaleString() || '0'}
+          icon={<HomeIcon />}
+          iconColor="#10b981"
+        />
+      </Grid>
+      <Grid item xs={12} sm={6} md={2}>
+        <StatCard
+          title="الخدمات"
+          value={stats?.services_count?.toLocaleString() || '0'}
+          icon={<BuildIcon />}
+          iconColor="#3b82f6"
+        />
+      </Grid>
+      <Grid item xs={12} sm={6} md={2}>
+        <StatCard
+          title="الطلبات"
+          value={stats?.orders_count?.toLocaleString() || '0'}
+          icon={<UsersIcon />}
+          iconColor="#0077ff"
+        />
+      </Grid>
+    </Grid>
+  </Grid>
+</Grid>
 
-      {/* Recent Orders */}
-      <Paper sx={{ p: { xs: 2, md: 3 }, mb: 5, borderRadius: 4, boxShadow: "0 12px 36px rgba(0,0,0,0.06)", background: "#fff", overflow: "visible" }}>
-        <Typography variant="h6" gutterBottom sx={{ fontWeight: "bold" }}>آخر الطلبات</Typography>
-        <Divider sx={{ mb: 2 }} />
-        {loading ? (
-          <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", py: 6 }}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <Table size="small" sx={{ borderRadius: 2, overflow: "visible" }}>
-            <TableHead>
-              <TableRow sx={{ backgroundColor: "#f9fafb" }}>
-                <TableCell sx={{ fontWeight: 700 }}>المستخدم</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>الخدمة</TableCell>
-                <TableCell sx={{ fontWeight: 700 }} align="right">الحالة</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {recentOrders.map((order, index) => (
-                <TableRow key={order.id} sx={{ backgroundColor: index % 2 === 0 ? "#fafafa" : "white", "&:hover": { backgroundColor: "#f3f4f6" } }}>
-                  <TableCell>{order.user}</TableCell>
-                  <TableCell>{order.service}</TableCell>
-                  <TableCell align="right">
-                    <Chip
-                      icon={order.status === "مكتمل" ? <CheckCircleIcon fontSize="small" /> : order.status === "قيد التنفيذ" ? <HourglassEmptyIcon fontSize="small" /> : <CancelIcon fontSize="small" />}
-                      label={order.status}
-                      color={order.status === "مكتمل" ? "success" : order.status === "قيد التنفيذ" ? "warning" : "error"}
-                      size="small"
-                      sx={{ fontWeight: 600 }}
-                    />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        )}
-      </Paper>
+
+
+
+
+          {/* Chart + System Status + Financial Stats */}
+<Grid 
+  container 
+  spacing={4} 
+  sx={{ 
+    flexWrap: 'nowrap', // مهم: يمنع إنهم ينزلوا تحت
+    overflowX: 'auto', // يسمح بتصغير العرض مع سكرول لو الشاشة صغيرة جداً
+    '&::-webkit-scrollbar': { display: 'none' } // يخفي الاسكرول
+  }}
+>
+  {/* Chart */}
+  <Grid item xs={12} sm={8} md={8} sx={{ flexShrink: 0 }}>
+    <GrowthChart />
+  </Grid>
+
+  {/* System Status + Growth + Financial Stats */}
+  <Grid item xs={12} sm={4} md={4} sx={{ flexShrink: 1 }}>
+    {/* حالة النظام */}
+    {/* حالة النظام */}
+<Card sx={{ p: 1.5, mb: 2 }}>
+  <Typography variant="h6" sx={{ mb: 1.5, fontWeight: 600, color: '#666666' }}>
+    حالة النظام
+  </Typography>
+  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, alignItems: 'flex-start' }}>
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%', p: 1.5, border: '1px solid #ddd', borderRadius: '8px' }}>
+      <Typography sx={{ fontWeight: 600, color: '#666666' }}>الخدمات النشطة</Typography>
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+        <Typography sx={{ fontWeight: 600, color: '#666666' }}>{stats?.services_count || 0}</Typography>
+        <Typography sx={{ fontSize: '0.85rem', color: 'gray' }}>ر.س</Typography>
+      </Box>
     </Box>
-  );
-};
 
-export default AdminDashboard;
+    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%', p: 1.5, border: '1px solid #ddd', borderRadius: '8px' }}>
+      <Typography sx={{ fontWeight: 600, color: '#666666' }}>الحجوزات المعلقة</Typography>
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+        <Typography sx={{ fontWeight: 600, color: '#666666' }}>{stats?.bookings_status?.pending || 0}</Typography>
+        <Typography sx={{ fontSize: '0.85rem', color: 'gray' }}>ر.س</Typography>
+      </Box>
+    </Box>
+  </Box>
+</Card>
+
+
+    {/* معدل النمو + الاحصائيات المالية */}
+    <Grid container spacing={2}>
+      <Grid item xs={6}>
+        {/* <Card sx={{ p: 1.5, height: '100%' }}>
+          <Typography variant="h6" sx={{ mb: 1.5, fontWeight: 600 }}>
+            معدل النمو
+          </Typography>
+          <Typography sx={{ fontWeight: 600, textAlign: 'center', fontSize: '1.2rem' }}>
+            +{calculateGrowthRate()}%
+          </Typography>
+        </Card> */}
+      </Grid>
+      <Grid item xs={6}>
+        <FinancialStats />
+      </Grid>
+    </Grid>
+  </Grid>
+</Grid>
+
+
+          {/* Recent Bookings */}
+<Card sx={{ width: '100%', p: 1.5 }}>
+  <Typography variant="h6" sx={{ mb: 1.5, fontWeight: 600, color: '#666666' }}>
+    الحجوزات الأخيرة
+  </Typography>
+  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+    {recentOrders.length > 0 ? (
+      recentOrders.map((order) => (
+        <Box
+          key={order.id}
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            p: 1.5,
+            border: '1px solid #ddd',
+            borderRadius: '8px',
+            width: '100%'
+          }}
+        >
+          {/* الخدمة + اسم العميل */}
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+            <Typography sx={{ fontWeight: 600, color: '#666666' }}>{order.service || 'خدمة غير محددة'}</Typography>
+            <Typography sx={{ fontSize: '0.9rem', color: '#666666' }}>{order.user || 'مستخدم غير محدد'}</Typography>
+          </Box>
+          {/* الحالة */}
+          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+            {getStatusChip(order.status)}
+          </Box>
+        </Box>
+      ))
+    ) : (
+      <Box sx={{ textAlign: 'center', py: 3 }}>
+        <Typography sx={{ color: '#666666' }}>لا توجد طلبات حديثة</Typography>
+      </Box>
+    )}
+  </Box>
+</Card>
+
+</Box>
+      </Box>
+
+      <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={() => setSnackbarOpen(false)} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        <Alert onClose={() => setSnackbarOpen(false)} severity="error" sx={{ width: '100%' }}>
+          {error}
+        </Alert>
+      </Snackbar>
+    </>
+  );
+}

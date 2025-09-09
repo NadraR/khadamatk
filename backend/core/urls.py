@@ -19,8 +19,8 @@ urlpatterns = [
     # Orders
     path('api/orders/', include('orders.urls')),
 
-    # Invoices
-    path('api/invoices/', include('invoices.urls')),
+    # Invoices - Temporarily disabled
+    # path('api/invoices/', include('invoices.urls')),
 
     # Ratings
     path('api/ratings/', include('ratings.urls')),
@@ -32,9 +32,12 @@ urlpatterns = [
     path('api/auth/', include('djoser.urls')),
     path('api/auth/', include('djoser.urls.jwt')),
 
-    # Chat
-    path("api/chat/", include("chat.urls")),
+    # Chat - Temporarily disabled
+    # path("api/chat/", include("chat.urls")),
 
     # Notifications
     path('api/notifications/', include('notifications.urls')),
+    # Favorites are handled in services app
+    # path('api/favorites/', include('favorites.urls')),
+
 ]

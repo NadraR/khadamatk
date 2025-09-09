@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { authService } from "../services/authService";
+import { useNavigate } from "react-router-dom";
 
 
 const RegisterForm = ({ onSuccess, onError, darkMode, language = "ar" }) => {
@@ -15,6 +16,7 @@ const RegisterForm = ({ onSuccess, onError, darkMode, language = "ar" }) => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const navigate = useNavigate();
 
   // Translations object
   const translations = {
@@ -145,7 +147,8 @@ const RegisterForm = ({ onSuccess, onError, darkMode, language = "ar" }) => {
       );
       
       if (onSuccess) onSuccess(result.data);
-    } catch (err) {
+        navigate("/");
+   } catch (err) {
       const errorMsg = err.message || t.registerError;
       setErrors({ general: errorMsg });
       if (onError) onError(errorMsg);

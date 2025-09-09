@@ -15,7 +15,8 @@ import {
   CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 import { DataGrid } from '@mui/x-data-grid';
-import { adminApiService } from '../../services/adminApiService';
+import { invoicesApi } from '../../services/adminApiService';
+import '../../styles/adminCommon.css';
 
 const InvoicesPage = () => {
   const [invoices, setInvoices] = useState([]);
@@ -28,7 +29,8 @@ const InvoicesPage = () => {
 
   const fetchInvoices = async () => {
     try {
-      const data = await adminApiService.getInvoices();
+      const response = await invoicesApi.getInvoices();
+      const data = response.success ? response.data : [];
       setInvoices(data);
     } catch (err) {
       setError('فشل في تحميل الفواتير');
@@ -39,7 +41,7 @@ const InvoicesPage = () => {
 
   const handleMarkPaid = async (invoiceId) => {
     try {
-      await adminApiService.markInvoicePaid(invoiceId);
+      await invoicesApi.markInvoicePaid(invoiceId);
       fetchInvoices();
     } catch (err) {
       setError('فشل في تحديث حالة الفاتورة');
@@ -48,7 +50,8 @@ const InvoicesPage = () => {
 
   const handleExportCSV = async () => {
     try {
-      const blob = await adminApiService.exportInvoicesCSV();
+      const response = await invoicesApi.exportInvoicesCSV();
+      const blob = response.success ? response.data : null;
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;

@@ -6,17 +6,19 @@ class ApiService {
     this.retryCount = 0;
     this.maxRetries = 1;
 
-    // إنشاء instance من axios
     this.api = axios.create({
       baseURL: this.baseURL,
       headers: { "Content-Type": "application/json" },
       timeout: 30000, // 30 ثانية - زيادة timeout
     });
 
-    // interceptor لإضافة token تلقائياً
+    // ⬅️ Interceptor لإضافة الـ access token
     this.api.interceptors.request.use(
       (config) => {
         const accessToken = localStorage.getItem("access");
+        console.log("[DEBUG][Request] →", config.url);
+        console.log("[DEBUG][Request] Access token:", accessToken);
+
         if (accessToken) {
           config.headers.Authorization = `Bearer ${accessToken}`;
         }
@@ -25,7 +27,7 @@ class ApiService {
       (error) => Promise.reject(error)
     );
 
-    // interceptor للتعامل مع الأخطاء و retry لتجديد التوكن
+    // ⬅️ Interceptor لتجديد التوكن عند 401
     this.api.interceptors.response.use(
       (response) => response,
       async (error) => {
@@ -40,14 +42,17 @@ class ApiService {
           this.retryCount++;
           originalRequest._retry = true;
 
+          console.log("[DEBUG] 401 detected → Trying refresh...");
           const newTokens = await this.refreshToken(localStorage.getItem("refresh"));
+
           if (newTokens?.access) {
             localStorage.setItem("access", newTokens.access);
             if (newTokens.refresh) localStorage.setItem("refresh", newTokens.refresh);
 
-            // إعادة المحاولة بعد تحديث التوكن
+            console.log("[DEBUG] Token refreshed, retrying request:", originalRequest.url);
             return this.api(originalRequest);
           } else {
+            console.warn("[DEBUG] Refresh token failed → clearing auth");
             this.clearAuth();
           }
         }
@@ -61,13 +66,15 @@ class ApiService {
   async refreshToken(refreshToken) {
     try {
       // Fixed: use the correct endpoint that matches backend
+      console.log("[DEBUG] Calling refresh endpoint with token:", refreshToken);
       const response = await axios.post(`${this.baseURL}/api/accounts/token/refresh/`, {
         refresh: refreshToken,
       });
+      console.log("[DEBUG] Refresh response:", response.data);
       return response.data;
     } catch (err) {
       this.clearAuth();
-      console.error("Error refreshing token:", err);
+      console.error("[DEBUG] Error refreshing token:", err.response?.data || err.message);
       return null;
     }
   }
@@ -93,7 +100,6 @@ class ApiService {
       throw error;
     }
   }
-
   async post(endpoint, body, headers = {}) {
     try {
       return await this.api.post(endpoint, body, { headers }).then((res) => res.data);
@@ -102,7 +108,6 @@ class ApiService {
       throw error;
     }
   }
-
   async put(endpoint, body, headers = {}) {
     try {
       return await this.api.put(endpoint, body, { headers }).then((res) => res.data);
@@ -111,7 +116,6 @@ class ApiService {
       throw error;
     }
   }
-
   async patch(endpoint, body, headers = {}) {
     try {
       return await this.api.patch(endpoint, body, { headers }).then((res) => res.data);
@@ -120,7 +124,6 @@ class ApiService {
       throw error;
     }
   }
-
   async delete(endpoint, headers = {}) {
     try {
       return await this.api.delete(endpoint, { headers }).then((res) => res.data);
@@ -132,6 +135,14 @@ class ApiService {
 
   // معالجة أخطاء الطلبات
   handleRequestError(error, method, endpoint) {
+    // Don't log 404 errors for endpoints that are not implemented yet
+    if (error.response?.status === 404 && 
+        (endpoint.includes('/favorites/') || 
+         endpoint.includes('/reviews/my-reviews/') || 
+         endpoint.includes('/ratings/my-ratings/'))) {
+      return; // Silent handling for unimplemented endpoints
+    }
+    
     console.error(`[API Error] ${method} ${endpoint}:`, error);
     
     if (error.code === 'ECONNABORTED') {

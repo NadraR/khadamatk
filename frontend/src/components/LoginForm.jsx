@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { authService } from "../services/authService";
+import { useNavigate } from "react-router-dom";
 
 const LoginForm = ({ onSuccess, onError, darkMode, language = "ar" }) => {
   const [email, setEmail] = useState("");
@@ -7,6 +8,7 @@ const LoginForm = ({ onSuccess, onError, darkMode, language = "ar" }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
+   const navigate = useNavigate();
 
   // Translations object
   const translations = {
@@ -52,6 +54,7 @@ const LoginForm = ({ onSuccess, onError, darkMode, language = "ar" }) => {
     try {
       const result = await authService.login(email, password);
       if (onSuccess) onSuccess(result.data);
+       navigate("/");
     } catch (err) {
       const errorMsg = err.message || t.loginError;
       setErrors({ general: errorMsg });

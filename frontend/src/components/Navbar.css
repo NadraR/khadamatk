@@ -517,6 +517,20 @@
     transform: scale(1.05);
     box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
   }
+
+  .clickable-avatar {
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .clickable-avatar:hover {
+    transform: scale(1.1) !important;
+    box-shadow: 0 6px 16px rgba(0, 123, 255, 0.5) !important;
+  }
+
+  .clickable-avatar:active {
+    transform: scale(0.95);
+  }
   
   .avatar-initials {
     color: white;
@@ -708,6 +722,11 @@
   
   body.dark-mode .user-avatar:hover {
     box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+  }
+
+  body.dark-mode .clickable-avatar:hover {
+    transform: scale(1.1) !important;
+    box-shadow: 0 6px 16px rgba(52, 152, 219, 0.6) !important;
   }
   
   body.dark-mode .logout-button {

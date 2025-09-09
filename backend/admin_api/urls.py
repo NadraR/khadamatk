@@ -5,7 +5,8 @@ from .views import (
     UserViewSet, ServiceViewSet, OrderViewSet, ReviewViewSet, RatingViewSet,
     InvoiceViewSet, AdminActionLogViewSet, AdminNotificationViewSet,
     AdminStatsView, AdminMeView, CategoryViewSet, FinancialReportView,
-    PlatformSettingViewSet, AdminLoginView, AdminRegisterView,OrdersTrendView, RecentOrdersView
+    PlatformSettingViewSet, AdminLoginView, AdminRegisterView,OrdersTrendView, RecentOrdersView,
+    SettingsViewSet
 )
 
 router = DefaultRouter()
@@ -18,7 +19,7 @@ router.register("ratings", RatingViewSet, basename="ratings")
 router.register("invoices", InvoiceViewSet, basename="invoices")
 router.register("logs", AdminActionLogViewSet, basename="logs")
 router.register("notifications", AdminNotificationViewSet, basename="notifications")
-router.register("settings", PlatformSettingViewSet, basename="settings")
+router.register("settings", SettingsViewSet, basename="settings")
 
 urlpatterns = [
     path("login/", AdminLoginView.as_view(), name="admin-login"),
