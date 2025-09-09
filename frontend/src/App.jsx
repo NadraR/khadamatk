@@ -44,6 +44,7 @@ import InvoiceDetails from "./pages/InvoiceDetails";
 import WorkerProfileCompletion from "./pages/WorkerProfileCompletion";
 import OrderStatusEdit from "./pages/OrderStatusEdit";
 import FontTest from "./components/FontTest";
+import ProviderProfile from "./pages/ProviderProfile";
 
 function App() {
   console.log('[DEBUG] App component rendering, current path:', window.location.pathname);
@@ -105,6 +106,9 @@ function App() {
         <Route path="/service/:id" element={<Layout><ServiceDetails /></Layout>} />
         <Route path="/service/:id/edit" element={<Layout><OrderStatusEdit /></Layout>} />
         <Route path="/services" element={<Layout><Services /></Layout>} />
+        
+        {/* Provider Profile */}
+        <Route path="/provider/:providerId" element={<Layout><ProviderProfile /></Layout>} />
         <Route path="/order" element={<Layout><OrderPage /></Layout>} />
         <Route path="/order/:id" element={<Layout><OrderPage /></Layout>} />
         <Route path="/order-page" element={<Layout><OrderPage /></Layout>} />

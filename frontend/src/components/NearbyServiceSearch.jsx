@@ -24,15 +24,23 @@ export default function NearbyServiceSearch() {
   useEffect(() => {
     const fetchServiceTypes = async () => {
       try {
+        console.log('[NearbyServiceSearch] Fetching service types...');
         const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8000";
-        const response = await fetch(`${baseURL}/api/services/types/`);
+        const url = `${baseURL}/api/services/types/`;
+        console.log('[NearbyServiceSearch] Service types URL:', url);
+        
+        const response = await fetch(url);
+        console.log('[NearbyServiceSearch] Service types response status:', response.status);
+        
         if (response.ok) {
           const data = await response.json();
-          console.log('Fetched service types:', data);
+          console.log('[NearbyServiceSearch] Fetched service types:', data);
           setServicesList(data);
+        } else {
+          console.error('[NearbyServiceSearch] Service types fetch failed:', response.status, response.statusText);
         }
       } catch (err) {
-        console.error("فشل في تحميل أنواع الخدمات", err);
+        console.error("[NearbyServiceSearch] فشل في تحميل أنواع الخدمات", err);
       }
     };
     
@@ -44,38 +52,55 @@ export default function NearbyServiceSearch() {
     const fetchUserLocation = async () => {
       try {
         setLocationLoading(true);
+        console.log('[NearbyServiceSearch] Starting location fetch...');
         
         // محاولة جلب الموقع من الـ state أولاً (إذا جاء من صفحة الموقع)
         const locationState = location.state?.selectedLocation;
+        console.log('[NearbyServiceSearch] Location state:', locationState);
+        
         if (locationState && locationState.lat && locationState.lng) {
+          console.log('[NearbyServiceSearch] Using location from state:', locationState);
           setUserLocation(locationState);
           setLocationLoading(false);
           return;
         }
         
         // إذا لم يكن هناك موقع في الـ state، جلب آخر موقع محفوظ
+        console.log('[NearbyServiceSearch] Fetching latest location from service...');
         const result = await locationService.getLatestLocation();
+        console.log('[NearbyServiceSearch] Latest location result:', result);
+        
         if (result.success && result.data) {
           const locationData = result.data;
+          console.log('[NearbyServiceSearch] Location data:', locationData);
+          
           if (locationData.location) {
             // إذا كانت البيانات تحتوي على حقل location
-            setUserLocation({
+            const userLoc = {
               lat: locationData.location.y,
               lng: locationData.location.x,
               address: locationData.address
-            });
+            };
+            console.log('[NearbyServiceSearch] Setting location from GIS field:', userLoc);
+            setUserLocation(userLoc);
           } else if (locationData.lat && locationData.lng) {
             // إذا كانت البيانات تحتوي على lat/lng مباشرة
-            setUserLocation({
+            const userLoc = {
               lat: locationData.lat,
               lng: locationData.lng,
               address: locationData.address
-            });
+            };
+            console.log('[NearbyServiceSearch] Setting location from lat/lng:', userLoc);
+            setUserLocation(userLoc);
+          } else {
+            console.log('[NearbyServiceSearch] No valid location data found');
           }
+        } else {
+          console.log('[NearbyServiceSearch] Location service failed or no data:', result);
         }
       } catch (err) {
+        console.error('[NearbyServiceSearch] Location fetch error:', err);
         setError("فشل في تحميل موقع المستخدم");
-        console.error(err);
       } finally {
         setLocationLoading(false);
       }
@@ -85,11 +110,15 @@ export default function NearbyServiceSearch() {
   }, [location.state]);
 
   const fetchNearbyServices = useCallback(async (location) => {
-    if (!location) return;
+    if (!location) {
+      console.log('[NearbyServiceSearch] No location provided, skipping search');
+      return;
+    }
     
     try {
       setLoading(true);
-      console.log('[NearbyServiceSearch] Searching for service type:', selectedService);
+      console.log('[NearbyServiceSearch] Starting search...');
+      console.log('[NearbyServiceSearch] Service type:', selectedService);
       console.log('[NearbyServiceSearch] Location:', location);
       
       let allResults = [];
@@ -97,90 +126,115 @@ export default function NearbyServiceSearch() {
       // 1. البحث في الخدمات (إذا تم تحديد نوع خدمة)
       if (selectedService) {
         console.log('[NearbyServiceSearch] Searching services with type:', selectedService);
-        const servicesResult = await locationService.searchNearbyServices(
+        try {
+          const servicesResult = await locationService.searchNearbyServices(
+            location.lat, 
+            location.lng, 
+            150, // radius in km
+            selectedService,
+            ''
+          );
+          
+          console.log('[NearbyServiceSearch] Services API result:', servicesResult);
+          
+          if (servicesResult.success && servicesResult.data) {
+            let servicesData = Array.isArray(servicesResult.data) ? servicesResult.data : [];
+            console.log('[NearbyServiceSearch] Services found:', servicesData.length);
+            console.log('[NearbyServiceSearch] First service sample:', servicesData[0]);
+            
+            // تحويل بيانات الخدمات لتنسيق موحد
+            const formattedServices = servicesData.map(service => ({
+              id: `service_${service.id}`,
+              type: 'service',
+              title: service.title,
+              description: service.description,
+              provider_username: service.provider_username,
+              provider_id: service.provider,
+              category: service.category,
+              price: service.price,
+              currency: service.currency,
+              rating_avg: service.rating_avg,
+              rating_count: service.rating_count,
+              city: service.city,
+              distance_km: service.distance_km,
+              provider_location: service.provider_location,
+              original_data: service
+            }));
+            
+            console.log('[NearbyServiceSearch] Formatted services:', formattedServices.length);
+            allResults.push(...formattedServices);
+          } else {
+            console.log('[NearbyServiceSearch] Services search failed or no data:', servicesResult);
+          }
+        } catch (servicesError) {
+          console.error('[NearbyServiceSearch] Services search error:', servicesError);
+        }
+      } else {
+        console.log('[NearbyServiceSearch] No service type selected, skipping services search');
+      }
+      
+      // 2. البحث في المواقع (العمال القريبين) - دائماً
+      console.log('[NearbyServiceSearch] Searching nearby workers...');
+      try {
+        const locationsResult = await locationService.searchNearbyLocations(
           location.lat, 
           location.lng, 
-          150, // radius in km
-          selectedService,
-          ''
+          150 // radius in km
         );
         
-        if (servicesResult.success && servicesResult.data) {
-          let servicesData = Array.isArray(servicesResult.data) ? servicesResult.data : [];
-          console.log('[NearbyServiceSearch] Services found:', servicesData.length);
+        console.log('[NearbyServiceSearch] Locations API result:', locationsResult);
+        
+        if (locationsResult.success && locationsResult.data) {
+          let locationsData = Array.isArray(locationsResult.data) ? locationsResult.data : [];
+          console.log('[NearbyServiceSearch] Workers found:', locationsData.length);
+          console.log('[NearbyServiceSearch] First worker sample:', locationsData[0]);
           
-          // تحويل بيانات الخدمات لتنسيق موحد
-          const formattedServices = servicesData.map(service => ({
-            id: `service_${service.id}`,
-            type: 'service',
-            title: service.title,
-            description: service.description,
-            provider_username: service.provider_username,
-            provider_id: service.provider,
-            category: service.category,
-            price: service.price,
-            currency: service.currency,
-            rating_avg: service.rating_avg,
-            rating_count: service.rating_count,
-            city: service.city,
-            distance_km: service.distance_km,
-            provider_location: service.provider_location,
-            original_data: service
+          // تحويل بيانات المواقع لتنسيق موحد
+          const formattedWorkers = locationsData.map(worker => ({
+            id: `worker_${worker.id}`,
+            type: 'worker',
+            title: worker.user?.first_name && worker.user?.last_name 
+              ? `${worker.user.first_name} ${worker.user.last_name}`
+              : worker.user?.username || 'عامل',
+            description: `عامل في ${worker.city || 'المنطقة'}`,
+            provider_username: worker.user?.username,
+            provider_id: worker.user?.id,
+            category: { name: 'عامل' },
+            price: worker.user?.hourly_rate || 0,
+            currency: 'ج.م',
+            rating_avg: worker.user?.rating || 0,
+            rating_count: 0,
+            city: worker.city,
+            distance_km: worker.distance_km,
+            provider_location: {
+              lat: worker.lat,
+              lng: worker.lng
+            },
+            worker_profile: {
+              job_title: worker.user?.role === 'worker' ? 'عامل' : 'مقدم خدمة',
+              skills: 'مهارات متنوعة',
+              services_provided: 'خدمات عامة'
+            },
+            original_data: worker
           }));
           
-          allResults.push(...formattedServices);
+          console.log('[NearbyServiceSearch] Formatted workers:', formattedWorkers.length);
+          allResults.push(...formattedWorkers);
+        } else {
+          console.log('[NearbyServiceSearch] Locations search failed or no data:', locationsResult);
         }
+      } catch (locationsError) {
+        console.error('[NearbyServiceSearch] Locations search error:', locationsError);
       }
       
-      // 2. البحث في المواقع (العمال القريبين)
-      console.log('[NearbyServiceSearch] Searching nearby workers...');
-      const locationsResult = await locationService.searchNearbyLocations(
-        location.lat, 
-        location.lng, 
-        150, // radius in km
-        selectedService // سيتم تجاهله في location endpoint لكن لا مشكلة
-      );
-      
-      if (locationsResult.success && locationsResult.data) {
-        let locationsData = Array.isArray(locationsResult.data) ? locationsResult.data : [];
-        console.log('[NearbyServiceSearch] Workers found:', locationsData.length);
-        
-        // تحويل بيانات المواقع لتنسيق موحد
-        const formattedWorkers = locationsData.map(worker => ({
-          id: `worker_${worker.id}`,
-          type: 'worker',
-          title: worker.user?.first_name && worker.user?.last_name 
-            ? `${worker.user.first_name} ${worker.user.last_name}`
-            : worker.user?.username || 'عامل',
-          description: `عامل في ${worker.city || 'المنطقة'}`,
-          provider_username: worker.user?.username,
-          provider_id: worker.user?.id,
-          category: { name: 'عامل' },
-          price: worker.user?.hourly_rate || 0,
-          currency: 'ج.م',
-          rating_avg: worker.user?.rating || 0,
-          rating_count: 0,
-          city: worker.city,
-          distance_km: worker.distance_km,
-          provider_location: {
-            lat: worker.lat,
-            lng: worker.lng
-          },
-          worker_profile: {
-            job_title: worker.user?.role === 'worker' ? 'عامل' : 'مقدم خدمة',
-            skills: 'مهارات متنوعة',
-            services_provided: 'خدمات عامة'
-          },
-          original_data: worker
-        }));
-        
-        allResults.push(...formattedWorkers);
-      }
+      console.log('[NearbyServiceSearch] Total results before filtering:', allResults.length);
       
       // 3. إزالة التكرار وترتيب النتائج
       const uniqueResults = allResults.filter((item, index, self) => 
         index === self.findIndex((t) => t.provider_id === item.provider_id)
       );
+      
+      console.log('[NearbyServiceSearch] Unique results after filtering:', uniqueResults.length);
       
       // ترتيب حسب المسافة أولاً ثم التقييم
       uniqueResults.sort((a, b) => {
@@ -190,13 +244,13 @@ export default function NearbyServiceSearch() {
         return (b.rating_avg || 0) - (a.rating_avg || 0);
       });
       
-      console.log('[NearbyServiceSearch] Total unique results:', uniqueResults.length);
+      console.log('[NearbyServiceSearch] Final sorted results:', uniqueResults.length);
       setResults(uniqueResults);
       setLastUpdated(new Date());
       setError(null);
       
     } catch (err) {
-      console.error('[NearbyServiceSearch] Search error:', err);
+      console.error('[NearbyServiceSearch] General search error:', err);
       setError("فشل في تحميل الخدمات القريبة");
     } finally {
       setLoading(false);
@@ -274,12 +328,34 @@ export default function NearbyServiceSearch() {
           <Box>
             <IconButton 
               onClick={handleRefresh} 
-              disabled={loading || locationLoading || !selectedService}
+              disabled={loading || locationLoading}
               sx={{ color: "primary.main" }}
               title="تحديث النتائج"
             >
               <RefreshIcon />
             </IconButton>
+            {/* Debug button */}
+            <Button 
+              onClick={() => {
+                console.log('[DEBUG] Current state:', {
+                  userLocation,
+                  selectedService,
+                  servicesList,
+                  results,
+                  loading,
+                  locationLoading,
+                  error
+                });
+                if (userLocation) {
+                  fetchNearbyServices(userLocation);
+                }
+              }}
+              size="small"
+              variant="outlined"
+              sx={{ ml: 1 }}
+            >
+              Debug
+            </Button>
             {lastUpdated && (
               <Typography variant="caption" sx={{ color: "text.secondary", ml: 1 }}>
                 {lastUpdated.toLocaleTimeString('ar-SA')}
