@@ -189,9 +189,13 @@ def service_detail(request, pk):
 
 @api_view(["GET"])
 def service_search(request):
+    print(f"[DEBUG] Service search called with params: {dict(request.GET)}")
+    print(f"[DEBUG] Request headers: {dict(request.headers)}")
+    
     try:
         lat = float(request.GET.get("lat"))
         lng = float(request.GET.get("lng"))
+        print(f"[DEBUG] Parsed coordinates: lat={lat}, lng={lng}")
     except (TypeError, ValueError):
         return Response({"error": "lat and lng are required and must be valid numbers"}, status=status.HTTP_400_BAD_REQUEST)
     
@@ -294,6 +298,8 @@ def service_search(request):
         qs = qs.order_by('-rating_avg', 'id')[:max_results]
     
     serializer = ServiceSearchSerializer(qs, many=True, context={"request": request})
+    print(f"[DEBUG] Returning {len(qs)} services")
+    print(f"[DEBUG] First service sample: {qs.first().title if qs.exists() else 'No services found'}")
     return Response(serializer.data)
 
 

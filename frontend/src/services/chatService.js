@@ -317,6 +317,30 @@ class ChatService {
     }
   }
 
+  // Send message via WebSocket
+  sendWebSocketMessage(orderId, messageText) {
+    try {
+      const connection = this.wsConnections.get(orderId);
+      if (connection && connection.send) {
+        const message = {
+          type: 'message',
+          orderId: orderId,
+          message: messageText,
+          timestamp: new Date().toISOString()
+        };
+        connection.send(JSON.stringify(message));
+        console.log(`[DEBUG] Sent WebSocket message for order ${orderId}:`, messageText);
+        return true;
+      } else {
+        console.log(`[DEBUG] No WebSocket connection for order ${orderId}`);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error sending WebSocket message:', error);
+      return false;
+    }
+  }
+
   // Disconnect WebSocket
   disconnectWebSocket(orderId) {
     try {
