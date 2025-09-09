@@ -27,6 +27,7 @@ class Order(models.Model):
     is_deleted = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    date_created = models.DateTimeField(auto_now_add=True)  # Legacy field for database compatibility
 
 class Offer(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='offers')

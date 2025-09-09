@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { FaScrewdriver, FaBell, FaSun, FaMoon, FaGlobe, FaHeart, FaComments, FaStar, FaBars, FaSignInAlt, FaSignOutAlt, FaEnvelope, FaEnvelopeOpen } from 'react-icons/fa';
 import './Navbar.css';
@@ -180,10 +180,26 @@ const Navbar = () => {
 
 
   // Enhanced message handling functions
-  const handleMessagesClick = () => {
+  const handleMessagesClick = async () => {
     if (!isLoggedIn) {
       handleLoginClick();
       return;
+    }
+    
+    // Mark all messages as read when clicking the messages button
+    try {
+      const result = await chatService.markAllMessagesAsRead();
+      if (result.success) {
+        console.log('[DEBUG] Navbar: All messages marked as read successfully');
+        // Force refresh message count after marking as read
+        setTimeout(() => {
+          fetchMessageCount();
+        }, 1000);
+      } else {
+        console.warn('[DEBUG] Navbar: Failed to mark messages as read:', result.error);
+      }
+    } catch (error) {
+      console.error('[DEBUG] Navbar: Error marking messages as read:', error);
     }
     
     // Reset message count and unread status when clicked
@@ -207,7 +223,7 @@ const Navbar = () => {
   };
 
   // Fetch real message count from backend
-  const fetchMessageCount = async () => {
+  const fetchMessageCount = useCallback(async () => {
     if (!isLoggedIn) return;
     
     try {
@@ -232,10 +248,10 @@ const Navbar = () => {
     } finally {
       setMessageLoading(false);
     }
-  };
+  }, [isLoggedIn]);
 
   // Fetch recent messages for dropdown
-  const fetchRecentMessages = async () => {
+  const fetchRecentMessages = useCallback(async () => {
     if (!isLoggedIn) return;
     
     try {
@@ -260,7 +276,7 @@ const Navbar = () => {
       console.error('Error fetching recent messages:', error);
       setRecentMessages([]);
     }
-  };
+  }, [isLoggedIn, i18n.language]);
 
   // Check for new messages periodically
   useEffect(() => {
@@ -274,14 +290,41 @@ const Navbar = () => {
         fetchRecentMessages();
       }, 30000);
       
-      return () => clearInterval(messageInterval);
+      // Listen for message events to update count
+      const handleMessageSent = () => {
+        console.log('[DEBUG] Navbar: Message sent event received, refreshing count');
+        setTimeout(() => {
+          fetchMessageCount();
+          fetchRecentMessages();
+        }, 500);
+      };
+      
+      const handleMessageRead = () => {
+        console.log('[DEBUG] Navbar: Message read event received, refreshing count');
+        setTimeout(() => {
+          fetchMessageCount();
+          fetchRecentMessages();
+        }, 500);
+      };
+      
+      // Add event listeners
+      window.addEventListener('messageSent', handleMessageSent);
+      window.addEventListener('messageRead', handleMessageRead);
+      window.addEventListener('messagesMarkedAsRead', handleMessageRead);
+      
+      return () => {
+        clearInterval(messageInterval);
+        window.removeEventListener('messageSent', handleMessageSent);
+        window.removeEventListener('messageRead', handleMessageRead);
+        window.removeEventListener('messagesMarkedAsRead', handleMessageRead);
+      };
     } else {
       // Reset message state when logged out
       setMessageCount(0);
       setUnreadMessages(false);
       setRecentMessages([]);
     }
-  }, [isLoggedIn]);
+  }, [isLoggedIn, fetchMessageCount, fetchRecentMessages]);
 
   // دالة لتنسيق رقم الإشعارات إذا كان كبيراً
   const formatNotificationCount = (count) => {
@@ -303,8 +346,8 @@ const Navbar = () => {
 
   // Handle message item click
   const handleMessageItemClick = (message) => {
-    // Navigate to the specific conversation/order
-    window.location.href = `/order/${message.orderId}`;
+    // Navigate to the messages page with the specific order
+    window.location.href = `/messages?orderId=${message.orderId}`;
     setShowMessageDropdown(false);
   };
 

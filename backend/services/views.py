@@ -110,6 +110,54 @@ def service_list(request):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def create_for_worker(request):
+    """Create a service for a worker - used when creating orders"""
+    try:
+        # Get the worker from the request
+        worker_id = request.data.get('worker_id')
+        if not worker_id:
+            return Response(
+                {"error": "worker_id is required"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get worker profile
+        try:
+            from accounts.models import WorkerProfile
+            worker_profile = WorkerProfile.objects.get(user_id=worker_id)
+        except WorkerProfile.DoesNotExist:
+            return Response(
+                {"error": "Worker profile not found"}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Create a basic service for the worker
+        service_data = {
+            'title': request.data.get('title', 'خدمة مخصصة'),
+            'description': request.data.get('description', 'خدمة مخصصة للطلب'),
+            'provider': worker_id,
+            'category_id': request.data.get('category_id'),
+            'city': request.data.get('city', ''),
+            'price': request.data.get('price', 0),
+            'is_active': True
+        }
+        
+        serializer = ServiceSerializer(data=service_data)
+        if serializer.is_valid():
+            service = serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+    except Exception as e:
+        return Response(
+            {"error": f"Error creating service: {str(e)}"}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
 @api_view(["GET", "PUT", "DELETE"])
 @permission_classes([IsWorkerOrReadOnly])
 def service_detail(request, pk):
@@ -247,6 +295,117 @@ def service_search(request):
     
     serializer = ServiceSearchSerializer(qs, many=True, context={"request": request})
     return Response(serializer.data)
+
+
+@api_view(["GET"])
+@permission_classes([permissions.IsAuthenticated])
+def favorites_list(request):
+    """
+    الحصول على قائمة المفضلات للمستخدم الحالي
+    """
+    favs = Favorite.objects.filter(user=request.user).select_related("service")
+    serializer = FavoriteSerializer(favs, many=True)
+    return Response(serializer.data)
+
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def favorite_add(request):
+    """
+    إضافة خدمة إلى المفضلات
+    """
+    service_id = request.data.get("service_id")
+    if not service_id:
+        return Response({"error": "service_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    service = get_object_or_404(Service, pk=service_id, is_deleted=False)
+    fav, created = Favorite.objects.get_or_create(user=request.user, service=service)
+    
+    return Response({
+        "status": "added to favorites", 
+        "created": created,
+        "favorite_id": fav.id
+    })
+
+@api_view(["DELETE"])
+@permission_classes([permissions.IsAuthenticated])
+def favorite_remove(request, service_id):
+    deleted_count, _ = Favorite.objects.filter(user=request.user, service_id=service_id).delete()
+    
+    if deleted_count > 0:
+        return Response({"status": "removed from favorites"})
+    else:
+        return Response({"error": "Favorite not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def create_service_for_worker(request):
+    """
+    Create a service for a worker automatically based on their profile
+    """
+    from accounts.models import User
+    
+    worker_id = request.data.get('worker_id')
+    if not worker_id:
+        return Response({"error": "worker_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+    
+    try:
+        worker = User.objects.get(id=worker_id, role='worker')
+    except User.DoesNotExist:
+        return Response({"error": "Worker not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    # Check if worker already has services
+    existing_services = Service.objects.filter(provider=worker, is_deleted=False)
+    if existing_services.exists():
+        # Return the first existing service
+        service = existing_services.first()
+        serializer = ServiceDetailSerializer(service)
+        return Response({
+            "message": "Service already exists",
+            "service": serializer.data
+        })
+    
+    # Create a service for this worker
+    try:
+        worker_profile = worker.worker_profile
+        
+        # Get or create appropriate category
+        category_name = 'خدمات عامة'
+        if worker_profile.job_title:
+            if 'كهربائي' in worker_profile.job_title or 'electrical' in worker_profile.job_title.lower():
+                category_name = 'Electricians'
+            elif 'سباك' in worker_profile.job_title or 'plumb' in worker_profile.job_title.lower():
+                category_name = 'Plumbers'
+            elif 'نظافة' in worker_profile.job_title or 'clean' in worker_profile.job_title.lower():
+                category_name = 'تنظيف'
+        
+        category, created = ServiceCategory.objects.get_or_create(
+            name=category_name,
+            defaults={'is_deleted': False}
+        )
+        
+        # Create the service
+        service = Service.objects.create(
+            provider=worker,
+            category=category,
+            title=f'{worker_profile.job_title or "خدمات عامة"} - {worker.username}',
+            description=f'خدمات {worker_profile.job_title or "متنوعة"}: {worker_profile.skills or "خدمات عامة"}',
+            price=worker_profile.hourly_rate or 100.00,
+            is_active=True,
+            is_deleted=False
+        )
+        
+        serializer = ServiceDetailSerializer(service)
+        return Response({
+            "message": "Service created successfully",
+            "service": serializer.data
+        }, status=status.HTTP_201_CREATED)
+        
+    except Exception as e:
+        return Response({
+            "error": f"Failed to create service: {str(e)}"
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 @api_view(["GET"])

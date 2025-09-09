@@ -65,3 +65,4 @@ class ConversationListSerializer(serializers.ModelSerializer):
                 'is_from_current_user': last_message.sender == self.context['request'].user
             }
         return None
+

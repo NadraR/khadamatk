@@ -69,6 +69,8 @@ const translations = {
     decline: "رفض",
     contactClient: "تواصل مع العميل",
     startWork: "بدء العمل",
+    orderAlreadyProcessed: "الطلب تم معالجته بالفعل",
+    orderMustBeInProgress: "يجب أن يكون الطلب قيد التنفيذ لإكماله",
     orderDetails: "تفاصيل الطلب",
     orderStatus: "حالة الطلب",
     serviceInfo: "معلومات الخدمة",
@@ -285,6 +287,62 @@ const Orders = () => {
       return;
     }
 
+    // Find the order to check its current status
+    const order = orders.find(o => o.id === orderId);
+    if (!order) {
+      toast.error(t('orderNotFound'));
+      return;
+    }
+
+    // Check if the action is valid for the current status
+    if (action === 'start' && order.status !== 'accepted') {
+      console.warn('[WARNING] Order Status Issue:', {
+        orderId,
+        currentStatus: order.status,
+        expectedStatus: 'accepted',
+        action,
+        message: 'Order may already be processed'
+      });
+      
+      toast.warning(t('orderAlreadyProcessed'), {
+        duration: 3000,
+        position: "top-center"
+      });
+      return;
+    }
+
+    if (action === 'accept' && order.status !== 'pending') {
+      console.warn('[WARNING] Order Status Issue:', {
+        orderId,
+        currentStatus: order.status,
+        expectedStatus: 'pending',
+        action,
+        message: 'Order may already be processed'
+      });
+      
+      toast.warning(t('orderAlreadyProcessed'), {
+        duration: 3000,
+        position: "top-center"
+      });
+      return;
+    }
+
+    if (action === 'complete' && order.status !== 'in_progress') {
+      console.warn('[WARNING] Order Status Issue:', {
+        orderId,
+        currentStatus: order.status,
+        expectedStatus: 'in_progress',
+        action,
+        message: 'Order must be in progress to complete'
+      });
+      
+      toast.warning(t('orderMustBeInProgress'), {
+        duration: 3000,
+        position: "top-center"
+      });
+      return;
+    }
+
     setActionLoading(prev => ({ ...prev, [orderId]: action }));
     
     try {
@@ -295,6 +353,8 @@ const Orders = () => {
         endpoint = `/api/orders/${orderId}/decline/`;
       } else if (action === 'start') {
         endpoint = `/api/orders/${orderId}/start/`;
+      } else if (action === 'complete') {
+        endpoint = `/api/orders/${orderId}/complete/`;
       } else {
         toast.error(t('invalidAction'));
         return;
@@ -884,7 +944,50 @@ const Orders = () => {
                         onClick={() => handleOrderAction(order.id, 'start')}
                         disabled={actionLoading[order.id]}
                       >
+                        {actionLoading[order.id] === 'start' ? (
+                          <div className="spinner-border spinner-border-sm me-1" role="status" />
+                        ) : (
+                          <BsClock className="me-1" />
+                        )}
                         بدء العمل
+                      </button>
+                    </div>
+                  )}
+                  
+                  {/* Actions for In Progress Orders */}
+                  {order.status === 'in_progress' && (
+                    <div className="d-flex gap-2">
+                      <button
+                        className="btn btn-primary btn-sm flex-fill"
+                        onClick={() => handleContactClient(order)}
+                      >
+                        <FaComments className="me-1" />
+                        تواصل مع العميل
+                      </button>
+                      <button
+                        className="btn btn-success btn-sm flex-fill"
+                        onClick={() => handleOrderAction(order.id, 'complete')}
+                        disabled={actionLoading[order.id]}
+                      >
+                        {actionLoading[order.id] === 'complete' ? (
+                          <div className="spinner-border spinner-border-sm me-1" role="status" />
+                        ) : (
+                          <BsCheckCircle className="me-1" />
+                        )}
+                        إنهاء العمل
+                      </button>
+                    </div>
+                  )}
+                  
+                  {/* Edit Button for All Orders */}
+                  {['pending', 'accepted', 'in_progress'].includes(order.status) && (
+                    <div className="d-flex gap-2 mt-2">
+                      <button
+                        className="btn btn-outline-warning btn-sm flex-fill"
+                        onClick={() => navigate(`/service/${order.service_id || order.service?.id}/edit`)}
+                      >
+                        <BsEye className="me-1" />
+                        تعديل حالة الطلب
                       </button>
                     </div>
                   )}

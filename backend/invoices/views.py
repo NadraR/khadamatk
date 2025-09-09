@@ -1,9 +1,9 @@
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.response import Response
 from django.utils.translation import gettext_lazy as _
-from .models import Invoice
-from .serializers import InvoiceSerializer
+from .models import Invoice, WorkerEarnings
+from .serializers import InvoiceSerializer, WorkerEarningsSerializer
 from django.db.models import Sum
 
 class IsOwnerOrAdmin(permissions.BasePermission):
@@ -57,9 +57,7 @@ class InvoiceViewSet(viewsets.ModelViewSet):
 @api_view(['GET'])
 def total_revenue(request):
     revenue = Invoice.objects.filter(status="paid").aggregate(total=Sum("amount"))["total"] or 0
-    return Response({"total_revenue": revenue})
-
-@api_view(['GET'])
+    return Response({"total_revenue": revenue})@api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def invoice_stats(request):
     """Get invoice statistics for the current user"""
@@ -91,3 +89,36 @@ def overdue_invoices(request):
     
     serializer = InvoiceSerializer(overdue, many=True)
     return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def worker_earnings(request):
+    """Get earnings for the current worker"""
+    if request.user.role != 'worker':
+        return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+    
+    earnings = WorkerEarnings.objects.filter(worker=request.user).order_by('-created_at')
+    serializer = WorkerEarningsSerializer(earnings, many=True)
+    return Response(serializer.data)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def worker_earnings_summary(request):
+    """Get earnings summary for the current worker"""
+    if request.user.role != 'worker':
+        return Response({'error': 'Access denied'}, status=status.HTTP_403_FORBIDDEN)
+    
+    earnings = WorkerEarnings.objects.filter(worker=request.user)
+    
+    summary = {
+        'total_earnings': earnings.aggregate(total=Sum('net_earnings'))['total'] or 0,
+        'total_platform_fees': earnings.aggregate(total=Sum('platform_fee'))['total'] or 0,
+        'total_gross_amount': earnings.aggregate(total=Sum('gross_amount'))['total'] or 0,
+        'total_invoices': earnings.count(),
+        'recent_earnings': WorkerEarningsSerializer(earnings[:5], many=True).data
+    }
+    
+    return Response(summary)
+

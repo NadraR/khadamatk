@@ -92,7 +92,7 @@ const AuthPage = () => {
         const detailsData = savedLocationDetails ? JSON.parse(savedLocationDetails) : {};
         
         // Import locationService dynamically to avoid circular imports
-        const { locationService } = await import('../services/locationService');
+        const { locationService } = await import('../services/LocationService');
         
         const locationPayload = {
           lat: locationData.lat,

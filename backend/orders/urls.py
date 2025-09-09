@@ -9,7 +9,9 @@ urlpatterns = [
     # Order Actions
     path("<int:pk>/accept/", views.accept_order, name="accept_order"),
     path("<int:pk>/decline/", views.decline_order, name="decline_order"),
+    path("<int:pk>/start/", views.start_order, name="start_order"),
     path("<int:pk>/complete/", views.complete_order, name="complete_order"),
+    path("<int:pk>/approve/", views.approve_completion, name="approve_completion"),
 
     # Offers (GET list / POST create)
     path("<int:order_id>/offers/", views.offer_list, name="offer_list"),
@@ -20,7 +22,7 @@ urlpatterns = [
 
 
 '''
-1️⃣ Orders
+# Orders
 
 GET /api/orders/ → عرض كل الطلبات الخاصة بالمستخدم (أو كل الطلبات إذا admin)
 
@@ -32,11 +34,11 @@ PUT /api/orders/5/ → تعديل الطلب رقم 5 (client فقط)
 
 DELETE /api/orders/5/ → حذف الطلب رقم 5 (soft delete)
 
-2️⃣ Offers
+# Offers
 
 POST /api/orders/5/offers/ → إنشاء عرض على الطلب رقم 5 من مقدم خدمة
 
-3️⃣ Negotiations
+# Negotiations
 
 POST /api/orders/5/negotiations/ → إرسال رسالة تفاوض على الطلب رقم 5
 '''

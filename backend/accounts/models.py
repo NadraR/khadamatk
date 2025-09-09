@@ -187,3 +187,23 @@ class ClientProfile(BaseProfile):
     def clean(self):
         if self.user.role != 'client':
             raise ValidationError("This profile is for clients only")
+
+    address = models.TextField(
+        blank=True,
+        verbose_name="Detailed Address"
+    )
+    notes = models.TextField(
+        blank=True,
+        verbose_name="Additional Notes"
+    )
+
+    class Meta:
+        verbose_name = 'Client Profile'
+        verbose_name_plural = 'Client Profiles'
+
+    def __str__(self):
+        return f"{self.user.username} - Client"
+
+    def clean(self):
+        if self.user.role != 'client':
+            raise ValidationError("This profile is for clients only")

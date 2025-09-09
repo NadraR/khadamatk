@@ -214,6 +214,88 @@ const OrderPage = () => {
     }
   }, [service, formData.location_address]);
 
+  // Load saved location from localStorage first
+  useEffect(() => {
+    const savedLocation = localStorage.getItem("selectedLocation");
+    if (savedLocation) {
+      try {
+        const parsed = JSON.parse(savedLocation);
+        setFormData(prev => ({
+          ...prev,
+          location_lat: parsed.lat,
+          location_lng: parsed.lng,
+          location_address: parsed.address || ''
+        }));
+      } catch (err) {
+        console.error("Error parsing saved location:", err);
+      }
+    }
+  }, []);
+
+  // Load client's saved location automatically
+  useEffect(() => {
+    const loadClientLocation = async () => {
+      // Only load if user is authenticated and no location data is already present
+      if (isAuthenticated && user && (!formData.location_lat || !formData.location_lng)) {
+        try {
+          console.log('[DEBUG] OrderPage: Loading client saved location...');
+          console.log('[DEBUG] OrderPage: Current formData location:', { lat: formData.location_lat, lng: formData.location_lng });
+          console.log('[DEBUG] OrderPage: Service location:', service?.location);
+          
+          const { locationService } = await import('../services/LocationService');
+          const result = await locationService.getLatestLocation();
+          
+          if (result.success && result.data && result.data.lat && result.data.lng) {
+            console.log('[DEBUG] OrderPage: Found saved location:', result.data);
+            setFormData(prev => ({
+              ...prev,
+              location_lat: result.data.lat,
+              location_lng: result.data.lng,
+              location_address: result.data.address || prev.location_address
+            }));
+            toast.success('تم تحميل موقعك المحفوظ تلقائياً', {
+              position: "top-right",
+              autoClose: 3000,
+              hideProgressBar: false,
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true,
+              rtl: true,
+            });
+          } else {
+            console.log('[DEBUG] OrderPage: No saved location found or invalid data');
+            
+            // Try to get location from service data if available
+            if (service?.location?.lat && service?.location?.lng) {
+              console.log('[DEBUG] OrderPage: Using location from service data');
+              setFormData(prev => ({
+                ...prev,
+                location_lat: service.location.lat,
+                location_lng: service.location.lng,
+                location_address: service.location.address || prev.location_address
+              }));
+            }
+          }
+        } catch (error) {
+          console.error('[DEBUG] OrderPage: Error loading saved location:', error);
+          
+          // Try to get location from service data as fallback
+          if (service?.location?.lat && service?.location?.lng) {
+            console.log('[DEBUG] OrderPage: Using service location as fallback');
+            setFormData(prev => ({
+              ...prev,
+              location_lat: service.location.lat,
+              location_lng: service.location.lng,
+              location_address: service.location.address || prev.location_address
+            }));
+          }
+        }
+      }
+    };
+    
+    loadClientLocation();
+  }, [isAuthenticated, user, service?.location, formData.location_lat, formData.location_lng]);
+
   // Check authentication status
   useEffect(() => {
     const checkAuth = () => {
@@ -1253,11 +1335,15 @@ const OrderPage = () => {
           
           try {
             const createServiceResponse = await apiService.post('/api/services/create-for-worker/', {
-              worker_id: workerId
+              worker_id: workerId,
+              title: service?.title || 'خدمة مخصصة',
+              description: service?.description || 'خدمة مخصصة للطلب',
+              category_id: 1, // Default category - Electricians
+              price: service?.price || 0
             });
             
-            if (createServiceResponse.service) {
-              serviceId = createServiceResponse.service.id;
+            if (createServiceResponse.id) {
+              serviceId = createServiceResponse.id;
               console.log('[DEBUG] OrderPage: Successfully created/found service ID:', serviceId);
             } else {
               throw new Error('No service returned from API');
@@ -1290,17 +1376,112 @@ const OrderPage = () => {
         console.log('[DEBUG] OrderPage: Service ID is valid:', serviceId);
       }
       
-      if (!formData.location_lat || !formData.location_lng) {
-        throw new Error('بيانات الموقع مطلوبة');
+      // Try to get location data from various sources
+      let locationLat = formData.location_lat;
+      let locationLng = formData.location_lng;
+      let locationAddress = formData.location_address;
+
+      console.log('[DEBUG] OrderPage: Initial location data:', { locationLat, locationLng, locationAddress });
+      console.log('[DEBUG] OrderPage: Service data available:', { 
+        hasService: !!service, 
+        serviceLat: service?.lat, 
+        serviceLng: service?.lng, 
+        serviceAddress: service?.address 
+      });
+
+      // If no location in form data, try to get from service data
+      if (!locationLat || !locationLng) {
+        // Check if service has location data directly
+        if (service?.lat && service?.lng) {
+          locationLat = service.lat;
+          locationLng = service.lng;
+          locationAddress = locationAddress || service.address || '';
+          console.log('[DEBUG] OrderPage: Using location from service data (direct):', { locationLat, locationLng, locationAddress });
+        }
+        // Also check nested location object
+        else if (service?.location?.lat && service?.location?.lng) {
+          locationLat = service.location.lat;
+          locationLng = service.location.lng;
+          locationAddress = locationAddress || service.location.address || '';
+          console.log('[DEBUG] OrderPage: Using location from service data (nested):', { locationLat, locationLng, locationAddress });
+        }
       }
+
+      // If still no location, try to load from backend
+      if (!locationLat || !locationLng) {
+        try {
+          console.log('[DEBUG] OrderPage: Attempting to load location from backend...');
+          const { locationService } = await import('../services/LocationService');
+          const result = await locationService.getLatestLocation();
+          
+          if (result.success && result.data) {
+            locationLat = result.data.lat;
+            locationLng = result.data.lng;
+            locationAddress = locationAddress || result.data.address || '';
+            console.log('[DEBUG] OrderPage: Successfully loaded location from backend:', { locationLat, locationLng, locationAddress });
+            
+            // Update form data for future use
+            setFormData(prev => ({
+              ...prev,
+              location_lat: locationLat,
+              location_lng: locationLng,
+              location_address: locationAddress
+            }));
+          } else {
+            // If no location from backend, use service location or default
+            if (service?.lat && service?.lng) {
+              locationLat = service.lat;
+              locationLng = service.lng;
+              locationAddress = locationAddress || service.address || 'موقع الخدمة';
+              console.log('[DEBUG] OrderPage: Using service location as fallback:', { locationLat, locationLng, locationAddress });
+            } else {
+              // Use default location (Cairo)
+              locationLat = 30.0444;
+              locationLng = 31.2357;
+              locationAddress = locationAddress || 'القاهرة، مصر';
+              console.log('[DEBUG] OrderPage: Using default location (Cairo):', { locationLat, locationLng, locationAddress });
+            }
+          }
+        } catch (locationError) {
+          console.error('[DEBUG] OrderPage: Error loading location from backend:', locationError);
+          // Use service location or default as fallback
+          if (service?.lat && service?.lng) {
+            locationLat = service.lat;
+            locationLng = service.lng;
+            locationAddress = locationAddress || service.address || 'موقع الخدمة';
+            console.log('[DEBUG] OrderPage: Using service location as error fallback:', { locationLat, locationLng, locationAddress });
+          } else {
+            // Use default location as fallback
+            locationLat = 30.0444;
+            locationLng = 31.2357;
+            locationAddress = locationAddress || 'القاهرة، مصر';
+            console.log('[DEBUG] OrderPage: Using default location as error fallback:', { locationLat, locationLng, locationAddress });
+          }
+        }
+      }
+
+      // Final check - if still no location, use service location or throw error
+      if (!locationLat || !locationLng) {
+        if (service?.lat && service?.lng) {
+          locationLat = service.lat;
+          locationLng = service.lng;
+          locationAddress = locationAddress || service.address || 'موقع الخدمة';
+          console.log('[DEBUG] OrderPage: Final fallback to service location:', { locationLat, locationLng, locationAddress });
+        } else {
+          console.error('[DEBUG] OrderPage: No location data available from any source');
+          throw new Error('بيانات الموقع مطلوبة - يرجى تحديد موقعك أو التأكد من حفظ موقعك في الملف الشخصي');
+        }
+      }
+
+      console.log('[DEBUG] OrderPage: Final location data before submission:', { locationLat, locationLng, locationAddress });
       
       const requestData = {
         service: serviceId,
         description: formData.description || `طلب خدمة من ${service?.worker_name || 'مزود الخدمة'}`,
         offered_price: parseFloat(formData.offered_price),
-        location_lat: formData.location_lat,
-        location_lng: formData.location_lng,
-        location_address: formData.location_address || 'عنوان غير محدد',
+        location_lat: locationLat,
+        location_lng: locationLng,
+        location_address: locationAddress || 'عنوان غير محدد',
         scheduled_time: new Date(formData.scheduled_time).toISOString(),
         delivery_time: new Date(formData.delivery_time).toISOString(),
       };

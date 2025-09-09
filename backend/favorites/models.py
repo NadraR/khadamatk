@@ -20,6 +20,5 @@ class Favorite(models.Model):
         unique_together = ('user', 'service')
         verbose_name = 'Favorite'
         verbose_name_plural = 'Favorites'
-
     def __str__(self):
         return f"{self.user.username} - {self.service.title}"

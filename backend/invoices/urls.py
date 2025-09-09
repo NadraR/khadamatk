@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import InvoiceViewSet, total_revenue, invoice_stats, overdue_invoices
+from .views import InvoiceViewSet, total_revenue, invoice_stats, overdue_invoices, worker_earnings, worker_earnings_summary
 
 # نحدد الـ as_view لكل نوع
 invoice_list = InvoiceViewSet.as_view({
@@ -22,4 +22,6 @@ urlpatterns = [
     path('stats/', invoice_stats, name='invoice-stats'),
     path('overdue/', overdue_invoices, name='overdue-invoices'),
     path("total-revenue/", total_revenue, name="total-revenue"),
+    path('worker/earnings/', worker_earnings, name='worker-earnings'),
+    path('worker/earnings/summary/', worker_earnings_summary, name='worker-earnings-summary'),
 ]

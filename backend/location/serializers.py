@@ -73,8 +73,6 @@ class UserLocationSerializer(serializers.ModelSerializer):
             instance.location = Point(float(lng), float(lat), srid=4326)
         
         return super().update(instance, validated_data)
-
-
 class ProviderSearchSerializer(serializers.Serializer):
     """Serializer للبحث عن مزودي الخدمة بالاسم"""
     lat = serializers.FloatField(
@@ -141,3 +139,4 @@ class ProviderSearchResultSerializer(serializers.Serializer):
     worker_profile = serializers.DictField()
     created_at = serializers.DateTimeField()
     search_metadata = serializers.DictField()
+

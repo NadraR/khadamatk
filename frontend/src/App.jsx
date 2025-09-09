@@ -42,6 +42,7 @@ import MessagesPage from "./pages/MessagesPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import InvoiceDetails from "./pages/InvoiceDetails";
 import WorkerProfileCompletion from "./pages/WorkerProfileCompletion";
+import OrderStatusEdit from "./pages/OrderStatusEdit";
 import FontTest from "./components/FontTest";
 
 function App() {
@@ -102,8 +103,10 @@ function App() {
 
         {/* Services */}
         <Route path="/service/:id" element={<Layout><ServiceDetails /></Layout>} />
+        <Route path="/service/:id/edit" element={<Layout><OrderStatusEdit /></Layout>} />
         <Route path="/services" element={<Layout><Services /></Layout>} />
         <Route path="/order" element={<Layout><OrderPage /></Layout>} />
+        <Route path="/order/:id" element={<Layout><OrderPage /></Layout>} />
         <Route path="/order-page" element={<Layout><OrderPage /></Layout>} />
         <Route path="/orders" element={<Layout><Orders /></Layout>} />
         <Route path="/orders/:id" element={<Layout><Orders /></Layout>} />

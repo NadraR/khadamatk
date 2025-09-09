@@ -86,8 +86,7 @@ class Notification(models.Model):
     def mark_as_unread(self):
         if self.read_at:
             self.read_at = None
-            self.save()
-    
+            self.save()    
     def take_action(self, action_type):
         """Mark notification action as taken"""
         if not self.action_taken:

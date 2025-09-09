@@ -1,21 +1,16 @@
-// LocationPicker.jsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useJsApiLoader, GoogleMap, Marker, InfoWindow } from '@react-google-maps/api';
 import { toast } from 'react-toastify';
 import { locationService } from '../services/LocationService';
-import { MapPin, Save, Crosshair, Navigation, Search } from 'lucide-react';
+import { MapPin, Save, Crosshair, Navigation, Search, Loader2, AlertCircle } from 'lucide-react';
+import { GOOGLE_MAPS_LIBRARIES, DEFAULT_CENTER } from '../constants/googleMaps';
 import './LocationPicker.css';
-
-const defaultCenter = { lat: 30.0444, lng: 31.2357 }; // القاهرة
-
-// Move LIBRARIES outside component to prevent recreation on every render
-const LIBRARIES = ['places', 'geometry'];
 
 export default function LocationPicker({ onLocationSelect, height = 500, initialLocation = null, showSaveButton = true, showSearchBox = true }) {
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey: apiKey,
-    libraries: LIBRARIES,
+    libraries: GOOGLE_MAPS_LIBRARIES,
     language: 'ar',
     region: 'EG',
   });
@@ -31,65 +26,86 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [currentLocationAccuracy, setCurrentLocationAccuracy] = useState(null);
+  const [isGeocoding, setIsGeocoding] = useState(false);
+  const [locationError, setLocationError] = useState(null);
+  const [isSavingLocation, setIsSavingLocation] = useState(false);
   
   const searchTimeoutRef = useRef(null);
   const geocoderRef = useRef(null);
+  const watchIdRef = useRef(null);
+  const isMountedRef = useRef(true);
+  const lastToastRef = useRef(null);
+  const toastCooldownRef = useRef(0);
+  const geolocationInProgressRef = useRef(false);
+
+  // Smart toast function to prevent duplicates
+  const showSmartToast = useCallback((message, type = 'info', options = {}) => {
+    const now = Date.now();
+    const cooldown = 2000; // 2 seconds cooldown
+    
+    // Check if same message was shown recently
+    if (lastToastRef.current === message && (now - toastCooldownRef.current) < cooldown) {
+      return; // Skip duplicate toast
+    }
+    
+    lastToastRef.current = message;
+    toastCooldownRef.current = now;
+    
+    const defaultOptions = {
+      position: "top-center",
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+    };
+    
+    toast[type](message, { ...defaultOptions, ...options });
+  }, []);
+
+  // التأكد من أن المكون لم يتم فصله قبل اكتمال العمليات غير المتزامنة
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+      if (watchIdRef.current !== null) {
+        navigator.geolocation.clearWatch(watchIdRef.current);
+      }
+      geolocationInProgressRef.current = false;
+    };
+  }, []);
 
   // Initialize geocoder
   useEffect(() => {
     if (isLoaded && window.google && window.google.maps) {
       geocoderRef.current = new window.google.maps.Geocoder();
+      
+      // Suppress Google Maps warnings
+      const originalWarn = console.warn;
+      console.warn = function(...args) {
+        const message = args[0];
+        if (message && typeof message === 'string') {
+          // Suppress marker deprecation warning
+          if (message.includes('google.maps.Marker is deprecated')) {
+            return;
+          }
+          // Suppress LoadScript performance warning
+          if (message.includes('LoadScript has been reloaded unintentionally')) {
+            return;
+          }
+        }
+        originalWarn.apply(console, args);
+      };
     }
   }, [isLoaded]);
-
-  // تحميل الموقع الحالي عند التحميل الأول فقط
-  useEffect(() => {
-    if (hasInitialized || initialLocation) return;
-    
-    setHasInitialized(true);
-    
-    // If no initial location provided, try to get current location
-    if (navigator.geolocation && !isManualSelection) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const currentLocation = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-            address: 'موقعي الحالي',
-            accuracy: position.coords.accuracy
-          };
-          setSelectedLocation(currentLocation);
-          setMarkerPosition(currentLocation);
-          setCurrentLocationAccuracy(position.coords.accuracy);
-          onLocationSelect && onLocationSelect(currentLocation);
-        },
-        (error) => {
-          console.warn('Geolocation error:', error);
-          // Fallback to default center
-          const fallbackLocation = { ...defaultCenter, address: 'القاهرة، مصر' };
-          setSelectedLocation(fallbackLocation);
-          setMarkerPosition(fallbackLocation);
-          onLocationSelect && onLocationSelect(fallbackLocation);
-        },
-        { 
-          enableHighAccuracy: true, 
-          timeout: 10000, 
-          maximumAge: 300000 // 5 minutes cache
-        }
-      );
-    } else if (!initialLocation) {
-      // Fallback to default center
-      const fallbackLocation = { ...defaultCenter, address: 'القاهرة، مصر' };
-      setSelectedLocation(fallbackLocation);
-      setMarkerPosition(fallbackLocation);
-      onLocationSelect && onLocationSelect(fallbackLocation);
-    }
-  }, [hasInitialized, initialLocation, isManualSelection, onLocationSelect]);
 
   // Geocode location to get address
   const geocodeLocation = useCallback(async (location) => {
     if (!geocoderRef.current) return location;
     
+    setIsGeocoding(true);
     try {
       const results = await new Promise((resolve, reject) => {
         geocoderRef.current.geocode({ location }, (results, status) => {
@@ -101,20 +117,329 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
         });
       });
       
-      return {
+      const locationWithAddress = {
         ...location,
         address: results[0].formatted_address,
         placeId: results[0].place_id,
         addressComponents: results[0].address_components
       };
+      
+      if (isMountedRef.current) {
+        setIsGeocoding(false);
+      }
+      return locationWithAddress;
     } catch (error) {
       console.warn('Geocoding failed:', error);
+      if (isMountedRef.current) {
+        setIsGeocoding(false);
+      }
+      
+      showSmartToast('فشل في الحصول على العنوان التفصيلي', 'warning', { autoClose: 3000 });
+      
       return {
         ...location,
         address: `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`
       };
     }
-  }, []);
+  }, [showSmartToast]);
+
+
+
+
+
+  const getCurrentLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      setLocationError("متصفحك لا يدعم الموقع الجغرافي.");
+      return;
+    }
+    
+    // Prevent multiple simultaneous geolocation attempts
+    if (geolocationInProgressRef.current) {
+      console.log('Geolocation already in progress, skipping...');
+      return;
+    }
+    
+    geolocationInProgressRef.current = true;
+    setIsGettingCurrentLocation(true);
+    setIsManualSelection(false);
+    setLocationError(null);
+    
+    // إيقاف أي عملية مراقبة سابقة
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    
+    // استراتيجية متدرجة للحصول على أفضل دقة ممكنة
+    let bestLocation = null;
+    let attempts = 0;
+    const maxAttempts = 3;
+    
+    const attemptGeolocation = (options, attemptNumber) => {
+      console.log(`Geolocation attempt ${attemptNumber} with options:`, options);
+      
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          attempts++;
+          const location = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+            timestamp: position.timestamp
+          };
+          
+          console.log(`Attempt ${attempts} - Location accuracy: ${position.coords.accuracy} meters`);
+          console.log(`Attempt ${attempts} - Location coordinates: ${position.coords.latitude}, ${position.coords.longitude}`);
+          
+          // التحقق من صحة الإحداثيات - إذا كانت خارج مصر بشكل واضح، نستخدم موقع افتراضي
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          
+          // مصر تقع تقريباً بين خط العرض 22-32 وخط الطول 25-37
+          if (lat < 22 || lat > 32 || lng < 25 || lng > 37) {
+            console.log('Coordinates outside Egypt detected, using fallback location');
+            showSmartToast('الإحداثيات خارج مصر! سيتم استخدام موقع افتراضي.', 'error', { autoClose: 4000 });
+            
+            const fallbackLocation = {
+              lat: DEFAULT_CENTER.lat,
+              lng: DEFAULT_CENTER.lng,
+              accuracy: 1000,
+              address: 'القاهرة، مصر (موقع افتراضي)'
+            };
+            processLocation(fallbackLocation);
+            return;
+          }
+          
+          // تحديث أفضل موقع إذا لم يكن لدينا موقع أو إذا كان هذا الموقع أدق
+          if (!bestLocation || position.coords.accuracy < bestLocation.accuracy) {
+            bestLocation = location;
+          }
+          
+          // إذا حصلنا على دقة جيدة (أقل من 50 متر)، نستخدمها مباشرة
+          if (position.coords.accuracy <= 50) {
+            console.log('Good accuracy achieved, using location');
+            processLocation(location);
+            return;
+          }
+          
+          // إذا حصلنا على دقة مقبولة (أقل من 500 متر) ووصلنا للمحاولة الثانية، نستخدمها
+          if (position.coords.accuracy <= 500 && attempts >= 2) {
+            console.log('Acceptable accuracy achieved after multiple attempts');
+            processLocation(bestLocation);
+            return;
+          }
+          
+          // إذا وصلنا للحد الأقصى من المحاولات
+          if (attempts >= maxAttempts) {
+            console.log('Max attempts reached, using best location found');
+            
+            // إذا كانت أفضل دقة لا تزال سيئة جداً (أكثر من 100 كم)، نستخدم موقع افتراضي
+            if (bestLocation.accuracy > 100000) {
+              console.log('All attempts resulted in extremely poor accuracy, trying watchPosition as last resort');
+              
+              // محاولة أخيرة باستخدام watchPosition
+              let watchAttempts = 0;
+              const maxWatchAttempts = 3;
+              let watchBestLocation = bestLocation;
+              
+              watchIdRef.current = navigator.geolocation.watchPosition(
+                (watchPosition) => {
+                  watchAttempts++;
+                  const watchLocation = {
+                    lat: watchPosition.coords.latitude,
+                    lng: watchPosition.coords.longitude,
+                    accuracy: watchPosition.coords.accuracy,
+                    timestamp: watchPosition.timestamp
+                  };
+                  
+                  console.log(`Watch attempt ${watchAttempts} - accuracy: ${watchPosition.coords.accuracy} meters`);
+                  
+                  // تحديث أفضل موقع إذا كان هذا أدق
+                  if (watchPosition.coords.accuracy < watchBestLocation.accuracy) {
+                    watchBestLocation = watchLocation;
+                  }
+                  
+                  // إذا حصلنا على دقة مقبولة أو وصلنا للحد الأقصى من المحاولات
+                  if (watchPosition.coords.accuracy <= 1000 || watchAttempts >= maxWatchAttempts) {
+                    navigator.geolocation.clearWatch(watchIdRef.current);
+                    watchIdRef.current = null;
+                    
+                    if (watchBestLocation.accuracy > 100000) {
+                      showSmartToast('فشل في تحديد موقع دقيق. سيتم استخدام موقع افتراضي.', 'error', { autoClose: 4000 });
+                      const fallbackLocation = {
+                        lat: DEFAULT_CENTER.lat,
+                        lng: DEFAULT_CENTER.lng,
+                        accuracy: 1000,
+                        address: 'القاهرة، مصر (موقع افتراضي)'
+                      };
+                      processLocation(fallbackLocation);
+                    } else {
+                      processLocation(watchBestLocation);
+                    }
+                  }
+                },
+                (watchError) => {
+                  console.error('Watch position failed:', watchError);
+                  navigator.geolocation.clearWatch(watchIdRef.current);
+                  watchIdRef.current = null;
+                  
+                  showSmartToast('فشل في تحديد موقع دقيق. سيتم استخدام موقع افتراضي.', 'error', { autoClose: 4000 });
+                  const fallbackLocation = {
+                    lat: DEFAULT_CENTER.lat,
+                    lng: DEFAULT_CENTER.lng,
+                    accuracy: 1000,
+                    address: 'القاهرة، مصر (موقع افتراضي)'
+                  };
+                  processLocation(fallbackLocation);
+                },
+                {
+                  enableHighAccuracy: true,
+                  timeout: 10000,
+                  maximumAge: 0
+                }
+              );
+              
+              // إيقاف watchPosition بعد 30 ثانية كحد أقصى
+              setTimeout(() => {
+                if (watchIdRef.current !== null) {
+                  navigator.geolocation.clearWatch(watchIdRef.current);
+                  watchIdRef.current = null;
+                  processLocation(watchBestLocation);
+                }
+              }, 30000);
+              
+            } else {
+              // استخدام أفضل موقع حصلنا عليه
+              processLocation(bestLocation);
+            }
+            return;
+          }
+          
+          // محاولة أخرى بإعدادات مختلفة
+          const nextOptions = attempts === 1 
+            ? { enableHighAccuracy: false, timeout: 15000, maximumAge: 30000 }  // محاولة أسرع مع دقة أقل
+            : { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };      // محاولة سريعة بدقة عالية
+            
+          setTimeout(() => attemptGeolocation(nextOptions, attempts + 1), 1000);
+        },
+        (error) => {
+          attempts++;
+          console.error(`Geolocation attempt ${attempts} failed:`, error);
+          
+          let errorMessage = '';
+          switch(error.code) {
+            case error.PERMISSION_DENIED:
+              errorMessage = 'يجب السماح بالوصول إلى الموقع في إعدادات المتصفح';
+              break;
+            case error.POSITION_UNAVAILABLE:
+              errorMessage = 'خدمة الموقع غير متاحة على جهازك';
+              break;
+            case error.TIMEOUT:
+              errorMessage = `انتهت مهلة المحاولة ${attempts}`;
+              break;
+            default:
+              errorMessage = `خطأ في المحاولة ${attempts}: ${error.message}`;
+          }
+          
+          // إذا فشلت جميع المحاولات أو كان خطأ في الصلاحيات
+          if (attempts >= maxAttempts || error.code === error.PERMISSION_DENIED) {
+            if (bestLocation) {
+              console.log('Using best location from previous attempts');
+              processLocation(bestLocation);
+            } else {
+              console.log('All geolocation attempts failed, using fallback location');
+              setLocationError(errorMessage);
+              setIsGettingCurrentLocation(false);
+              geolocationInProgressRef.current = false;
+              
+              showSmartToast(errorMessage, 'error', { autoClose: 4000 });
+              
+              // استخدام موقع افتراضي
+              const fallbackLocation = {
+                lat: DEFAULT_CENTER.lat,
+                lng: DEFAULT_CENTER.lng,
+                accuracy: 1000,
+                address: 'القاهرة، مصر (موقع افتراضي)'
+              };
+              processLocation(fallbackLocation);
+            }
+            return;
+          }
+          
+          // محاولة أخرى بإعدادات مختلفة
+          const nextOptions = attempts === 1 
+            ? { enableHighAccuracy: false, timeout: 15000, maximumAge: 30000 }
+            : { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
+            
+          setTimeout(() => attemptGeolocation(nextOptions, attempts + 1), 2000);
+        },
+        options
+      );
+    };
+    
+    // بدء المحاولة الأولى
+    const initialOptions = {
+      enableHighAccuracy: true,
+      timeout: 20000,
+      maximumAge: 0
+    };
+    
+    attemptGeolocation(initialOptions, 1);
+    
+    // دالة معالجة الموقع المشتركة
+    function processLocation(loc) {
+      // تحديث الموقع مباشرة
+      setMarkerPosition(loc);
+      setCurrentLocationAccuracy(loc.accuracy);
+      setSelectedLocation({...loc, address: 'جاري تحميل العنوان...'});
+      
+      if (map) {
+        map.panTo(loc);
+        map.setZoom(18);
+      }
+      
+      setShowInfoWindow(true);
+      
+      // الحصول على العنوان
+      geocodeLocation(loc).then(locationWithAddress => {
+        setSelectedLocation(locationWithAddress);
+        onLocationSelect && onLocationSelect(locationWithAddress);
+        
+        showSmartToast(`تم تحديد موقعك بدقة ${Math.round(loc.accuracy)} متر`, 'success', { autoClose: 3000 });
+      }).catch(() => {
+        setSelectedLocation({...loc, address: 'موقعي الحالي'});
+        onLocationSelect && onLocationSelect({...loc, address: 'موقعي الحالي'});
+        
+        showSmartToast(`تم تحديد موقعك بدقة ${Math.round(loc.accuracy)} متر`, 'success', { autoClose: 3000 });
+      }).finally(() => {
+        setIsGettingCurrentLocation(false);
+        geolocationInProgressRef.current = false;
+      });
+    }
+    
+  }, [geocodeLocation, onLocationSelect, map, showSmartToast]);
+
+
+  // تحميل الموقع الحالي عند التحميل الأول فقط
+  useEffect(() => {
+    if (hasInitialized || initialLocation) return;
+    
+    setHasInitialized(true);
+    
+    // If no initial location provided, try to get current location
+    if (navigator.geolocation && !isManualSelection) {
+      // استخدام setTimeout لتجنب مشكلة الـ dependency
+      setTimeout(() => {
+        getCurrentLocation();
+      }, 0);
+    } else if (!initialLocation) {
+      // Fallback to default center
+      const fallbackLocation = { ...DEFAULT_CENTER, address: 'القاهرة، مصر' };
+      setSelectedLocation(fallbackLocation);
+      setMarkerPosition(fallbackLocation);
+      onLocationSelect && onLocationSelect(fallbackLocation);
+    }
+  }, [hasInitialized, initialLocation, isManualSelection, onLocationSelect]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Search for places
   const searchPlaces = useCallback(async (query) => {
@@ -160,10 +485,12 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
     } catch (error) {
       console.error('Search error:', error);
       setSearchResults([]);
+      
+      showSmartToast('فشل في البحث عن الأماكن', 'error', { autoClose: 3000 });
     } finally {
       setIsSearching(false);
     }
-  }, []);
+  }, [showSmartToast]);
 
   // Handle search input with debouncing
   const handleSearchChange = (value) => {
@@ -178,65 +505,6 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
     }, 300);
   };
 
-  const getCurrentLocation = () => {
-    if (!navigator.geolocation) {
-      toast.error('المتصفح لا يدعم الموقع الحالي');
-      return;
-    }
-    
-    setIsGettingCurrentLocation(true);
-    setIsManualSelection(false);
-    
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const location = {
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-          accuracy: position.coords.accuracy
-        };
-        
-        // Geocode to get address
-        const locationWithAddress = await geocodeLocation(location);
-        locationWithAddress.address = 'موقعي الحالي - ' + (locationWithAddress.address || 'موقع غير محدد');
-        
-        setSelectedLocation(locationWithAddress);
-        setMarkerPosition(locationWithAddress);
-        setCurrentLocationAccuracy(position.coords.accuracy);
-        onLocationSelect && onLocationSelect(locationWithAddress);
-
-        if (map) {
-          map.panTo(location);
-          map.setZoom(16);
-        }
-        
-        setShowInfoWindow(true);
-        toast.success(`تم تحديد موقعك بنجاح (دقة: ${Math.round(position.coords.accuracy)}م)`);
-        setIsGettingCurrentLocation(false);
-      },
-      (error) => {
-        let errorMessage = 'فشل في الحصول على الموقع';
-        switch(error.code) {
-          case error.PERMISSION_DENIED:
-            errorMessage = 'تم رفض الإذن للوصول إلى الموقع';
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMessage = 'الموقع غير متاح';
-            break;
-          case error.TIMEOUT:
-            errorMessage = 'انتهت مهلة الحصول على الموقع';
-            break;
-        }
-        toast.error(errorMessage);
-        setIsGettingCurrentLocation(false);
-      },
-      { 
-        enableHighAccuracy: true, 
-        timeout: 15000, 
-        maximumAge: 60000 // 1 minute cache
-      }
-    );
-  };
-
   const handleMapClick = async (event) => {
     if (!event.latLng) return;
     
@@ -245,20 +513,29 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
       lng: event.latLng.lng(),
     };
     
+    // إيقاف أي عملية مراقبة للموقع جارية
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    
     // Mark as manual selection to prevent auto-location override
     setIsManualSelection(true);
+    setLocationError(null);
     
     // Update marker immediately for better UX
     setMarkerPosition(location);
     setShowInfoWindow(true);
+    
+    // Set temporary address
+    setSelectedLocation({...location, address: 'جاري تحميل العنوان...'});
     
     // Geocode to get address
     try {
       const locationWithAddress = await geocodeLocation(location);
       setSelectedLocation(locationWithAddress);
       onLocationSelect && onLocationSelect(locationWithAddress);
-      toast.success('تم تحديد الموقع يدوياً');
-    } catch (error) {
+    } catch {
       // Fallback if geocoding fails
       const fallbackLocation = {
         ...location,
@@ -266,12 +543,20 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
       };
       setSelectedLocation(fallbackLocation);
       onLocationSelect && onLocationSelect(fallbackLocation);
-      toast.success('تم تحديد الموقع يدوياً');
+      
+      showSmartToast('تم تحديد الموقع ولكن فشل في الحصول على العنوان التفصيلي', 'warning', { autoClose: 3000 });
     }
   };
 
   const handleSearchResultSelect = async (result) => {
+    // إيقاف أي عملية مراقبة للموقع جارية
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    
     setIsManualSelection(true);
+    setLocationError(null);
     setMarkerPosition(result.location);
     setSelectedLocation({
       ...result.location,
@@ -295,40 +580,44 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
       name: result.name
     });
     
-    toast.success('تم اختيار الموقع من نتائج البحث');
+    showSmartToast(`تم تحديد الموقع: ${result.name || result.address}`, 'success', { autoClose: 3000 });
   };
 
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, []);
 
   const handleSaveLocation = async () => {
-    if (!selectedLocation) {
-      toast.error('⚠️ لم يتم اختيار موقع بعد');
+    // منع النقر المتعدد
+    if (isSavingLocation) {
       return;
     }
+    
+    if (!selectedLocation) {
+      return;
+    }
+    
+    // التحقق من وجود التوكن قبل المحاولة
+    const accessToken = localStorage.getItem('access');
+    if (!accessToken || accessToken.trim() === '' || accessToken === 'null' || accessToken === 'undefined') {
+      showSmartToast('يجب تسجيل الدخول أولاً لحفظ الموقع', 'warning', { autoClose: 3000 });
+      return;
+    }
+    
+    setIsSavingLocation(true);
+    
     try {
-      const res = await locationService.saveLocation(selectedLocation);
-      if (res.success) {
-        toast.success('تم حفظ الموقع بنجاح ✅');
-      } else {
-        toast.error('فشل في حفظ الموقع ❌');
-      }
+      await locationService.saveLocation(selectedLocation);
+      showSmartToast('تم حفظ الموقع بنجاح', 'success', { autoClose: 2000 });
     } catch (error) {
       console.error('Error saving location:', error);
-      toast.error('حدث خطأ أثناء الحفظ ❌');
+      showSmartToast('فشل في حفظ الموقع', 'error', { autoClose: 3000 });
+    } finally {
+      setIsSavingLocation(false);
     }
   };
 
   if (loadError) {
     return (
       <div className="location-picker-error">
-        <div className="error-icon">⚠️</div>
+        <AlertCircle size={48} className="error-icon" />
         <h3>خطأ في تحميل الخريطة</h3>
         <p>تأكد من اتصالك بالإنترنت أو أعد تحميل الصفحة</p>
         <button 
@@ -344,7 +633,7 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
   if (!isLoaded) {
     return (
       <div className="location-picker-loading">
-        <div className="loading-spinner"></div>
+        <Loader2 className="loading-spinner animate-spin" size={48} />
         <p>جاري تحميل الخريطة...</p>
         <small>قد يستغرق هذا بضع ثواني</small>
       </div>
@@ -357,6 +646,7 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
       {showSearchBox && (
         <div className="search-container">
           <div className="search-input-wrapper">
+            <Search className="search-icon" size={20} />
             <input
               type="text"
               className="location-search-input"
@@ -364,8 +654,7 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
               value={searchQuery}
               onChange={(e) => handleSearchChange(e.target.value)}
             />
-            {isSearching && <div className="search-spinner spinner-small"></div>}
-            <Search className="search-icon" size={20} />
+            {isSearching && <Loader2 className="search-spinner animate-spin" size={16} />}
           </div>
           
           {searchResults.length > 0 && (
@@ -397,22 +686,32 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
           title="الحصول على موقعك الحالي"
         >
           {isGettingCurrentLocation ? (
-            <div className="spinner-small"></div>
+            <Loader2 className="animate-spin" size={16} />
           ) : (
             <Crosshair size={16} />
           )}
           {isGettingCurrentLocation ? 'جاري تحديد الموقع...' : 'الموقع الحالي'}
         </button>
 
+
         {showSaveButton && selectedLocation && (
           <button
             onClick={handleSaveLocation}
+            disabled={isSavingLocation}
             className="current-location-button"
-            style={{ background: '#1976d2' }}
-            title="حفظ الموقع المحدد"
+            style={{ 
+              background: isSavingLocation ? '#ccc' : '#1976d2',
+              opacity: isSavingLocation ? 0.7 : 1,
+              cursor: isSavingLocation ? 'not-allowed' : 'pointer'
+            }}
+            title={isSavingLocation ? "جاري حفظ الموقع..." : "حفظ الموقع المحدد"}
           >
+            {isSavingLocation ? (
+              <Loader2 className="animate-spin" size={16} />
+            ) : (
             <Save size={16} />
-            حفظ الموقع
+            )}
+            {isSavingLocation ? 'جاري الحفظ...' : 'حفظ الموقع'}
           </button>
         )}
         
@@ -429,6 +728,29 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
         )}
       </div>
 
+      {/* Location Status */}
+      <div className="location-status">
+        {isGettingCurrentLocation && (
+          <div className="location-status-item">
+            <Loader2 className="animate-spin" size={14} />
+            <span>جاري تحديد موقعك...</span>
+          </div>
+        )}
+        {locationError && (
+          <div className="location-error-message">
+            <AlertCircle size={16} />
+            <span>
+              {locationError === 'permission-denied' 
+                ? 'يجب السماح بالوصول إلى الموقع في إعدادات المتصفح'
+                : locationError === 'unavailable'
+                ? 'خدمة الموقع غير متاحة على جهازك'
+                : 'انتهت مهلة محاولة الوصول إلى الموقع'
+              }
+            </span>
+          </div>
+        )}
+      </div>
+
       {/* Location Info */}
       {selectedLocation && (
         <div className="location-info">
@@ -437,12 +759,18 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
             <span className="location-type">
               {isManualSelection ? '📍 موقع محدد يدوياً' : '📍 موقعك الحالي'}
             </span>
+            {isGeocoding && <Loader2 className="animate-spin" size={14} />}
           </div>
           <div className="location-details">
             <p className="address">{selectedLocation.address || 'عنوان غير متوفر'}</p>
             {currentLocationAccuracy && (
               <small className="accuracy">دقة الموقع: {Math.round(currentLocationAccuracy)} متر</small>
             )}
+            <div className="coordinates">
+              <small>
+                الإحداثيات: {selectedLocation.lat?.toFixed(6)}, {selectedLocation.lng?.toFixed(6)}
+              </small>
+            </div>
           </div>
         </div>
       )}
@@ -450,7 +778,7 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
       {/* Map Container */}
       <div className="map-container">
         <GoogleMap
-          center={selectedLocation || defaultCenter}
+          center={selectedLocation || DEFAULT_CENTER}
           zoom={selectedLocation ? 15 : 10}
           mapContainerStyle={{ width: '100%', height: `${height}px` }}
           onLoad={(mapInstance) => setMap(mapInstance)}
@@ -475,42 +803,17 @@ export default function LocationPicker({ onLocationSelect, height = 500, initial
           {markerPosition && (
             <Marker 
               position={markerPosition}
-              animation={window.google?.maps?.Animation?.BOUNCE}
+              title={isManualSelection ? 'موقع محدد يدوياً' : 'موقعك الحالي'}
+              animation={window.google?.maps?.Animation?.DROP}
               icon={{
                 url: isManualSelection 
-                  ? 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiNGRjY5MDAiLz4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iOCIgZmlsbD0id2hpdGUiLz4KPC9zdmc+Cg=='
-                  : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTYiIGZpbGw9IiMwMDdCRkYiLz4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iOCIgZmlsbD0id2hpdGUiLz4KPC9zdmc+Cg==',
-                scaledSize: new window.google.maps.Size(24, 24),
-                anchor: new window.google.maps.Point(12, 12)
+                  ? 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTIiIGZpbGw9IiNmZjQ0NDQiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIyIi8+CjxjaXJjbGUgY3g9IjE2IiBjeT0iMTYiIHI9IjQiIGZpbGw9IiNmZmZmZmYiLz4KPC9zdmc+'
+                  : 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMTYiIGN5PSIxNiIgcj0iMTIiIGZpbGw9IiMzMzY2ZmYiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIyIi8+CjxjaXJjbGUgY3g9IjE2IiBjeT0iMTYiIHI9IjQiIGZpbGw9IiNmZmZmZmYiLz4KPC9zdmc+'
               }}
-            >
-              {showInfoWindow && (
-                <InfoWindow
-                  onCloseClick={() => setShowInfoWindow(false)}
-                >
-                  <div className="info-window-content">
-                    <h4>{isManualSelection ? 'موقع محدد يدوياً' : 'موقعك الحالي'}</h4>
-                    <p>{selectedLocation.address}</p>
-                    {selectedLocation.name && (
-                      <p><strong>{selectedLocation.name}</strong></p>
-                    )}
-                    <div className="coordinates">
-                      <small>
-                        {selectedLocation.lat?.toFixed(6)}, {selectedLocation.lng?.toFixed(6)}
-                      </small>
-                    </div>
-                  </div>
-                </InfoWindow>
-              )}
-            </Marker>
+            />
           )}
         </GoogleMap>
       </div>
-
-      {/* Instructions */}
-      <div className="location-instructions">
-        <p>💡 <strong>تلميح:</strong> انقر على الخريطة لتحديد موقع يدوياً أو استخدم زر "الموقع الحالي"</p>
-      </div>
     </div>
   );
-}
+};

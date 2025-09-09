@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('accounts', '0009_fix_certifications_field'),
+        ('accounts', '0008_alter_workerprofile_estimated_price_and_more'),
     ]
 
     operations = [

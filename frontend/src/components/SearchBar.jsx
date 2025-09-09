@@ -557,6 +557,7 @@ const StyledWrapper = styled.div`
     .suggestion-category {
       font-size: 10px;
     }
-  }`;
+  }
+`;
 
 export default SearchBar;

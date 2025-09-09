@@ -5,7 +5,9 @@ from .views import (
     MessageListCreateView, 
     UserConversationsView,
     get_unread_message_count,
-    get_recent_messages
+    get_recent_messages,
+    mark_messages_as_read,
+    mark_all_messages_as_read
 )
 
 urlpatterns = [
@@ -17,4 +19,6 @@ urlpatterns = [
     path("conversations/", UserConversationsView.as_view(), name="user-conversations"),
     path("messages/unread-count/", get_unread_message_count, name="unread-message-count"),
     path("messages/recent/", get_recent_messages, name="recent-messages"),
+    path("messages/mark-read/", mark_messages_as_read, name="mark-messages-read"),
+    path("messages/mark-all-read/", mark_all_messages_as_read, name="mark-all-messages-read"),
 ]

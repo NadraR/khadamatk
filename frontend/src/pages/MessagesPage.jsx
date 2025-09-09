@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { useLocation } from "react-router-dom";
-import { FaPaperPlane, FaSpinner } from "react-icons/fa";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { FaPaperPlane, FaSpinner, FaArrowLeft } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import { toast } from "react-toastify";
 import chatService from "../services/chatService";
@@ -9,6 +9,8 @@ import "./MessagesPage.css";
 const MessagesPage = () => {
   const { i18n } = useTranslation();
   const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [conversations, setConversations] = useState([]);
   const [activeConversation, setActiveConversation] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -23,86 +25,148 @@ const MessagesPage = () => {
     try {
       setLoading(true);
       setError(null);
-      const result = await chatService.getUserOrders();
+      
+      // Get current user info
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      console.log('[DEBUG] MessagesPage: Loading conversations for user:', currentUser);
+      
+      // Use the proper API endpoint for conversations
+      const result = await chatService.getUserConversations();
       
       if (!result.success) {
-        throw new Error(result.error);
-      }
-      
-      // Handle different response formats from the API
-      let orders = result.data || [];
-      
-      // If the response has a results property (paginated), use that
-      if (result.data && result.data.results) {
-        orders = result.data.results;
-      } else if (result.data && !Array.isArray(result.data)) {
-        // If data is an object but not an array, try to extract array from common properties
-        orders = result.data.data || result.data.orders || [];
-      }
-      
-      // Ensure orders is an array
-      if (!Array.isArray(orders)) {
-        console.warn('Orders data is not an array:', orders);
-        orders = [];
-      }
-      
-      // Filter out cancelled orders and transform into conversation format
-      const conversationsData = orders
-        .filter(order => order.status !== 'cancelled') // Don't show cancelled orders
-        .filter(order => ['accepted', 'completed', 'in_progress'].includes(order.status)) // Only show active orders
-        .map(order => {
-          // Determine the other party's name based on current user role
-          const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-          let otherPartyName = 'Unknown User';
+        console.warn('No conversations found, trying orders fallback');
+        // Fallback to orders if conversations API fails
+        const ordersResult = await chatService.getUserOrders();
+        
+        if (!ordersResult.success) {
+          throw new Error(ordersResult.error);
+        }
+        
+        // Handle different response formats from the API
+        let orders = ordersResult.data || [];
+        
+        // If the response has a results property (paginated), use that
+        if (ordersResult.data && ordersResult.data.results) {
+          orders = ordersResult.data.results;
+        } else if (ordersResult.data && !Array.isArray(ordersResult.data)) {
+          // If data is an object but not an array, try to extract array from common properties
+          orders = ordersResult.data.data || ordersResult.data.orders || [];
+        }
+        
+        // Ensure orders is an array
+        if (!Array.isArray(orders)) {
+          console.warn('Orders data is not an array:', orders);
+          orders = [];
+        }
+        
+        // Filter orders based on user role
+        let filteredOrders = orders;
+        if (currentUser.role === 'worker') {
+          // For workers, show orders where they are the worker or service provider
+          filteredOrders = orders.filter(order => 
+            order.worker_id === currentUser.id || 
+            order.service?.provider?.id === currentUser.id ||
+            order.service?.user_id === currentUser.id ||
+            order.worker === currentUser.id
+          );
+        } else {
+          // For clients, show orders where they are the customer
+          filteredOrders = orders.filter(order => 
+            order.customer === currentUser.id || 
+            order.customer_id === currentUser.id
+          );
+        }
+        
+        // Filter out cancelled orders and transform into conversation format
+        const conversationsData = filteredOrders
+          .filter(order => order.status !== 'cancelled') // Don't show cancelled orders
+          .filter(order => ['accepted', 'completed', 'in_progress', 'pending'].includes(order.status)) // Show all active orders
+          .map(order => {
+            // Determine the other party's name based on current user role
+            let otherPartyName = 'Unknown User';
+            
+            if (currentUser.role === 'worker') {
+              // Worker sees client name
+              otherPartyName = order.customer_first_name && order.customer_last_name 
+                ? `${order.customer_first_name} ${order.customer_last_name}`
+                : order.customer_name || order.customer_username || 'عميل غير محدد';
+            } else {
+              // Client sees worker name
+              otherPartyName = order.worker_name || order.worker_username || 'عامل غير محدد';
+            }
+            
+            return {
+              id: order.id,
+              orderId: order.id,
+              name: otherPartyName,
+              lastMessage: order.status || 'No messages yet',
+              unread: 0, // TODO: Implement unread count
+              status: order.status,
+              service: order.service_name || order.service?.title || 'Unknown Service'
+            };
+          });
+        
+        setConversations(conversationsData);
+        
+        // Auto-select conversation if orderId is provided in location state or URL params
+        const targetOrderId = location.state?.orderId || searchParams.get('orderId');
+        if (targetOrderId) {
+          let targetConversation = conversationsData.find(conv => conv.orderId === parseInt(targetOrderId));
           
-          if (currentUser.role === 'worker') {
-            // Worker sees client name
-            otherPartyName = order.customer_first_name && order.customer_last_name 
-              ? `${order.customer_first_name} ${order.customer_last_name}`
-              : order.customer_name || 'عميل غير محدد';
-          } else {
-            // Client sees worker name
-            otherPartyName = order.worker_name || 'عامل غير محدد';
+          // If conversation doesn't exist yet, create a placeholder
+          if (!targetConversation && (location.state?.clientName || location.state?.workerName)) {
+            const otherPartyName = location.state?.clientName || location.state?.workerName || 'Unknown User';
+            targetConversation = {
+              id: targetOrderId,
+              orderId: targetOrderId,
+              name: otherPartyName,
+              lastMessage: 'بدء محادثة جديدة',
+              unread: 0,
+              status: 'accepted',
+              service: location.state?.serviceName || 'خدمة غير محددة'
+            };
+            setConversations(prev => [targetConversation, ...prev]);
           }
           
-          return {
-            id: order.id,
-            orderId: order.id,
-            name: otherPartyName,
-            lastMessage: order.status || 'No messages yet',
-            unread: 0, // TODO: Implement unread count
-            status: order.status,
-            service: order.service_name || order.service?.title || 'Unknown Service'
-          };
-        });
-      
-      setConversations(conversationsData);
-      
-      // Auto-select conversation if orderId is provided in location state
-      const targetOrderId = location.state?.orderId;
-      if (targetOrderId) {
-        let targetConversation = conversationsData.find(conv => conv.orderId === parseInt(targetOrderId));
-        
-        // If conversation doesn't exist yet, create a placeholder
-        if (!targetConversation && location.state?.clientName) {
-          targetConversation = {
-            id: targetOrderId,
-            orderId: targetOrderId,
-            name: location.state.clientName,
-            lastMessage: 'بدء محادثة جديدة',
-            unread: 0,
-            status: 'accepted',
-            service: location.state.serviceName || 'خدمة غير محددة'
-          };
-          setConversations(prev => [targetConversation, ...prev]);
+          if (targetConversation) {
+            setActiveConversation(targetConversation);
+          }
         }
+      } else {
+        // Use conversations API response
+        const conversationsData = result.data || [];
+        console.log('[DEBUG] MessagesPage: Loaded conversations:', conversationsData);
+        setConversations(conversationsData);
         
-        if (targetConversation) {
-          setActiveConversation(targetConversation);
+        // Auto-select conversation if orderId is provided in location state or URL params
+        const targetOrderId = location.state?.orderId || searchParams.get('orderId');
+        if (targetOrderId) {
+          let targetConversation = conversationsData.find(conv => conv.orderId === parseInt(targetOrderId));
+          
+          // If conversation doesn't exist yet, create a placeholder
+          if (!targetConversation && (location.state?.clientName || location.state?.workerName)) {
+            const otherPartyName = location.state?.clientName || location.state?.workerName || 'Unknown User';
+            targetConversation = {
+              id: targetOrderId,
+              orderId: targetOrderId,
+              name: otherPartyName,
+              lastMessage: 'بدء محادثة جديدة',
+              unread: 0,
+              status: 'accepted',
+              service: location.state?.serviceName || 'خدمة غير محددة'
+            };
+            setConversations(prev => [targetConversation, ...prev]);
+          }
+          
+          if (targetConversation) {
+            setActiveConversation(targetConversation);
+          }
         }
       }
       
-      if (conversationsData.length === 0 && !location.state?.orderId) {
+      // Check if no conversations found
+      const totalConversations = conversations.length;
+      if (totalConversations === 0 && !targetOrderId) {
         toast.info(i18n.language === 'ar' ? 'لا توجد محادثات متاحة' : 'No conversations available');
       }
     } catch (error) {
@@ -113,7 +177,7 @@ const MessagesPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [i18n.language, location.state]);
+  }, [i18n.language, location.state, searchParams]);
 
   const loadMessages = useCallback(async (orderId) => {
     try {
@@ -275,6 +339,16 @@ const MessagesPage = () => {
     }
   };
 
+  const handleBackToDashboard = () => {
+    // Check user role and navigate accordingly
+    const userData = JSON.parse(localStorage.getItem('user') || '{}');
+    if (userData.role === 'worker') {
+      navigate('/homeProvider');
+    } else {
+      navigate('/homeClient');
+    }
+  };
+
   if (loading) {
     return (
       <div className="messages-page">
@@ -290,7 +364,13 @@ const MessagesPage = () => {
     <div className="messages-page">
       {/* Sidebar Conversations */}
       <div className="conversations-list">
-        <h3>{i18n.language === 'ar' ? 'الرسائل' : 'Messages'}</h3>
+        <div className="conversations-header">
+          <button className="back-button" onClick={handleBackToDashboard}>
+            <FaArrowLeft />
+            {i18n.language === 'ar' ? 'رجوع' : 'Back'}
+          </button>
+          <h3>{i18n.language === 'ar' ? 'الرسائل' : 'Messages'}</h3>
+        </div>
         {error && (
           <div className="error-message">
             {error}

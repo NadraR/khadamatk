@@ -16,3 +16,7 @@ class InvoiceAdmin(admin.ModelAdmin):
         updated_count = queryset.update(status=Invoice.STATUS_PAID, paid_at=timezone.now())
         self.message_user(request, _("تم تحديد {} فاتورة كمدفوعة").format(updated_count))
     mark_as_paid.short_description = _("تحديد الفواتير المحددة كمدفوعة")
+
+
+
+

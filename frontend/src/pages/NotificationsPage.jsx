@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import "bootstrap/dist/css/bootstrap.min.css";
 import { 
   BsBell, BsCheck2All, BsFilter, BsSearch, BsX,
@@ -120,7 +120,7 @@ const NotificationsPage = () => {
   // Apply filters when they change
   useEffect(() => {
     applyFilters();
-  }, [notifications, filterLevel, filterRead, searchTerm]);
+  }, [applyFilters]);
 
   const loadNotifications = async (pageNum = 1, append = false) => {
     setLoading(true);
@@ -164,7 +164,7 @@ const NotificationsPage = () => {
     }
   };
 
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     let filtered = [...notifications];
     
     // Filter by level
@@ -190,7 +190,7 @@ const NotificationsPage = () => {
     }
     
     setFilteredNotifications(filtered);
-  };
+  }, [notifications, filterLevel, filterRead, searchTerm]);
 
   const handleNotificationClick = async (notification) => {
     // Mark as read if unread
@@ -669,6 +669,3 @@ const NotificationsPage = () => {
 };
 
 export default NotificationsPage;
-
-
-

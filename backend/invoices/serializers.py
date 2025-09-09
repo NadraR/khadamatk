@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.utils.translation import gettext_lazy as _
-from .models import Invoice
+from .models import Invoice, WorkerEarnings
 from orders.models import Order
 
 class InvoiceSerializer(serializers.ModelSerializer):
@@ -25,3 +25,19 @@ class InvoiceSerializer(serializers.ModelSerializer):
         # امنع تغيير order_id
         validated_data.pop("order", None)
         return super().update(instance, validated_data)
+
+
+class WorkerEarningsSerializer(serializers.ModelSerializer):
+    invoice_id = serializers.IntegerField(source='invoice.id', read_only=True)
+    order_id = serializers.IntegerField(source='invoice.order.id', read_only=True)
+    service_name = serializers.CharField(source='invoice.order.service.title', read_only=True)
+    customer_name = serializers.CharField(source='invoice.order.customer.get_full_name', read_only=True)
+    
+    class Meta:
+        model = WorkerEarnings
+        fields = [
+            'id', 'invoice_id', 'order_id', 'gross_amount', 'platform_fee', 
+            'net_earnings', 'created_at', 'service_name', 'customer_name'
+        ]
+        read_only_fields = ['id', 'created_at', 'platform_fee', 'net_earnings']
+

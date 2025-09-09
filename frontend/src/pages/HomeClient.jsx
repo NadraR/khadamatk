@@ -26,7 +26,13 @@ import {
 } from 'react-icons/fa';
 import apiService from '../services/ApiService';
 import invoiceService from '../services/InvoiceService';
+import ReviewService from '../services/ReviewService';
+import RatingService from '../services/RatingService';
+import ReviewCard from '../components/ReviewCard';
+import ReviewModal from '../components/ReviewModal';
+import RatingStars from '../components/RatingStars';
 import Navbar from '../components/Navbar';
+import { toast } from 'react-toastify';
 import './HomeClient.css';
 
 // Translation object
@@ -238,6 +244,9 @@ const HomeClient = () => {
   const [loading, setLoading] = useState(true);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [selectedOrderForReview, setSelectedOrderForReview] = useState(null);
+  const [reviewLoading, setReviewLoading] = useState(false);
   const [language, setLanguage] = useState('ar');
   const [stats, setStats] = useState({
     totalOrders: 0,
@@ -256,6 +265,7 @@ const HomeClient = () => {
   
   // Filter state for orders
   const [orderFilter, setOrderFilter] = useState('all');
+  const [disableUserFilter, setDisableUserFilter] = useState(false); // خيار لتعطيل تصفية المستخدم
 
   // Translation function
   const t = useCallback((key) => {
@@ -287,6 +297,7 @@ const HomeClient = () => {
       'all': t('allStatuses'),
       'pending': t('pending'),
       'accepted': t('accepted'),
+      'rejected': 'مرفوض',
       'completed': t('completed'),
       'cancelled': t('cancelled'),
       'in_progress': t('inProgress')
@@ -314,17 +325,89 @@ const HomeClient = () => {
     }
   }, [navigate]);
 
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async () => {
     try {
+      console.log('[DEBUG] Starting loadOrders for user:', user?.id);
+      console.log('[DEBUG] Making API call to /api/orders/');
+      
+      // جلب جميع الطلبات للعميل الحالي
       const response = await apiService.get('/api/orders/');
-      console.log('[DEBUG] loadOrders response:', response);
-      setOrders(response || []);
+      console.log('[DEBUG] loadOrders raw response:', response);
+      console.log('[DEBUG] Response type:', typeof response, 'Is array:', Array.isArray(response));
+      
+      // Extract orders array from response
+      let ordersData = response?.results || response?.data || response || [];
+      
+      // التأكد من أن البيانات هي مصفوفة
+      if (!Array.isArray(ordersData)) {
+        console.warn('[DEBUG] Orders data is not an array:', ordersData);
+        ordersData = [];
+      }
+      
+      // تصفية الطلبات للعميل الحالي فقط (إذا لم تكن مصففة من الخادم)
+      const currentUserId = user?.id;
+      console.log('[DEBUG] Current user ID:', currentUserId);
+      console.log('[DEBUG] Orders before filtering:', ordersData);
+      console.log('[DEBUG] Disable user filter:', disableUserFilter);
+      
+      if (!disableUserFilter && currentUserId && ordersData.length > 0) {
+        // فحص عينة من الطلبات لفهم البنية
+        console.log('[DEBUG] Sample order structure:', ordersData[0]);
+        
+        ordersData = ordersData.filter(order => {
+          // فحص جميع الحقول المحتملة للعميل
+          const possibleClientFields = [
+            order.client_id,
+            order.user_id,
+            order.client,
+            order.client?.id,
+            order.user?.id,
+            order.customer_id,
+            order.customer?.id,
+            order.user_id,
+            order.user?.id
+          ];
+          
+          const matches = possibleClientFields.some(field => {
+            if (field === currentUserId) return true;
+            if (typeof field === 'string' && parseInt(field) === currentUserId) return true;
+            if (typeof field === 'number' && field === currentUserId) return true;
+            return false;
+          });
+          
+          // فحص إضافي بالبريد الإلكتروني إذا لم نجد تطابق بالـ ID
+          if (!matches && user?.email && order.customer_email) {
+            const emailMatch = user.email === order.customer_email;
+            console.log(`[DEBUG] Email check: user.email=${user.email}, order.customer_email=${order.customer_email}, match=${emailMatch}`);
+            return emailMatch;
+          }
+          
+          console.log(`[DEBUG] Order ${order.id}:`, {
+            client_id: order.client_id,
+            user_id: order.user_id,
+            client: order.client,
+            customer_id: order.customer_id,
+            customer: order.customer,
+            customer_name: order.customer_name,
+            customer_email: order.customer_email,
+            possibleFields: possibleClientFields,
+            matches: matches
+          });
+          
+          return matches;
+        });
+      } else if (disableUserFilter) {
+        console.log('[DEBUG] User filtering disabled - showing all orders');
+      }
+      
+      console.log('[DEBUG] Filtered orders for current user:', ordersData);
+      setOrders(ordersData);
       
       // Calculate stats
-      const totalOrders = response?.length || 0;
-      const completedOrders = response?.filter(order => order.status === 'completed')?.length || 0;
-      const pendingOrders = response?.filter(order => order.status === 'pending')?.length || 0;
-      const totalSpent = response?.reduce((sum, order) => sum + parseFloat(order.offered_price || 0), 0) || 0;
+      const totalOrders = ordersData.length;
+      const completedOrders = ordersData.filter(order => order.status === 'completed').length;
+      const pendingOrders = ordersData.filter(order => order.status === 'pending').length;
+      const totalSpent = ordersData.reduce((sum, order) => sum + parseFloat(order.offered_price || 0), 0);
       
       setStats(prev => ({
         ...prev,
@@ -334,26 +417,52 @@ const HomeClient = () => {
         totalSpent
       }));
     } catch (error) {
-      console.error('Error loading orders:', error);
+      console.error('[DEBUG] Exception in loadOrders:', error);
+      console.error('[DEBUG] Error details:', {
+        message: error.message,
+        code: error.code,
+        status: error.status,
+        response: error.response
+      });
       setOrders([]);
+      
+      // إظهار رسالة خطأ للمستخدم
+      if (error.code === 'ECONNABORTED') {
+        toast.error('مشكلة في الاتصال بالخادم. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.', {
+          position: "top-center",
+          autoClose: 5000,
+        });
+      } else {
+        toast.error(`خطأ في تحميل الطلبات: ${error.message}`, {
+          position: "top-center",
+          autoClose: 5000,
+        });
+      }
     }
-  };
+  }, [user?.id, user?.email, disableUserFilter]);
 
-  const loadFavorites = async () => {
+  const loadFavorites = useCallback(async () => {
     try {
-      // Assuming there's a favorites endpoint
-      const response = await apiService.get('/api/favorites/');
-      setFavorites(response || []);
+      // Skip favorites for now as endpoint doesn't exist
+      setFavorites([]);
     } catch (error) {
       console.error('Error loading favorites:', error);
       setFavorites([]);
     }
-  };
+  }, []);
 
-  const loadInvoices = async () => {
+  const loadInvoices = useCallback(async () => {
     try {
+      console.log('[DEBUG] Starting loadInvoices for user:', user?.id);
+      console.log('[DEBUG] Making API call via invoiceService.getMyInvoices()');
+      
       const result = await invoiceService.getMyInvoices();
+      console.log('[DEBUG] loadInvoices raw result:', result);
+      
       if (result.success) {
+        console.log('[DEBUG] Invoices loaded successfully:', result.data);
+        console.log('[DEBUG] Invoices array length:', result.data?.length || 0);
+        console.log('[DEBUG] Invoices sample:', result.data?.[0] || 'No invoices');
         setInvoices(result.data || []);
         
         // Update statistics based on invoices
@@ -370,16 +479,37 @@ const HomeClient = () => {
           totalAmount: totalAmount.toFixed(2)
         }));
       } else {
-        console.error('Error loading invoices:', result.error);
+        console.error('[DEBUG] Failed to load invoices:', result.error);
+        console.error('[DEBUG] Full result object:', result);
         setInvoices([]);
       }
     } catch (error) {
-      console.error('Error loading invoices:', error);
+      console.error('[DEBUG] Exception in loadInvoices:', error);
+      console.error('[DEBUG] Error details:', {
+        message: error.message,
+        code: error.code,
+        status: error.status,
+        response: error.response
+      });
       setInvoices([]);
     }
-  };
+  }, []);
 
-  const loadReviews = async () => {
+  // Function to refresh invoices when returning to the page
+  const refreshInvoices = useCallback(async () => {
+    if (activeTab === 'invoices' || activeTab === 'overview') {
+      await loadInvoices();
+    }
+  }, [activeTab, loadInvoices, user?.id]);
+
+  // Function to refresh orders when returning to the page
+  const refreshOrders = useCallback(async () => {
+    if (activeTab === 'orders' || activeTab === 'overview') {
+      await loadOrders();
+    }
+  }, [activeTab, loadOrders]);
+
+  const loadReviews = useCallback(async () => {
     try {
       const response = await apiService.get('/api/reviews/my-reviews/');
       setReviews(response || []);
@@ -387,9 +517,9 @@ const HomeClient = () => {
       console.error('Error loading reviews:', error);
       setReviews([]);
     }
-  };
+  }, [user?.id]);
 
-  const loadRatings = async () => {
+  const loadRatings = useCallback(async () => {
     try {
       const response = await apiService.get('/api/ratings/my-ratings/');
       // setRatings(response || []);
@@ -403,11 +533,15 @@ const HomeClient = () => {
       console.error('Error loading ratings:', error);
       // setRatings([]);
     }
-  };
+  }, [user?.id]);
 
   const loadClientData = useCallback(async () => {
     try {
       setLoading(true);
+      console.log('[DEBUG] Starting loadClientData for user:', user);
+      console.log('[DEBUG] User ID:', user?.id, 'Role:', user?.role);
+      console.log('[DEBUG] Access token exists:', !!localStorage.getItem('access'));
+      
       await Promise.all([
         loadOrders(),
         loadFavorites(),
@@ -415,12 +549,14 @@ const HomeClient = () => {
         loadReviews(),
         loadRatings()
       ]);
+      
+      console.log('[DEBUG] All data loading completed');
     } catch (error) {
-      console.error('Error loading client data:', error);
+      console.error('[DEBUG] Error in loadClientData:', error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user, loadOrders, loadFavorites, loadInvoices, loadReviews, loadRatings]);
 
   useEffect(() => {
     checkAuthentication();
@@ -432,10 +568,44 @@ const HomeClient = () => {
     }
   }, [user, loadClientData]);
 
+  // Refresh data when tab changes
+  useEffect(() => {
+    if (user) {
+      refreshInvoices();
+      refreshOrders();
+    }
+  }, [activeTab, user, refreshInvoices, refreshOrders]);
+
+  // Auto-refresh invoices every 30 seconds when on invoices tab
+  useEffect(() => {
+    if (activeTab === 'invoices' && user) {
+      const interval = setInterval(() => {
+        loadInvoices();
+      }, 30000); // Refresh every 30 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [activeTab, user, loadInvoices]);
+
+  // Listen for invoice payment events
+  useEffect(() => {
+    const handleInvoicePaid = () => {
+      console.log('[HomeClient] Invoice payment detected, refreshing invoices...');
+      loadInvoices();
+    };
+
+    window.addEventListener('invoicePaid', handleInvoicePaid);
+    
+    return () => {
+      window.removeEventListener('invoicePaid', handleInvoicePaid);
+    };
+  }, [loadInvoices]);
+
   const getOrderStatusBadge = (status) => {
     const statusConfig = {
       pending: { class: 'badge-warning', icon: FaClock, text: t('pending') },
       accepted: { class: 'badge-info', icon: FaCheck, text: t('accepted') },
+      rejected: { class: 'badge-danger', icon: FaExclamationTriangle, text: 'مرفوض' },
       completed: { class: 'badge-success', icon: FaCheck, text: t('completed') },
       cancelled: { class: 'badge-danger', icon: FaExclamationTriangle, text: t('cancelled') },
       in_progress: { class: 'badge-primary', icon: FaClock, text: t('inProgress') }
@@ -468,6 +638,17 @@ const HomeClient = () => {
     );
   };
 
+  const getPaymentMethodText = (method) => {
+    const methods = {
+      'cash': 'نقداً',
+      'card': 'بطاقة ائتمان',
+      'wallet': 'محفظة إلكترونية',
+      'bank': 'تحويل بنكي',
+      'online': 'دفع إلكتروني'
+    };
+    return methods[method] || 'غير محدد';
+  };
+
   const removeFavorite = async (favoriteId) => {
     try {
       await apiService.delete(`/api/favorites/${favoriteId}/`);
@@ -485,6 +666,59 @@ const HomeClient = () => {
       }
     } catch (error) {
       console.error('Error downloading invoice:', error);
+    }
+  };
+
+  const checkServerConnection = async () => {
+    toast.info('جاري فحص الاتصال بالخادم...', { autoClose: 2000 });
+    
+    try {
+      // فحص الاتصال العام
+      const adminResponse = await fetch('http://localhost:8000/admin/', { 
+        method: 'HEAD',
+        timeout: 5000 
+      });
+      
+      console.log('[DEBUG] Admin endpoint response:', adminResponse.status);
+      
+      // فحص API endpoints المحددة
+      const ordersResponse = await fetch('http://localhost:8000/api/orders/', {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access')}`
+        },
+        timeout: 5000
+      });
+      
+      console.log('[DEBUG] Orders API response:', ordersResponse.status);
+      
+      const invoicesResponse = await fetch('http://localhost:8000/api/invoices/my_invoices/', {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access')}`
+        },
+        timeout: 5000
+      });
+      
+      console.log('[DEBUG] Invoices API response:', invoicesResponse.status);
+      
+      if (adminResponse.ok && ordersResponse.ok && invoicesResponse.ok) {
+        toast.success('جميع endpoints تعمل بشكل طبيعي', { autoClose: 3000 });
+      } else {
+        toast.warning(`بعض endpoints تعطي أخطاء: Admin(${adminResponse.status}), Orders(${ordersResponse.status}), Invoices(${invoicesResponse.status})`, { 
+          autoClose: 6000 
+        });
+      }
+    } catch (error) {
+      console.error('Server connection check failed:', error);
+      toast.error('فشل الاتصال بالخادم. تأكد من تشغيل الخادم الخلفي على المنفذ 8000', { 
+        autoClose: 5000,
+        position: "top-center" 
+      });
     }
   };
 
@@ -522,12 +756,63 @@ const HomeClient = () => {
     });
   };
 
+  const handleRateOrder = (order) => {
+    console.log('[DEBUG] handleRateOrder called with order:', order);
+    setSelectedOrderForReview(order);
+    setShowReviewModal(true);
+  };
+
+  const handleReviewOrder = (order) => {
+    console.log('[DEBUG] handleReviewOrder called with order:', order);
+    setSelectedOrderForReview(order);
+    setShowReviewModal(true);
+  };
+
+  const handleReviewSubmit = async (reviewData) => {
+    try {
+      setReviewLoading(true);
+      console.log('[DEBUG] Submitting review:', reviewData);
+      
+      const result = await ReviewService.createReview({
+        service_id: reviewData.service_id,
+        order_id: reviewData.order_id,
+        score: reviewData.score,
+        comment: reviewData.comment
+      });
+
+      if (result.success) {
+        console.log('[DEBUG] Review created successfully');
+        // Refresh reviews
+        await loadReviews();
+        setShowReviewModal(false);
+        setSelectedOrderForReview(null);
+        
+        // Show success message
+        alert('تم إرسال المراجعة بنجاح!');
+      } else {
+        console.error('[DEBUG] Failed to create review:', result.error);
+        alert('حدث خطأ في إرسال المراجعة: ' + result.error);
+      }
+    } catch (error) {
+      console.error('[DEBUG] Error creating review:', error);
+      alert('حدث خطأ في إرسال المراجعة');
+    } finally {
+      setReviewLoading(false);
+    }
+  };
+
+  const handleReviewModalClose = () => {
+    setShowReviewModal(false);
+    setSelectedOrderForReview(null);
+  };
+
   const renderStars = (rating) => {
     return [...Array(5)].map((_, index) => (
       <FaStar 
         key={index} 
         className={index < rating ? 'text-warning' : 'text-muted'} 
       />
+      
     ));
   };
 
@@ -620,7 +905,17 @@ const HomeClient = () => {
           </div>
         </div>
         <div className="col-md-3">
-          <div className="stat-card">
+          <div className="stat-card" 
+               onClick={() => setActiveTab('invoices')}
+               style={{ cursor: 'pointer', transition: 'all 0.3s ease' }}
+               onMouseEnter={(e) => {
+                 e.currentTarget.style.transform = 'translateY(-5px)';
+                 e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,123,255,0.2)';
+               }}
+               onMouseLeave={(e) => {
+                 e.currentTarget.style.transform = 'translateY(0)';
+                 e.currentTarget.style.boxShadow = '0 4px 10px rgba(0,0,0,0.05)';
+               }}>
             <div className="stat-icon">
               <FaReceipt />
             </div>
@@ -631,7 +926,17 @@ const HomeClient = () => {
           </div>
         </div>
         <div className="col-md-3">
-          <div className="stat-card">
+          <div className="stat-card" 
+               onClick={() => setActiveTab('invoices')}
+               style={{ cursor: 'pointer', transition: 'all 0.3s ease' }}
+               onMouseEnter={(e) => {
+                 e.currentTarget.style.transform = 'translateY(-5px)';
+                 e.currentTarget.style.boxShadow = '0 8px 20px rgba(40,167,69,0.2)';
+               }}
+               onMouseLeave={(e) => {
+                 e.currentTarget.style.transform = 'translateY(0)';
+                 e.currentTarget.style.boxShadow = '0 4px 10px rgba(0,0,0,0.05)';
+               }}>
             <div className="stat-icon">
               <FaCheck />
             </div>
@@ -642,7 +947,17 @@ const HomeClient = () => {
           </div>
         </div>
         <div className="col-md-3">
-          <div className="stat-card">
+          <div className="stat-card" 
+               onClick={() => setActiveTab('invoices')}
+               style={{ cursor: 'pointer', transition: 'all 0.3s ease' }}
+               onMouseEnter={(e) => {
+                 e.currentTarget.style.transform = 'translateY(-5px)';
+                 e.currentTarget.style.boxShadow = '0 8px 20px rgba(220,53,69,0.2)';
+               }}
+               onMouseLeave={(e) => {
+                 e.currentTarget.style.transform = 'translateY(0)';
+                 e.currentTarget.style.boxShadow = '0 4px 10px rgba(0,0,0,0.05)';
+               }}>
             <div className="stat-icon">
               <FaExclamationTriangle />
             </div>
@@ -767,23 +1082,47 @@ const HomeClient = () => {
               <h5 className="mb-0">الفواتير الأخيرة</h5>
               <FaFileInvoiceDollar className="text-success" style={{ fontSize: '1.5rem' }} />
             </div>
-            {invoices.slice(0, 3).map(invoice => (
-              <div key={invoice.id} className="recent-invoice-item">
-                <div className="invoice-info">
-                  <h6>فاتورة #{invoice.id}</h6>
-                  <small className="text-muted">
-                    {invoice.amount} ج.م
-                  </small>
+            {invoices.length > 0 ? (
+              invoices.slice(0, 3).map(invoice => (
+                <div 
+                  key={invoice.id} 
+                  className="recent-invoice-item"
+                  onClick={() => navigate(`/invoice/${invoice.id}`)}
+                  style={{ 
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f8f9fa';
+                    e.currentTarget.style.transform = 'translateX(-5px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = '';
+                    e.currentTarget.style.transform = 'translateX(0)';
+                  }}
+                >
+                  <div className="invoice-info">
+                    <h6>فاتورة #{invoice.id}</h6>
+                    <small className="text-muted">
+                      {invoice.amount} ج.م
+                    </small>
+                  </div>
+                  <div className="invoice-status">
+                    {getInvoiceStatusBadge(invoice.status)}
+                  </div>
                 </div>
-                <div className="invoice-status">
-                  {getInvoiceStatusBadge(invoice.status)}
-                </div>
+              ))
+            ) : (
+              <div className="text-center py-3">
+                <FaFileInvoiceDollar size={24} className="text-muted mb-2" />
+                <p className="text-muted small mb-0">لا توجد فواتير بعد</p>
               </div>
-            ))}
+            )}
             <button 
               className="btn btn-sm btn-outline-primary mt-2"
               onClick={() => setActiveTab('invoices')}
             >
+              <FaFileInvoiceDollar className="me-1" />
               عرض جميع الفواتير
             </button>
           </div>
@@ -873,6 +1212,14 @@ const HomeClient = () => {
       <div className="section-header">
         <h5>جميع الطلبات ({getFilteredOrders().length})</h5>
         <div className="d-flex gap-2">
+          <button 
+            className="btn btn-outline-primary btn-sm"
+            onClick={() => loadOrders()}
+            title="إعادة تحميل الطلبات"
+          >
+            <FaClock className="me-1" />
+            إعادة تحميل
+          </button>
           <select 
             className="form-select form-select-sm" 
             style={{ width: 'auto' }}
@@ -882,14 +1229,205 @@ const HomeClient = () => {
             <option value="all">جميع الحالات</option>
             <option value="pending">قيد الانتظار</option>
             <option value="accepted">مقبول</option>
+            <option value="rejected">مرفوض</option>
+            <option value="in_progress">قيد التنفيذ</option>
             <option value="completed">مكتمل</option>
             <option value="cancelled">ملغي</option>
-            <option value="in_progress">قيد التنفيذ</option>
           </select>
         </div>
       </div>
       
       <div className="orders-list">
+        {/* Debug info */}
+        {import.meta.env.DEV && (
+          <div className="alert alert-info mb-3">
+            <div className="d-flex justify-content-between align-items-center">
+              <small>
+                <strong>Debug Info:</strong> Total orders: {orders.length} | 
+                Filtered orders: {getFilteredOrders().length} | 
+                Current filter: {orderFilter} | 
+                User ID: {user?.id} | Role: {user?.role} |
+                User Filter: {disableUserFilter ? 'معطل' : 'مفعل'} |
+                Access Token: {localStorage.getItem('access') ? 'موجود' : 'غير موجود'} |
+                Loading: {loading ? 'نعم' : 'لا'}
+              </small>
+              <button 
+                className="btn btn-sm btn-info me-2"
+                onClick={async () => {
+                  console.log('[DEBUG] Current state:', {
+                    user,
+                    orders,
+                    invoices,
+                    loading,
+                    activeTab
+                  });
+                  
+                  // اختبار API مباشرة
+                  try {
+                    console.log('[DEBUG] Testing API directly...');
+                    const response = await apiService.get('/api/orders/');
+                    console.log('[DEBUG] Direct API response:', response);
+                    console.log('[DEBUG] Response structure:', {
+                      hasResults: !!response.results,
+                      hasData: !!response.data,
+                      resultsLength: response.results?.length || 0,
+                      dataLength: response.data?.length || 0,
+                      count: response.count,
+                      page: response.page
+                    });
+                  } catch (error) {
+                    console.error('[DEBUG] Direct API error:', error);
+                  }
+                  
+                  checkServerConnection();
+                }}
+              >
+                تشخيص البيانات
+              </button>
+              <button 
+                className="btn btn-sm btn-warning me-2"
+                onClick={async () => {
+                  console.log('[DEBUG] Loading orders without filtering...');
+                  try {
+                    const response = await apiService.get('/api/orders/');
+                    const ordersData = response?.results || response?.data || response || [];
+                    console.log('[DEBUG] Raw orders (no filter):', ordersData);
+                    setOrders(ordersData);
+                  } catch (error) {
+                    console.error('[DEBUG] Error loading raw orders:', error);
+                  }
+                }}
+              >
+                تحميل بدون تصفية
+              </button>
+              <button 
+                className={`btn btn-sm ${disableUserFilter ? 'btn-success' : 'btn-outline-secondary'} me-2`}
+                onClick={() => {
+                  setDisableUserFilter(!disableUserFilter);
+                  console.log('[DEBUG] User filter toggled:', !disableUserFilter);
+                  // إعادة تحميل الطلبات مع الإعداد الجديد
+                  loadOrders();
+                }}
+              >
+                {disableUserFilter ? 'تصفية المستخدم: معطلة' : 'تصفية المستخدم: مفعلة'}
+              </button>
+              <button 
+                className="btn btn-sm btn-danger me-2"
+                onClick={async () => {
+                  console.log('[DEBUG] Testing order creation...');
+                  try {
+                    // محاولة إنشاء طلب تجريبي
+                    const testOrder = {
+                      service_id: 1,
+                      description: 'طلب تجريبي للاختبار',
+                      location_lat: 30.0444,
+                      location_lng: 31.2357,
+                      offered_price: 100
+                    };
+                    
+                    const response = await apiService.post('/api/orders/', testOrder);
+                    console.log('[DEBUG] Test order created:', response);
+                    
+                    // إعادة تحميل الطلبات
+                    setTimeout(() => {
+                      loadOrders();
+                    }, 1000);
+                    
+                  } catch (error) {
+                    console.error('[DEBUG] Test order creation failed:', error);
+                  }
+                }}
+              >
+                إنشاء طلب تجريبي
+              </button>
+              <button 
+                className="btn btn-sm btn-success me-2"
+                onClick={() => {
+                  console.log('[DEBUG] Showing all orders without any filtering...');
+                  setDisableUserFilter(true);
+                  setOrderFilter('all');
+                  // تحميل مباشر بدون أي تصفية
+                  apiService.get('/api/orders/').then(response => {
+                    const ordersData = response?.results || response?.data || response || [];
+                    console.log('[DEBUG] All orders loaded:', ordersData);
+                    setOrders(ordersData);
+                  }).catch(error => {
+                    console.error('[DEBUG] Error loading all orders:', error);
+                  });
+                }}
+              >
+                عرض جميع الطلبات
+              </button>
+              <button 
+                className="btn btn-sm btn-warning"
+                onClick={() => {
+                  console.log('[DEBUG] Deep analysis of current user and orders...');
+                  console.log('[DEBUG] Current user:', user);
+                  console.log('[DEBUG] Current user ID:', user?.id);
+                  console.log('[DEBUG] Current user email:', user?.email);
+                  console.log('[DEBUG] Current orders:', orders);
+                  console.log('[DEBUG] Current orders length:', orders.length);
+                  
+                  // فحص مباشر للـ API
+                  apiService.get('/api/orders/').then(response => {
+                    console.log('[DEBUG] Raw API response:', response);
+                    const ordersData = response?.results || response?.data || response || [];
+                    console.log('[DEBUG] Orders data:', ordersData);
+                    
+                    // فحص كل طلب
+                    ordersData.forEach((order, index) => {
+                      console.log(`[DEBUG] Order ${index + 1}:`, {
+                        id: order.id,
+                        customer_name: order.customer_name,
+                        customer_email: order.customer_email,
+                        customer_id: order.customer_id,
+                        client_id: order.client_id,
+                        user_id: order.user_id,
+                        client: order.client,
+                        customer: order.customer,
+                        user: order.user
+                      });
+                    });
+                    
+                    // فحص التطابق
+                    const matchingOrders = ordersData.filter(order => {
+                      const possibleFields = [
+                        order.client_id,
+                        order.user_id,
+                        order.client,
+                        order.client?.id,
+                        order.user?.id,
+                        order.customer_id,
+                        order.customer?.id,
+                        order.customer_email
+                      ];
+                      
+                      const matches = possibleFields.some(field => {
+                        if (field === user?.id) return true;
+                        if (typeof field === 'string' && parseInt(field) === user?.id) return true;
+                        if (typeof field === 'number' && field === user?.id) return true;
+                        if (field === user?.email) return true;
+                        return false;
+                      });
+                      
+                      console.log(`[DEBUG] Order ${order.id} matches:`, matches);
+                      return matches;
+                    });
+                    
+                    console.log('[DEBUG] Matching orders:', matchingOrders);
+                    console.log('[DEBUG] Matching orders count:', matchingOrders.length);
+                    
+                  }).catch(error => {
+                    console.error('[DEBUG] Error in deep analysis:', error);
+                  });
+                }}
+              >
+                تحليل عميق
+              </button>
+            </div>
+          </div>
+        )}
+        
         {getFilteredOrders().map(order => {
           console.log('[DEBUG] Rendering order:', order.id, 'Status:', order.status, 'Data:', order);
           return (
@@ -946,6 +1484,76 @@ const HomeClient = () => {
                 <FaEye className="me-1" />
                 عرض
               </button>
+              
+              {/* Rating and Review buttons for completed orders */}
+              {order.status === 'completed' && (
+                <>
+                  <button 
+                    className="btn btn-sm btn-warning"
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('[DEBUG] Rate button clicked for order:', order.id);
+                      handleRateOrder(order);
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.transform = 'translateY(-2px)';
+                      e.target.style.boxShadow = '0 4px 12px rgba(255,193,7,0.3)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                    }}
+                    style={{
+                      minWidth: '80px',
+                      fontWeight: '600',
+                      borderRadius: '8px',
+                      padding: '8px 16px',
+                      fontSize: '13px',
+                      color: 'white',
+                      cursor: 'pointer',
+                      userSelect: 'none'
+                    }}
+                  >
+                    <FaStar className="me-1" />
+                    تقييم
+                  </button>
+                  
+                  <button 
+                    className="btn btn-sm btn-info"
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      console.log('[DEBUG] Review button clicked for order:', order.id);
+                      handleReviewOrder(order);
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.transform = 'translateY(-2px)';
+                      e.target.style.boxShadow = '0 4px 12px rgba(13,202,240,0.3)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.transform = 'translateY(0)';
+                      e.target.style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)';
+                    }}
+                    style={{
+                      minWidth: '80px',
+                      fontWeight: '600',
+                      borderRadius: '8px',
+                      padding: '8px 16px',
+                      fontSize: '13px',
+                      color: 'white',
+                      cursor: 'pointer',
+                      userSelect: 'none'
+                    }}
+                  >
+                    <FaComments className="me-1" />
+                    مراجعة
+                  </button>
+                </>
+              )}
+              
               {(order.status === 'pending' || order.status === 'cancelled') && (
                 <button 
                   className="btn btn-sm btn-warning"
@@ -1013,12 +1621,35 @@ const HomeClient = () => {
             <h6 className="text-muted">
               {orderFilter === 'all' ? 'لا توجد طلبات بعد' : `لا توجد طلبات بحالة "${getFilterStatusText(orderFilter)}"`}
             </h6>
-            <p className="text-muted small">
+            <p className="text-muted small mb-4">
               {orderFilter === 'all' 
                 ? 'ابدأ بطلب خدمة جديدة من الصفحة الرئيسية' 
                 : 'جرب تغيير الفلتر لعرض طلبات أخرى'
               }
             </p>
+            <div className="d-flex gap-3 justify-content-center">
+              <button 
+                className="btn btn-primary"
+                onClick={() => navigate('/services')}
+              >
+                <FaPlus className="me-2" />
+                طلب خدمة جديدة
+              </button>
+              <button 
+                className="btn btn-outline-primary me-2"
+                onClick={() => loadOrders()}
+              >
+                <FaClock className="me-2" />
+                إعادة تحميل الطلبات
+              </button>
+              <button 
+                className="btn btn-outline-info"
+                onClick={() => checkServerConnection()}
+              >
+                <FaExclamationTriangle className="me-2" />
+                فحص الاتصال
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -1067,46 +1698,110 @@ const HomeClient = () => {
     <div className="invoices-section">
       <div className="section-header">
         <h5>فواتيري</h5>
+        <small className="text-muted">
+          الفواتير تُولد تلقائياً للطلبات المكتملة فقط
+        </small>
       </div>
       
+      {/* Debug info for invoices */}
+      {import.meta.env.DEV && (
+        <div className="alert alert-warning mb-3">
+          <div className="d-flex justify-content-between align-items-center">
+            <small>
+              <strong>Debug Info:</strong> Total invoices: {invoices.length} | 
+              User ID: {user?.id} |
+              Access Token: {localStorage.getItem('access') ? 'موجود' : 'غير موجود'}
+            </small>
+            <button 
+              className="btn btn-sm btn-warning"
+              onClick={() => {
+                console.log('[DEBUG] Invoices state:', invoices);
+                console.log('[DEBUG] Statistics state:', statistics);
+                loadInvoices();
+              }}
+            >
+              إعادة تحميل الفواتير
+            </button>
+          </div>
+        </div>
+      )}
+      
       <div className="invoices-table">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>رقم الفاتورة</th>
-              <th>الطلب</th>
-              <th>المبلغ</th>
-              <th>الحالة</th>
-              <th>تاريخ الاستحقاق</th>
-              <th>الإجراءات</th>
-            </tr>
-          </thead>
-          <tbody>
-            {invoices.map(invoice => (
-              <tr key={invoice.id}>
-                <td>#{invoice.id}</td>
-                <td>{invoice.order_title}</td>
-                <td>{invoice.amount} ج.م</td>
-                <td>{getInvoiceStatusBadge(invoice.status)}</td>
-                <td>{new Date(invoice.due_date).toLocaleDateString('ar-EG')}</td>
-                <td>
-                  <button 
-                    className="btn btn-sm btn-outline-primary me-2"
-                    onClick={() => navigate(`/invoice/${invoice.id}`)}
-                  >
-                    <FaEye />
-                  </button>
-                  <button 
-                    className="btn btn-sm btn-outline-success"
-                    onClick={() => downloadInvoice(invoice.id)}
-                  >
-                    <FaDownload />
-                  </button>
-                </td>
+        {invoices.length > 0 ? (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>رقم الفاتورة</th>
+                <th>الطلب</th>
+                <th>المبلغ</th>
+                <th>الحالة</th>
+                <th>طريقة الدفع</th>
+                <th>تاريخ الاستحقاق</th>
+                <th>الإجراءات</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {invoices.map(invoice => (
+                <tr key={invoice.id}>
+                  <td>#{invoice.id}</td>
+                  <td>{invoice.order_title}</td>
+                  <td>{invoice.amount} ج.م</td>
+                  <td>{getInvoiceStatusBadge(invoice.status)}</td>
+                  <td>
+                    <span className={`badge ${invoice.payment_method ? 'badge-info' : 'badge-secondary'}`}>
+                      {getPaymentMethodText(invoice.payment_method)}
+                    </span>
+                  </td>
+                  <td>{new Date(invoice.due_date).toLocaleDateString('ar-EG')}</td>
+                  <td>
+                    <button 
+                      className="btn btn-sm btn-outline-primary me-2"
+                      onClick={() => navigate(`/invoice/${invoice.id}`)}
+                      title="عرض تفاصيل الفاتورة"
+                    >
+                      <FaEye className="me-1" />
+                      عرض التفاصيل
+                    </button>
+                    <button 
+                      className="btn btn-sm btn-outline-success"
+                      onClick={() => downloadInvoice(invoice.id)}
+                      title="تحميل الفاتورة"
+                    >
+                      <FaDownload className="me-1" />
+                      تحميل
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <div className="empty-state text-center py-5">
+            <div className="empty-icon mb-3">
+              <FaFileInvoiceDollar size={48} className="text-muted" />
+            </div>
+            <h6 className="text-muted">لا توجد فواتير بعد</h6>
+            <p className="text-muted small mb-4">
+              ستظهر هنا فواتيرك بعد إكمال الطلبات وتوليد الفواتير تلقائياً
+            </p>
+            <div className="d-flex gap-3 justify-content-center">
+              <button 
+                className="btn btn-primary"
+                onClick={() => navigate('/services')}
+              >
+                <FaPlus className="me-2" />
+                طلب خدمة جديدة
+              </button>
+              <button 
+                className="btn btn-outline-primary"
+                onClick={() => setActiveTab('orders')}
+              >
+                <FaClipboardList className="me-2" />
+                عرض طلباتي
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1448,6 +2143,16 @@ const HomeClient = () => {
           </div>
         </div>
       )}
+
+      {/* Review Modal */}
+      <ReviewModal
+        show={showReviewModal}
+        onHide={handleReviewModalClose}
+        service={selectedOrderForReview?.service}
+        order={selectedOrderForReview}
+        onSubmit={handleReviewSubmit}
+        loading={reviewLoading}
+      />
     </div>
   );
 };

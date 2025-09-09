@@ -81,8 +81,6 @@ class MessageListCreateView(generics.ListCreateAPIView):
         
         conversation, _ = Conversation.objects.get_or_create(order=order)
         serializer.save(conversation=conversation, sender=self.request.user)
-
-
 class UserConversationsView(generics.ListAPIView):
     """Get all conversations for the current user"""
     serializer_class = ConversationListSerializer
@@ -179,3 +177,71 @@ def get_recent_messages(request):
             'count': 0,
             'error': str(e)
         })
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def mark_messages_as_read(request):
+    """Mark all messages in a conversation as read for the current user"""
+    try:
+        user = request.user
+        order_id = request.data.get('order_id')
+        
+        if not order_id:
+            return Response({
+                'error': 'order_id is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Get the conversation for this order
+        try:
+            order = Order.objects.get(id=order_id)
+            conversation = Conversation.objects.get(order=order)
+        except (Order.DoesNotExist, Conversation.DoesNotExist):
+            return Response({
+                'error': 'Order or conversation not found'
+            }, status=status.HTTP_404_NOT_FOUND)
+        
+        # Check if user can access this conversation
+        if not (user == order.customer or 
+                user == order.worker or
+                (order.service.provider and user == order.service.provider) or 
+                user.is_staff):
+            return Response({
+                'error': 'You do not have permission to access this conversation'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
+        # For now, we'll just return success since we don't have read tracking yet
+        # In a real implementation, you'd update a read status field
+        return Response({
+            'success': True,
+            'message': 'Messages marked as read'
+        })
+        
+    except Exception as e:
+        print(f"Error in mark_messages_as_read: {str(e)}")
+        return Response({
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def mark_all_messages_as_read(request):
+    """Mark all messages as read for the current user"""
+    try:
+        user = request.user
+        
+        # For now, we'll just return success since we don't have read tracking yet
+        # In a real implementation, you'd update a read status field for all conversations
+        return Response({
+            'success': True,
+            'message': 'All messages marked as read'
+        })
+        
+    except Exception as e:
+        print(f"Error in mark_all_messages_as_read: {str(e)}")
+        return Response({
+            'error': str(e)
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+

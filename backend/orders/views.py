@@ -197,7 +197,6 @@ def negotiation_list(request, order_id):
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-
 # ---------------- Order Actions (Accept/Decline) ----------------
 @api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
@@ -363,6 +362,69 @@ def complete_order(request, pk):
 
 @api_view(["POST"])
 @permission_classes([permissions.IsAuthenticated])
+def approve_completion(request, pk):
+    """
+    Client approves order completion (confirms the work is done)
+    This will trigger automatic invoice creation via signals
+    """
+    try:
+        order = get_object_or_404(Order, pk=pk, is_deleted=False)
+        
+        # Check if user is the customer
+        if request.user != order.customer:
+            return Response(
+                {"error": "Only the customer can approve order completion"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        
+        # Check if order can be approved
+        if order.status != 'completed':
+            return Response(
+                {"error": f"Cannot approve order with status: {order.status}. Order must be completed by worker first."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        # Update order status to approved_completed
+        order.status = 'approved_completed'
+        order.save()
+        
+        # Create notification for worker
+        try:
+            create_notification(
+                recipient=order.worker or order.service.provider,
+                actor=request.user,
+                verb='order_approved',
+                message=f'وافق العميل {request.user.username} على اكتمال الطلب #{order.id}. سيتم إنشاء الفاتورة تلقائياً.',
+                short_message=f'تم الموافقة على الطلب #{order.id}',
+                target=order,
+                url=f'/orders/{order.id}',
+                level='success',
+                offered_price=order.offered_price,
+                service_name=order.service.title if order.service else 'خدمة غير محددة',
+                job_description=order.description or 'طلب مكتمل',
+                location_lat=order.location_lat,
+                location_lng=order.location_lng,
+                location_address=order.location_address,
+                requires_action=False
+            )
+        except Exception as e:
+            print(f"Error creating notification: {e}")
+        
+        serializer = OrderSerializer(order)
+        return Response({
+            "message": "Order completion approved successfully. Invoice will be created automatically.",
+            "order": serializer.data
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
 def decline_order(request, pk):
     """
     Worker declines an order
@@ -416,6 +478,205 @@ def decline_order(request, pk):
         serializer = OrderSerializer(order)
         return Response({
             "message": "Order declined successfully",
+            "order": serializer.data
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def approve_completion(request, pk):
+    """
+    Client approves order completion (confirms the work is done)
+    This will trigger automatic invoice creation via signals
+    """
+    try:
+        order = get_object_or_404(Order, pk=pk, is_deleted=False)
+        
+        # Check if user is the customer
+        if request.user != order.customer:
+            return Response(
+                {"error": "Only the customer can approve order completion"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        
+        # Check if order can be approved
+        if order.status != 'completed':
+            return Response(
+                {"error": f"Cannot approve order with status: {order.status}. Order must be completed by worker first."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        # Update order status to approved_completed
+        order.status = 'approved_completed'
+        order.save()
+        
+        # Create notification for worker
+        try:
+            create_notification(
+                recipient=order.worker or order.service.provider,
+                actor=request.user,
+                verb='order_approved',
+                message=f'وافق العميل {request.user.username} على اكتمال الطلب #{order.id}. سيتم إنشاء الفاتورة تلقائياً.',
+                short_message=f'تم الموافقة على الطلب #{order.id}',
+                target=order,
+                url=f'/orders/{order.id}',
+                level='success',
+                offered_price=order.offered_price,
+                service_name=order.service.title if order.service else 'خدمة غير محددة',
+                job_description=order.description or 'طلب مكتمل',
+                location_lat=order.location_lat,
+                location_lng=order.location_lng,
+                location_address=order.location_address,
+                requires_action=False
+            )
+        except Exception as e:
+            print(f"Error creating notification: {e}")
+        
+        serializer = OrderSerializer(order)
+        return Response({
+            "message": "Order completion approved successfully. Invoice will be created automatically.",
+            "order": serializer.data
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def start_order(request, pk):
+    """
+    Worker starts working on an order (changes status from accepted to in_progress)
+    """
+    try:
+        order = get_object_or_404(Order, pk=pk, is_deleted=False)
+        
+        # Check if user is a worker
+        if not hasattr(request.user, 'role') or request.user.role != 'worker':
+            return Response(
+                {"error": "Only workers can start orders"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        
+        # Check if user is the assigned worker
+        if order.worker != request.user:
+            return Response(
+                {"error": "Only the assigned worker can start this order"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        
+        # Check if order can be started
+        if order.status not in ['accepted']:
+            return Response(
+                {
+                    "error": f"Cannot start order with status: {order.status}",
+                    "details": "Order must be in 'accepted' status to be started",
+                    "current_status": order.status
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        # Update order status
+        order.status = 'in_progress'
+        order.save()
+        
+        # Create notification for customer
+        try:
+            create_notification(
+                recipient=order.customer,
+                actor=request.user,
+                verb='order_started',
+                message=f'بدأ العامل {request.user.username} العمل على طلبك #{order.id}',
+                short_message=f'بدأ العمل على الطلب #{order.id}',
+                target=order,
+                url=f'/orders/{order.id}',
+                level='info',
+                offered_price=order.offered_price,
+                service_name=order.service.title if order.service else 'خدمة غير محددة',
+                job_description=order.description or 'طلب قيد التنفيذ',
+                location_lat=order.location_lat,
+                location_lng=order.location_lng,
+                location_address=order.location_address,
+                requires_action=False
+            )
+        except Exception as e:
+            print(f"Error creating notification: {e}")
+        
+        serializer = OrderSerializer(order)
+        return Response({
+            "message": "Order started successfully",
+            "order": serializer.data
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def approve_completion(request, pk):
+    """
+    Client approves order completion (confirms the work is done)
+    This will trigger automatic invoice creation via signals
+    """
+    try:
+        order = get_object_or_404(Order, pk=pk, is_deleted=False)
+        
+        # Check if user is the customer
+        if request.user != order.customer:
+            return Response(
+                {"error": "Only the customer can approve order completion"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        
+        # Check if order can be approved
+        if order.status != 'completed':
+            return Response(
+                {"error": f"Cannot approve order with status: {order.status}. Order must be completed by worker first."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        # Update order status to approved_completed
+        order.status = 'approved_completed'
+        order.save()
+        
+        # Create notification for worker
+        try:
+            create_notification(
+                recipient=order.worker or order.service.provider,
+                actor=request.user,
+                verb='order_approved',
+                message=f'وافق العميل {request.user.username} على اكتمال الطلب #{order.id}. سيتم إنشاء الفاتورة تلقائياً.',
+                short_message=f'تم الموافقة على الطلب #{order.id}',
+                target=order,
+                url=f'/orders/{order.id}',
+                level='success',
+                offered_price=order.offered_price,
+                service_name=order.service.title if order.service else 'خدمة غير محددة',
+                job_description=order.description or 'طلب مكتمل',
+                location_lat=order.location_lat,
+                location_lng=order.location_lng,
+                location_address=order.location_address,
+                requires_action=False
+            )
+        except Exception as e:
+            print(f"Error creating notification: {e}")
+        
+        serializer = OrderSerializer(order)
+        return Response({
+            "message": "Order completion approved successfully. Invoice will be created automatically.",
             "order": serializer.data
         }, status=status.HTTP_200_OK)
         
@@ -483,3 +744,68 @@ def complete_order(request, pk):
             {"error": str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+
+@api_view(["POST"])
+@permission_classes([permissions.IsAuthenticated])
+def approve_completion(request, pk):
+    """
+    Client approves order completion (confirms the work is done)
+    This will trigger automatic invoice creation via signals
+    """
+    try:
+        order = get_object_or_404(Order, pk=pk, is_deleted=False)
+        
+        # Check if user is the customer
+        if request.user != order.customer:
+            return Response(
+                {"error": "Only the customer can approve order completion"},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        
+        # Check if order can be approved
+        if order.status != 'completed':
+            return Response(
+                {"error": f"Cannot approve order with status: {order.status}. Order must be completed by worker first."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        
+        # Update order status to approved_completed
+        order.status = 'approved_completed'
+        order.save()
+        
+        # Create notification for worker
+        try:
+            create_notification(
+                recipient=order.worker or order.service.provider,
+                actor=request.user,
+                verb='order_approved',
+                message=f'وافق العميل {request.user.username} على اكتمال الطلب #{order.id}. سيتم إنشاء الفاتورة تلقائياً.',
+                short_message=f'تم الموافقة على الطلب #{order.id}',
+                target=order,
+                url=f'/orders/{order.id}',
+                level='success',
+                offered_price=order.offered_price,
+                service_name=order.service.title if order.service else 'خدمة غير محددة',
+                job_description=order.description or 'طلب مكتمل',
+                location_lat=order.location_lat,
+                location_lng=order.location_lng,
+                location_address=order.location_address,
+                requires_action=False
+            )
+        except Exception as e:
+            print(f"Error creating notification: {e}")
+        
+        serializer = OrderSerializer(order)
+        return Response({
+            "message": "Order completion approved successfully. Invoice will be created automatically.",
+            "order": serializer.data
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        return Response(
+            {"error": str(e)},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
