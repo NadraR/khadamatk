@@ -1,134 +1,212 @@
-import React, { useState } from 'react';
+// src/layout/AdminLayout.jsx
+import React, { useState, useEffect } from "react";
 import {
   Box,
   AppBar,
   Toolbar,
   Typography,
   IconButton,
-  useTheme,
-  useMediaQuery,
   Avatar,
   Menu,
   MenuItem,
-} from '@mui/material';
+  Paper,
+  useTheme,
+  useMediaQuery,
+  CssBaseline,
+  InputBase,
+  Badge,
+} from "@mui/material";
 import {
   Menu as MenuIcon,
   Logout as LogoutIcon,
-} from '@mui/icons-material';
-import { Outlet, useNavigate } from 'react-router-dom';
-import { useAdminAuth } from '../contexts/AdminAuthContext';
-import AdminSidebar from '../components/admin/AdminSidebar';
+  Notifications as NotificationsIcon,
+  Search as SearchIcon,
+} from "@mui/icons-material";
+import { Outlet, useNavigate } from "react-router-dom";
+import { useAdminAuth } from "../contexts/AdminAuthContext";
+import AdminSidebar from "../components/admin/AdminSidebar";
+import adminApi from "../services/adminApiService";
+
+const APP_BAR_HEIGHT_MOBILE = 56;
+const APP_BAR_HEIGHT_DESKTOP = 64;
+const DESKTOP_BREAKPOINT = 900;
 
 const AdminLayout = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 900);
+  const [sidebarOpen, setSidebarOpen] = useState(
+    () => window.innerWidth >= DESKTOP_BREAKPOINT
+  );
   const [anchorEl, setAnchorEl] = useState(null);
   const { user, logout } = useAdminAuth();
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const navigate = useNavigate();
 
-  const handleSidebarToggle = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-
-  const handleProfileMenuOpen = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleProfileMenuClose = () => {
-    setAnchorEl(null);
-  };
+  const handleSidebarToggle = () => setSidebarOpen((v) => !v);
+  const handleProfileMenuOpen = (e) => setAnchorEl(e.currentTarget);
+  const handleProfileMenuClose = () => setAnchorEl(null);
 
   const handleLogout = () => {
     logout();
     handleProfileMenuClose();
+    navigate("/admin/login");
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 900) {
-        setSidebarOpen(true);
-      }
+      if (window.innerWidth >= DESKTOP_BREAKPOINT) setSidebarOpen(true);
     };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   return (
-    <Box sx={{ display: 'flex', flexDirection: 'row', direction: 'rtl' }}>
-      {/* App Bar */}
+    <Box sx={{ display: "flex", flexDirection: "row", direction: "rtl" }}>
+      <CssBaseline />
+
+      {/* Top App Bar */}
       <AppBar
         position="fixed"
-        elevation={6}
+        elevation={0}
         sx={{
-          width: '100%',
-          ml: 0,
-          // أزلنا left
-          zIndex: (theme) => theme.zIndex.drawer + 1,
-          direction: 'rtl',
-          background: 'linear-gradient(90deg, #1976d2 70%, #42a5f5 100%)',
+          width: "100%",
+          zIndex: (t) => t.zIndex.drawer + 2,
+          color: "#fff",
+          background: "#1F293B",
+          backdropFilter: "blur(10px)",
           borderBottomLeftRadius: { md: 24 },
-          borderBottomRightRadius: 0,
-          boxShadow: '0 4px 24px 0 #1976d233',
-          transition: theme.transitions.create(['width', 'margin'], {
-            easing: theme.transitions.easing.sharp,
-            duration: theme.transitions.duration.leavingScreen,
-          }),
+          borderBottomRightRadius: { md: 24 },
+          boxShadow: "0 6px 20px rgba(0,0,0,0.25)",
         }}
       >
-        <Toolbar sx={{ minHeight: 64, px: { xs: 1, md: 3 } }}>
+        <Toolbar
+          sx={{
+            minHeight: {
+              xs: APP_BAR_HEIGHT_MOBILE,
+              md: APP_BAR_HEIGHT_DESKTOP,
+            },
+            px: { xs: 1.5, md: 2.5 },
+            gap: 1,
+            justifyContent: "space-between",
+          }}
+        >
+          {/* Sidebar toggle for mobile */}
           <IconButton
             color="inherit"
-            aria-label="toggle sidebar"
+            aria-label="open drawer"
             onClick={handleSidebarToggle}
             edge="start"
-            sx={{ mr: 2, background: '#fff2', borderRadius: 2, '&:hover': { background: '#fff4' } }}
+            sx={{ display: { md: "none" } }}
           >
-            {/* <MenuIcon sx={{ fontSize: 24 }} /> */}
+            <MenuIcon />
           </IconButton>
+
+          {/* Title / Logo */}
           <Typography
-            variant="h6"
+            variant="h5"
             noWrap
             component="div"
-            sx={{ flexGrow: 1, fontWeight: 700, letterSpacing: 1, cursor: 'pointer', userSelect: 'none' }}
-            onClick={() => navigate('/admin')}
-            title="العودة للوحة التحكم"
+            sx={{
+              cursor: "pointer",
+              fontWeight: 600,
+              letterSpacing: "-0.025em",
+            }}
+            onClick={() => navigate("/admin")}
+            title="لوحة التحكم"
           >
-            لوحة التحكم الإدارية - <span style={{ color: '#fff', fontWeight: 900 }}>خدماتك</span>
+            لوحة التحكم
           </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-            <Typography variant="body1" sx={{ color: '#fff', fontWeight: 500, fontSize: 17 }}>
-              مرحباً، <span style={{ fontWeight: 700 }}>{user?.username}</span>
-            </Typography>
+
+          {/* Search + Actions */}
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1.5,
+              flexGrow: 1,
+              justifyContent: "flex-end",
+            }}
+          >
+            {/* Search */}
+            {!isMobile && (
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  background: "rgba(255,255,255,0.15)",
+                  borderRadius: 2,
+                  px: 1.5,
+                  py: 0.5,
+                  minWidth: 220,
+                }}
+              >
+                <SearchIcon sx={{ fontSize: 20, opacity: 0.8, mr: 1, ml: 0.5 }} onClick={() => navigate("/admin/search")} />
+                <InputBase
+                  placeholder="ابحث..."
+                  sx={{
+                    color: "#fff",
+                    fontSize: 14,
+                    width: "100%",
+                    "& .MuiInputBase-input": {
+                      py: 0.5,
+                    },
+                  }}
+                />
+              </Box>
+            )}
+
+            {/* Notifications */}
+            <IconButton sx={{ color: "#fff" }}>
+              <Badge badgeContent={adminApi.notificationsCount} color="error">
+                <NotificationsIcon onClick={() => navigate("/admin/notifications")} />
+              </Badge>
+            </IconButton>
+
+            {/* User Info */}
+            {!isMobile && (
+              <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                مرحباً <span style={{ fontWeight: 800 }}>{user?.username}</span>
+              </Typography>
+            )}
+
+            {/* Avatar */}
             <IconButton
               size="large"
               edge="end"
               aria-label="account of current user"
-              aria-controls="primary-search-account-menu"
-              aria-haspopup="true"
               onClick={handleProfileMenuOpen}
-              sx={{ ml: 1, background: '#fff2', borderRadius: 2, '&:hover': { background: '#fff4' } }}
+              sx={{
+                ml: 1,
+                background: "rgba(255,255,255,0.1)",
+                borderRadius: 2.5,
+                "&:hover": { background: "rgba(255,255,255,0.2)" },
+              }}
             >
-              <Avatar sx={{ width: 38, height: 38, bgcolor: '#fff', color: '#1976d2', fontWeight: 700, fontSize: 22, border: '2px solid #1976d2' }}>
-                {user?.username?.charAt(0).toUpperCase()}
+              <Avatar
+                sx={{
+                  width: 38,
+                  height: 38,
+                  bgcolor: "#7C3AED",
+                  color: "#fff",
+                  fontWeight: 700,
+                  fontSize: 18,
+                }}
+              >
+                {user?.username?.charAt(0)?.toUpperCase() || "K"}
               </Avatar>
             </IconButton>
+
+            {/* Menu */}
             <Menu
               anchorEl={anchorEl}
-              anchorOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
-              keepMounted
-              transformOrigin={{
-                vertical: 'top',
-                horizontal: 'right',
-              }}
               open={Boolean(anchorEl)}
               onClose={handleProfileMenuClose}
+              PaperProps={{
+                elevation: 3,
+                sx: { mt: 1.5, minWidth: 180, borderRadius: 2 },
+              }}
             >
               <MenuItem onClick={handleLogout}>
-                <LogoutIcon sx={{ mr: 1 , fontWeight: 700, color: 'error.main', textAlign: 'right', fontSize: 17 }}/>
+                <LogoutIcon sx={{ mr: 1, color: "error.main", fontSize: 20 }} />
                 تسجيل الخروج
               </MenuItem>
             </Menu>
@@ -139,19 +217,31 @@ const AdminLayout = () => {
       {/* Sidebar */}
       <Box
         sx={{
-          display: { xs: 'none', md: 'block' },
-          position: 'fixed',
+          display: { xs: "none", md: "block" },
+          position: "fixed",
           right: 0,
-          top: '64px',
-          height: 'calc(100vh - 64px)',
-          zIndex: (theme) => theme.zIndex.drawer,
+          top: `${APP_BAR_HEIGHT_DESKTOP}px`,
+          height: `calc(100vh - ${APP_BAR_HEIGHT_DESKTOP}px)`,
+          zIndex: (t) => t.zIndex.drawer,
         }}
       >
         <AdminSidebar open={true} onClose={() => {}} />
       </Box>
-      {/* Drawer للهواتف */}
-      <Box sx={{ display: { xs: 'block', md: 'none' } }}>
-        <AdminSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+      <Box
+        sx={{
+          display: { xs: "block", md: "none" },
+          position: "fixed",
+          right: 0,
+          top: `${APP_BAR_HEIGHT_MOBILE}px`,
+          height: `calc(100vh - ${APP_BAR_HEIGHT_MOBILE}px)`,
+          zIndex: (t) => t.zIndex.drawer,
+        }}
+      >
+        <AdminSidebar
+          open={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        />
       </Box>
 
       {/* Main Content */}
@@ -159,17 +249,34 @@ const AdminLayout = () => {
         component="main"
         sx={{
           flexGrow: 1,
-          p: { xs: 1, md: 3 },
-          width: '100%',
-          pr: { md: '260px' }, // زيادة المسافة اليمنى للمحتوى الرئيسي
-          direction: 'rtl',
-          minHeight: '100vh',
-          background: 'linear-gradient(120deg, #f8fafc 60%, #e3f2fd 100%)',
-          transition: 'padding 0.3s',
+          width: "100%",
+          pt: {
+            xs: `${APP_BAR_HEIGHT_MOBILE + 8}px`,
+            md: `${APP_BAR_HEIGHT_DESKTOP + 12}px`,
+          },
+          pb: { xs: 2, md: 3 },
+          px: { xs: 1.5, md: 3 },
+          pr: { md: "260px" },
+          direction: "rtl",
+          minHeight: "100vh",
+          background: "#fff",
+          position: "relative",
+          overflow: "hidden",
         }}
       >
-        <Toolbar />
-        <Outlet />
+        <Paper
+          elevation={0}
+          sx={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "radial-gradient(1200px 600px at 100% -200px, rgba(124,58,237,0.05), transparent), radial-gradient(800px 400px at -200px 100%, rgba(6,182,212,0.05), transparent)",
+            pointerEvents: "none",
+          }}
+        />
+        <Box sx={{ position: "relative", zIndex: 1 }}>
+          <Outlet />
+        </Box>
       </Box>
     </Box>
   );

@@ -1,3 +1,4 @@
+// src/pages/admin/ServicesPage.jsx
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -5,17 +6,17 @@ import {
   Typography,
   Button,
   Chip,
-  IconButton,
   Alert,
   CircularProgress,
+  Skeleton,
+  Tooltip,
 } from '@mui/material';
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Add as AddIcon,
   Business as BusinessIcon,
+  MonetizationOn as PriceIcon,
 } from '@mui/icons-material';
-import { DataGrid } from '@mui/x-data-grid';
 import { adminApiService } from '../../services/adminApiService';
 
 const ServicesPage = () => {
@@ -47,139 +48,160 @@ const ServicesPage = () => {
     }
   };
 
-  const columns = [
-    { field: 'id', headerName: 'ID', width: 70 },
-    { field: 'title', headerName: 'عنوان الخدمة', width: 200 },
-    { field: 'description', headerName: 'الوصف', width: 300 },
-    { field: 'city', headerName: 'المدينة', width: 120 },
-    { field: 'price', headerName: 'السعر', width: 100 },
-    {
-      field: 'is_active',
-      headerName: 'الحالة',
-      width: 120,
-      renderCell: (params) => (
-        <Chip
-          label={params.value ? 'نشط' : 'معطل'}
-          color={params.value ? 'success' : 'error'}
-          size="small"
-        />
-      ),
-    },
-    {
-      field: 'actions',
-      headerName: 'الإجراءات',
-      width: 150,
-      renderCell: (params) => (
-        <Box>
-          <IconButton
-            size="small"
-            onClick={() => handleToggleActive(params.row.id)}
-            title={params.row.is_active ? 'تعطيل' : 'تفعيل'}
-          >
-            {params.row.is_active ? <DeleteIcon /> : <EditIcon />}
-          </IconButton>
-        </Box>
-      ),
-    },
-  ];
-
+  // عرض Skeleton أثناء التحميل
   if (loading) {
     return (
       <Box sx={{ p: 3, textAlign: 'center' }}>
-        <CircularProgress size={60} />
-        <Typography variant="h6" sx={{ mt: 2 }}>
+        <Typography variant="h6" sx={{ mb: 2 }}>
           جاري تحميل الخدمات...
         </Typography>
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' },
+            gap: 3,
+          }}
+        >
+          {[...Array(6)].map((_, idx) => (
+            <Skeleton
+              key={idx}
+              variant="rounded"
+              height={180}
+              sx={{ borderRadius: 3 }}
+            />
+          ))}
+        </Box>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ p: { xs: 1, md: 3 }, pr: { xs: 1, md: 0 } }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3, flexWrap: 'wrap', gap: 2 }}>
-        <Typography variant="h4" sx={{ fontWeight: 700, color: '#1976d2' }}>إدارة الخدمات</Typography>
-        <Button
-          variant="contained"
-          startIcon={<BusinessIcon />}
-          sx={{
-            borderRadius: 3,
-            fontWeight: 700,
-            fontSize: 18,
-            px: 3,
-            py: 1.2,
-            background: 'linear-gradient(90deg, #388e3c 60%, #81c784 100%)',
-            boxShadow: '0 4px 16px #388e3c33',
-            transition: '0.2s',
-            '&:hover': {
-              background: 'linear-gradient(90deg, #2e7d32 60%, #388e3c 100%)',
-              boxShadow: '0 8px 24px #388e3c44',
-            },
-          }}
-        >
-          إضافة خدمة جديدة
-        </Button>
-      </Box>
+    <Box sx={{ p: { xs: 1, md: 3 } }}>
+      {/* عنوان الصفحة */}
+      <Typography
+        variant="h4"
+        textAlign="center"
+        sx={{
+          fontWeight: 800,
+          mb: 4,
+          p: 2,
+          borderRadius: 3,
+          bgcolor: '#f1fdf5',
+          color: '#2e7d32',
+          border: '2px solid #81c784',
+          boxShadow: '0 4px 20px rgba(46,125,50,0.15)',
+        }}
+      >
+        إدارة الخدمات
+      </Typography>
 
+      {/* رسالة الخطأ */}
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }} onClose={() => setError(null)}>
+        <Alert severity="error" sx={{ mb: 3 }} onClose={() => setError(null)}>
           {error}
         </Alert>
       )}
 
-      <Box sx={{ mt: 2 }}>
-        <Box sx={{
+      {/* الكروت */}
+      <Box
+        sx={{
           display: 'grid',
           gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr', md: '1fr 1fr 1fr' },
-          gap: 2.2,
-        }}>
-          {services.map((service) => (
-            <Paper
-              key={service.id}
-              elevation={0}
+          gap: { xs: 2, md: 3 },
+        }}
+      >
+        {services.map((service) => (
+          <Paper
+            key={service.id}
+            sx={{
+              p: 3,
+              borderRadius: 4,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 1,
+              background: 'linear-gradient(135deg, #f9fdf9, #ffffff)',
+              border: '1px solid #e0e0e0',
+              boxShadow: '0 6px 20px rgba(0,0,0,0.08)',
+              transition: 'all 0.3s ease',
+              '&:hover': {
+                transform: 'translateY(-6px)',
+                boxShadow: '0 12px 30px rgba(0,0,0,0.18)',
+              },
+            }}
+          >
+            {/* العنوان والأيقونة */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+              <BusinessIcon sx={{ color: '#2e7d32', fontSize: 38 }} />
+              <Box>
+                <Typography variant="h6" sx={{ fontWeight: 800, fontSize: 20 }}>
+                  {service.title}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  sx={{ color: 'text.secondary', fontSize: 14 }}
+                >
+                  {service.city}
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* الوصف */}
+            <Typography
+              variant="body2"
+              color="text.secondary"
               sx={{
-                p: 3,
-                borderRadius: 5,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 2,
-                boxShadow: '0 4px 24px #388e3c22',
-                background: '#fff',
-                minHeight: 180,
-                transition: 'box-shadow 0.22s, transform 0.22s',
-                '&:hover': {
-                  boxShadow: '0 8px 32px #388e3c44',
-                  transform: 'scale(1.025)',
-                },
+                mb: 1,
+                fontSize: 15,
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+                overflow: 'hidden',
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2.5, mb: 1 }}>
-                <BusinessIcon sx={{ color: '#388e3c', fontSize: 40, boxShadow: 2 }} />
-                <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 800, fontSize: 22 }}>{service.title}</Typography>
-                  <Typography variant="body2" color="textSecondary" sx={{ fontSize: 16 }}>{service.city} - {service.price} ج.م</Typography>
-                </Box>
-              </Box>
-              <Typography variant="body2" color="textSecondary" sx={{ mb: 1, minHeight: 36, fontSize: 16 }}>
-                {service.description}
-              </Typography>
-              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1 }}>
-                <Chip label={service.is_active ? 'نشطة' : 'معطلة'} color={service.is_active ? 'success' : 'error'} size="medium" sx={{ fontWeight: 700, fontSize: 15 }} />
-              </Box>
-              <Box sx={{ display: 'flex', gap: 1.5, mt: 'auto', justifyContent: 'flex-end' }}>
+              {service.description}
+            </Typography>
+
+            {/* Chips */}
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1 }}>
+              <Chip
+                icon={<PriceIcon />}
+                label={`${service.price} ج.م`}
+                variant="outlined"
+                color="primary"
+                size="small"
+                sx={{ fontWeight: 700 }}
+              />
+              <Chip
+                label={service.is_active ? 'نشطة' : 'معطلة'}
+                color={service.is_active ? 'success' : 'error'}
+                size="small"
+                sx={{ fontWeight: 700 }}
+              />
+            </Box>
+
+            {/* الأزرار */}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 'auto' }}>
+              <Tooltip title={service.is_active ? 'تعطيل الخدمة' : 'تفعيل الخدمة'}>
                 <Button
                   size="small"
                   variant="contained"
-                  color={service.is_active ? 'error' : 'success'}
                   startIcon={service.is_active ? <DeleteIcon /> : <EditIcon />}
                   onClick={() => handleToggleActive(service.id)}
-                  sx={{ borderRadius: 2, fontWeight: 700, px: 2, fontSize: 15, boxShadow: service.is_active ? '0 2px 8px #e5393522' : '0 2px 8px #43a04722' }}
+                  sx={{
+                    borderRadius: 2,
+                    px: 2,
+                    background: service.is_active ? '#f44336' : '#4caf50',
+                    '&:hover': {
+                      background: service.is_active ? '#d32f2f' : '#388e3c',
+                    },
+                  }}
                 >
                   {service.is_active ? 'تعطيل' : 'تفعيل'}
                 </Button>
-              </Box>
-            </Paper>
-          ))}
-        </Box>
+              </Tooltip>
+            </Box>
+          </Paper>
+        ))}
       </Box>
     </Box>
   );

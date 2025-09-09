@@ -3,7 +3,7 @@ import { Box, Paper, Typography, Chip, Button, CircularProgress, Alert } from '@
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import { adminApiService } from '../../services/adminApiService';
 
-const NotificationsPage = () => {
+const AdminNotifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -44,4 +44,4 @@ const NotificationsPage = () => {
   );
 };
 
-export default NotificationsPage;
+export default AdminNotifications;

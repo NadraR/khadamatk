@@ -8,9 +8,13 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import authenticate
 from django.contrib.auth import get_user_model
 from django.db.models import Avg, Sum, Count
+from django.db.models.functions import TruncMonth
+from django.utils.translation import gettext as _
 from django.http import HttpResponse
 import csv
-
+from django.db.models.functions import TruncDay, TruncMonth, TruncYear
+from django.utils import timezone
+from datetime import timedelta
 from services.models import Service, ServiceCategory
 from orders.models import Order, Booking
 from reviews.models import Review
@@ -346,3 +350,76 @@ class PlatformSettingViewSet(viewsets.ModelViewSet):
     permission_classes = [IsStaffOrSuperuser]
     filter_backends = [filters.SearchFilter]
     search_fields = ["key", "group", "value"]
+
+
+# ---------------- Orders Trend ----------------
+class OrdersTrendView(APIView):
+    permission_classes = [IsStaffOrSuperuser]
+
+    def get(self, request):
+        interval = request.GET.get("interval", "month")  # default: month
+        today = timezone.now().date()
+        
+        # تحديد الفترة
+        if interval == "day":
+            start_date = today - timedelta(days=30)  # آخر 30 يوم
+            trunc_func = TruncDay
+        elif interval == "year":
+            start_date = today - timedelta(days=365*2)  # آخر سنتين
+            trunc_func = TruncYear
+        else:  # month
+            start_date = today - timedelta(days=180)  # آخر 6 شهور
+            trunc_func = TruncMonth
+
+        orders = (
+            Order.objects.filter(date_created__gte=start_date)
+            .annotate(period=trunc_func("date_created"))
+            .values("period")
+            .annotate(total=Count("id"))
+            .order_by("period")
+        )
+
+        services = (
+            Service.objects.filter(created_at__gte=start_date)
+            .annotate(period=trunc_func("created_at"))
+            .values("period")
+            .annotate(total=Count("id"))
+            .order_by("period")
+        )
+
+        # دمج البيانات في شكل مناسب للـ chart
+        trend_data = []
+        periods = sorted({*orders.values_list("period", flat=True), *services.values_list("period", flat=True)})
+        for p in periods:
+            name = ""
+            if interval == "day":
+                name = p.strftime("%d %b")       # 08 Sep
+            elif interval == "month":
+                name = p.strftime("%B %Y")      # September 2025
+            else:  # year
+                name = p.strftime("%Y")         # 2025
+
+            trend_data.append({
+                "name": name,
+                "orders": next((o["total"] for o in orders if o["period"] == p), 0),
+                "services": next((s["total"] for s in services if s["period"] == p), 0),
+            })
+
+        return Response(trend_data)
+
+# ---------------- Recent Orders ----------------
+class RecentOrdersView(APIView):
+    permission_classes = [IsStaffOrSuperuser]
+
+    def get(self, request):
+        orders = Order.objects.select_related("customer", "service").order_by("-date_created")[:5]
+        data = [
+            {
+                "id": o.id,
+                "user": getattr(o.customer, "username", None),
+                "service": getattr(o.service, "title", None),
+                "status": o.get_status_display() if hasattr(o, "get_status_display") else o.status,
+            }
+            for o in orders
+        ]
+        return Response(data)

@@ -176,7 +176,28 @@ export const adminApiService = {
   getFinancialReport: async () => {
     const response = await adminApi.get('/financial-report/');
     return response.data;
-  }
+  },
+
+  // Dashboard-specific
+  getOrdersTrend: async () => {
+    const response = await adminApi.get('/orders-trend/');
+    return response.data;
+  },
+
+  getRecentOrders: async () => {
+    const response = await adminApi.get('/recent-orders/');
+    return response.data;
+  },
+
+  getDashboardData: async () => {
+    const [stats, trend, recent] = await Promise.all([
+      adminApiService.getStats(),
+      adminApiService.getOrdersTrend(),
+      adminApiService.getRecentOrders(),
+    ]);
+    return { stats, trend, recent };
+  },
+
 };
 
 export default adminApi;

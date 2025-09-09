@@ -15,11 +15,15 @@ import HomeProvider from './pages/HomeProvider';
 import About from './pages/About';
 
 // Admin pages
-import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminLogin from './pages/admin/AdminLogin';
+import AdminDashboard from './pages/admin/AdminDashboard';
 import UsersPage from './pages/admin/UsersPage';
 import ServicesPage from './pages/admin/ServicesPage';
 import OrdersPage from './pages/admin/OrdersPage';
+import ReviewsPage from './pages/admin/ReviewsPage';
+import RatingsPage from './pages/admin/RatingsPage';
+import SettingsPage from './pages/admin/SettingsPage';
+import AdminNotifications from './pages/admin/AdminNotifications';
 import InvoicesPage from './pages/admin/InvoicesPage';
 import AdminLayout from './layouts/AdminLayout';
 import { AdminAuthProvider, useAdminAuth } from './contexts/AdminAuthContext';
@@ -98,10 +102,11 @@ function App() {
             <Route path="users" element={<UsersPage />} />
             <Route path="services" element={<ServicesPage />} />
             <Route path="orders" element={<OrdersPage />} />
-            <Route path="reviews" element={<div>صفحة التقييمات</div>} />
+            <Route path="reviews" element={<ReviewsPage/>} />
+            <Route path="ratings" element={<RatingsPage/>} />
             <Route path="invoices" element={<InvoicesPage />} />
-            <Route path="settings" element={<div>صفحة الإعدادات</div>} />
-            <Route path="notifications" element={<div>صفحة الإشعارات</div>} />
+            <Route path="settings" element={<SettingsPage/>} />
+            <Route path="notifications" element={<AdminNotifications/>} />
           </Route>
           <Route path="/adminDashboard" element={<Navigate to="/admin" />} />
 

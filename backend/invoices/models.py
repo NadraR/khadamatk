@@ -29,7 +29,9 @@ class Invoice(models.Model):
         'orders.Order', 
         on_delete=models.CASCADE,
         related_name='invoice',
-        verbose_name='الحجز'
+        verbose_name='الحجز',
+        null=True,
+        blank=True
     )
     
     amount = models.DecimalField(
