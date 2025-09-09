@@ -1,6 +1,7 @@
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import FontProvider from "./components/FontProvider";
+import FontOptimizer from "./components/FontOptimizer";
 import ErrorBoundary from "./components/ErrorBoundary";
 
 // Auth & Layout
@@ -31,10 +32,12 @@ import AdminLayout from "./layouts/AdminLayout";
 import { AdminAuthProvider, useAdminAuth } from "./contexts/AdminAuthContext";
 
 // Service-related pages
+
 import ServiceDetails from "./pages/ServiceDetails";
 import Services from "./pages/Services";
 import Orders from "./pages/Orders";
 import OrderPage from "./pages/OrderPage";
+import TrackOrder from "./pages/TrackOrder";
 import Reviews from "./pages/Reviews";
 import Ratings from "./pages/Ratings";
 
@@ -50,6 +53,7 @@ import MessagesPage from "./pages/MessagesPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import InvoiceDetails from "./pages/InvoiceDetails";
 import WorkerProfileCompletion from "./pages/WorkerProfileCompletion";
+import OrderStatusEdit from "./pages/OrderStatusEdit";
 import FontTest from "./components/FontTest";
 
 // ✅ Protected Route Component for Admin
@@ -76,15 +80,16 @@ function App() {
   return (
     <FontProvider>
       <AdminAuthProvider>
+        <FontOptimizer />
         <Routes>
           {/* Auth */}
           <Route path="/auth" element={<AuthPage />} />
-          <Route path="/oauth2callback" element={<OAuthCallback />} />
           <Route path="/worker" element={<WorkerProfileCompletion />} />
           <Route
             path="/worker-profile-completion"
             element={<WorkerProfileCompletion />}
           />
+          <Route path="/oauth2callback" element={<OAuthCallback />} />
 
           {/* Home */}
           <Route
@@ -170,6 +175,103 @@ function App() {
             <Route path="logs" element={<AdminLogsPage />} />
           </Route>
           <Route path="/adminDashboard" element={<Navigate to="/admin" />} />
+          {/* Services */}
+          <Route
+            path="/service/:id"
+            element={
+              <Layout>
+                <ServiceDetails />
+              </Layout>
+            }
+          />
+          <Route
+            path="/service/:id/edit"
+            element={
+              <Layout>
+                <OrderStatusEdit />
+              </Layout>
+            }
+          />
+          <Route
+            path="/services"
+            element={
+              <Layout>
+                <Services />
+              </Layout>
+            }
+          />
+          <Route
+            path="/order"
+            element={
+              <Layout>
+                <OrderPage />
+              </Layout>
+            }
+          />
+          <Route
+            path="/order/:id"
+            element={
+              <Layout>
+                <OrderPage />
+              </Layout>
+            }
+          />
+          <Route
+            path="/order-page"
+            element={
+              <Layout>
+                <OrderPage />
+              </Layout>
+            }
+          />
+          <Route
+            path="/orders"
+            element={
+              <Layout>
+                <Orders />
+              </Layout>
+            }
+          />
+          <Route
+            path="/orders/:id"
+            element={
+              <Layout>
+                <Orders />
+              </Layout>
+            }
+          />
+          <Route
+            path="/track-order"
+            element={
+              <Layout>
+                <TrackOrder />
+              </Layout>
+            }
+          />
+          <Route
+            path="/track-orders"
+            element={
+              <Layout>
+                <TrackOrder />
+              </Layout>
+            }
+          />
+          <Route
+            path="/reviews/:serviceId"
+            element={
+              <Layout>
+                <Reviews />
+              </Layout>
+            }
+          />
+          <Route
+            path="/ratings/:serviceId"
+            element={
+              <Layout>
+                <Ratings />
+              </Layout>
+            }
+          />
 
           {/* Services */}
           <Route
@@ -315,6 +417,23 @@ function App() {
             element={
               <Layout>
                 <NotificationsPage />
+              </Layout>
+            }
+          />
+          {/* Invoice Details */}
+          <Route
+            path="/invoice/:id"
+            element={
+              <Layout>
+                <InvoiceDetails />
+              </Layout>
+            }
+          />
+          <Route
+            path="/invoice-details/:id"
+            element={
+              <Layout>
+                <InvoiceDetails />
               </Layout>
             }
           />

@@ -8,6 +8,7 @@ urlpatterns = [
 
     # Services
     path("", views.service_list, name="service_list"),
+    path("create-for-worker/", views.create_for_worker, name="create_for_worker"),
     path("<int:pk>/", views.service_detail, name="service_detail"),
     path("nearby/", views.service_search, name="services_nearby"),
     # Favorites

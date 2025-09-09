@@ -25,13 +25,11 @@ class Invoice(models.Model):
         (PAYMENT_BANK, 'تحويل بنكي'),
     ]
     
-    booking = models.OneToOneField(
+    order = models.OneToOneField(
         'orders.Order', 
         on_delete=models.CASCADE,
         related_name='invoice',
-        verbose_name='الحجز',
-        null=True,
-        blank=True
+        verbose_name='الطلب'
     )
     
     amount = models.DecimalField(
@@ -84,7 +82,7 @@ class Invoice(models.Model):
         ordering = ['-issued_at']
     
     def __str__(self):
-        return f'فاتورة #{self.id} - {self.booking}'
+        return f'فاتورة #{self.id} - {self.order}'
     
     def mark_as_paid(self, payment_method=None):
         if self.status != self.STATUS_PAID:
@@ -92,8 +90,7 @@ class Invoice(models.Model):
             self.paid_at = timezone.now()
             if payment_method:
                 self.payment_method = payment_method
-            self.save()
-    
+            self.save()    
     @property
     def is_overdue(self):
         if self.due_date and self.status != self.STATUS_PAID:
@@ -102,4 +99,52 @@ class Invoice(models.Model):
     
     @property
     def order_title(self):
-        return f"طلب #{self.booking.id} - {self.booking.service.title if self.booking.service else 'خدمة محذوفة'}"
+        return f"طلب #{self.order.id} - {self.order.service.title if self.order.service else 'خدمة محذوفة'}"
+
+
+class WorkerEarnings(models.Model):
+    """نموذج لتتبع أرباح العامل"""
+    worker = models.ForeignKey(
+        'accounts.User', 
+        on_delete=models.CASCADE,
+        related_name='earnings',
+        verbose_name='العامل'
+    )
+    invoice = models.ForeignKey(
+        Invoice,
+        on_delete=models.CASCADE,
+        related_name='worker_earnings',
+        verbose_name='الفاتورة'
+    )
+    gross_amount = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2,
+        verbose_name='المبلغ الإجمالي'
+    )
+    platform_fee = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2,
+        verbose_name='رسوم المنصة (5%)'
+    )
+    net_earnings = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2,
+        verbose_name='صافي الأرباح'
+    )
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='تاريخ الإنشاء')
+    updated_at = models.DateTimeField(auto_now=True, verbose_name='تاريخ التحديث')
+    
+    class Meta:
+        verbose_name = 'أرباح العامل'
+        verbose_name_plural = 'أرباح العمال'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"أرباح {self.worker.first_name} - {self.net_earnings} ج.م"
+    
+    def save(self, *args, **kwargs):
+        # حساب رسوم المنصة (5%)
+        self.platform_fee = self.gross_amount * 0.05
+        # حساب صافي الأرباح
+        self.net_earnings = self.gross_amount - self.platform_fee
+        super().save(*args, **kwargs)

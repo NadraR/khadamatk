@@ -163,8 +163,6 @@ def _get_user_profile_from_request(request):
     elif hasattr(user, 'client_profile'):
         return user.client_profile
     return None
-
-
 @api_view(['POST'])
 @permission_classes([permissions.IsAuthenticated])
 def notification_action(request, notification_id):
@@ -259,3 +257,4 @@ def notification_action(request, notification_id):
             {'error': str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+

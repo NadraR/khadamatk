@@ -633,6 +633,67 @@
   z-index: 2 !important;
 }
 
+/* Password Toggle Button Styles */
+.password-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--secondary-color);
+  transition: all 0.2s ease;
+  z-index: 2;
+  border-radius: 4px;
+}
+
+.password-toggle-btn:hover {
+  color: var(--primary-color);
+  background-color: var(--input-bg);
+}
+
+.password-toggle-btn:focus {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.password-toggle-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.password-toggle-btn:disabled:hover {
+  color: var(--secondary-color);
+  background-color: transparent;
+}
+
+/* RTL Support for password toggle */
+[dir="rtl"] .password-toggle-btn {
+  right: auto;
+  left: 12px;
+}
+
+/* Dark mode support */
+.dark-mode .password-toggle-btn {
+  color: var(--hint-color);
+}
+
+.dark-mode .password-toggle-btn:hover {
+  color: var(--primary-color);
+  background-color: var(--input-bg);
+}
+
 /* Responsive improvements */
 @media (max-width: 480px) {
   .google-login-wrapper {
@@ -643,6 +704,16 @@
   .google-hint {
     font-size: 0.8rem;
     max-width: 280px;
+  }
+  
+  .password-toggle-btn {
+    right: 8px;
+    padding: 2px;
+  }
+  
+  [dir="rtl"] .password-toggle-btn {
+    right: auto;
+    left: 8px;
   }
 }
 

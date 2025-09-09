@@ -90,59 +90,44 @@ class CustomUserCreateSerializer(BaseUserCreateSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'phone', 'role', 'first_name', 'last_name', 'bio']
+        fields = ['id', 'username', 'email', 'phone', 'role', 'first_name', 'last_name']
         read_only_fields = ['email', 'role']
 
 
 # 🔹 Worker Profile Serializer
 class WorkerProfileSerializer(serializers.ModelSerializer):
-    user_id = serializers.IntegerField(source="user.id", read_only=True)
-    username = serializers.CharField(source="user.username", read_only=True)
-    first_name = serializers.CharField(source="user.first_name", read_only=True)
-    last_name = serializers.CharField(source="user.last_name", read_only=True)
-    email = serializers.EmailField(source="user.email", read_only=True)
-    phone = serializers.CharField(source="user.phone", read_only=True)
-    bio = serializers.CharField(source="user.bio", read_only=True)
-    joined_date = serializers.DateTimeField(source="user.date_joined", read_only=True)
-
+    is_complete = serializers.ReadOnlyField()
+    
     class Meta:
         model = WorkerProfile
         fields = [
-        "id", "user","username","user_id", "job_title", "hourly_rate",
-        "experience_years", "skills", "services_provided", "certifications", "estimated_price",
-        "created_at", "updated_at", "first_name", "last_name", "email", "phone", "bio", "joined_date"
+            "id", "user", "job_title", "hourly_rate",
+            "experience_years", "skills", "services_provided", "estimated_price",
+            "neighborhood", "is_complete", "created_at", "updated_at"
         ]
-        read_only_fields = ["user", "created_at", "updated_at", "username", "first_name", "last_name", "email", "phone", "bio", "joined_date"]
+        read_only_fields = ["user", "created_at", "updated_at", "is_complete"]
 
 
 # 🔹 Client Profile Serializer
 class ClientProfileSerializer(serializers.ModelSerializer):
-    # Add user fields to the serializer
-    username = serializers.CharField(source='user.username', read_only=True)
-    first_name = serializers.CharField(source='user.first_name', read_only=True)
-    last_name = serializers.CharField(source='user.last_name', read_only=True)
-    email = serializers.EmailField(source='user.email', read_only=True)
-    phone = serializers.CharField(source='user.phone', read_only=True)
-    bio = serializers.CharField(source='user.bio', read_only=True)
-    joined_date = serializers.DateTimeField(source='user.date_joined', read_only=True)
-    
     class Meta:
         model = ClientProfile
-        fields = [
-            "id", "user", "preferred_contact_method",
-            "address", "notes",
-            "created_at", "updated_at",
-            # User fields
-            "username", "first_name", "last_name", 
-            "email", "phone", "bio", "joined_date"
-        ]
-        read_only_fields = ["user", "created_at", "updated_at", "username", "first_name", "last_name", "email", "phone", "bio", "joined_date"]
+        # fields = [
+        #     "id", "user", "preferred_contact_method",
+        #     "address", "notes", "location",
+        #     "created_at", "updated_at"
+        # ]
+        fields = '__all__'
+        widgets = {
+            'location': forms.TextInput(attrs={'placeholder': 'lat, lng'})
+        }
+        read_only_fields = ["user", "created_at", "updated_at"]
 
 
-# class UserSerializer(serializers.ModelSerializer):
-#     class Meta:
-#         model = User
-#         fields = ('id', 'username', 'email', 'first_name', 'last_name')  # اختار اللي تحب تعرضه
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'email', 'first_name', 'last_name')  # اختار اللي تحب تعرضه
 
 
 User = get_user_model()
@@ -168,12 +153,3 @@ class LoginSerializer(serializers.Serializer):
 
         attrs['user'] = user
         return attrs
-
-
-# class WorkerProfileSerializer(serializers.ModelSerializer):
-#     user = UserSerializer(read_only=True)
-
-#     class Meta:
-#         model = WorkerProfile
-#         fields = ["id", "user", "specialization", "experience", "rating"]
-

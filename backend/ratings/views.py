@@ -23,8 +23,6 @@ def add_or_update_rating(request, service_id):
         service=service, customer=request.user, defaults={"score": score}
     )
     return Response(RatingSerializer(rating).data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
-
-
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])
 def my_ratings(request):
@@ -45,3 +43,61 @@ def my_ratings(request):
         })
     
     return Response(ratings_data)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def provider_ratings(request, provider_id):
+    """Get rating statistics for a specific provider/worker"""
+    from accounts.models import WorkerProfile
+    from django.db.models import Avg, Count
+    from reviews.models import Review
+    
+    try:
+        worker_profile = WorkerProfile.objects.get(user_id=provider_id)
+    except WorkerProfile.DoesNotExist:
+        return Response({"error": "Provider not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    # Get all services by this provider
+    provider_services = Service.objects.filter(provider_id=provider_id, is_active=True)
+    service_ids = provider_services.values_list('id', flat=True)
+    
+    # Get rating statistics for all services
+    ratings_stats = Rating.objects.filter(
+        service_id__in=service_ids
+    ).aggregate(
+        average_rating=Avg('score'),
+        total_ratings=Count('id')
+    )
+    
+    # Get rating distribution
+    rating_distribution = {}
+    for score in range(1, 6):
+        count = Rating.objects.filter(service_id__in=service_ids, score=score).count()
+        rating_distribution[score] = count
+    
+    # Get recent reviews for this provider
+    recent_reviews = Review.objects.filter(
+        service_id__in=service_ids,
+        is_deleted=False
+    ).select_related('service', 'customer').order_by('-created_at')[:5]
+    
+    recent_reviews_data = []
+    for review in recent_reviews:
+        recent_reviews_data.append({
+            'id': review.id,
+            'service_name': review.service.title,
+            'customer_name': review.customer.username or review.customer.email,
+            'rating': review.rating,
+            'comment': review.comment,
+            'created_at': review.created_at,
+        })
+    
+    return Response({
+        'average_rating': round(ratings_stats['average_rating'] or 0, 2),
+        'total_ratings': ratings_stats['total_ratings'] or 0,
+        'rating_distribution': rating_distribution,
+        'recent_reviews': recent_reviews_data
+    })
+
+

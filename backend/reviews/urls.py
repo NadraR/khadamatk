@@ -18,4 +18,7 @@ urlpatterns = [
     # PUT /api/reviews/5/ → تعديل ريفيو
     # DELETE /api/reviews/5/ → حذف ريفيو
     path("<int:review_id>/", views.review_detail, name="review_detail"),
+    
+    # GET /api/reviews/provider/12/ → جميع مراجعات مزود خدمة معين
+    path("provider/<int:provider_id>/", views.provider_reviews, name="provider_reviews"),
 ]

@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { authService } from "../services/authService";
-import { useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 
 
 const RegisterForm = ({ onSuccess, onError, darkMode, language = "ar" }) => {
@@ -16,7 +16,8 @@ const RegisterForm = ({ onSuccess, onError, darkMode, language = "ar" }) => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
-  const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Translations object
   const translations = {
@@ -50,7 +51,9 @@ const RegisterForm = ({ onSuccess, onError, darkMode, language = "ar" }) => {
       phonePlaceholder: "أدخل رقم الهاتف (مثال: 01234567890)",
       emailPlaceholder: "أدخل بريدك الإلكتروني",
       passwordPlaceholder: "أدخل كلمة المرور",
-      confirmPasswordPlaceholder: "أعد إدخال كلمة المرور"
+      confirmPasswordPlaceholder: "أعد إدخال كلمة المرور",
+      showPassword: "إظهار كلمة المرور",
+      hidePassword: "إخفاء كلمة المرور"
     },
     en: {
       firstName: "First Name",
@@ -82,7 +85,9 @@ const RegisterForm = ({ onSuccess, onError, darkMode, language = "ar" }) => {
       phonePlaceholder: "Enter phone number (e.g., 01234567890)",
       emailPlaceholder: "Enter your email",
       passwordPlaceholder: "Enter your password",
-      confirmPasswordPlaceholder: "Re-enter your password"
+      confirmPasswordPlaceholder: "Re-enter your password",
+      showPassword: "Show password",
+      hidePassword: "Hide password"
     }
   };
 
@@ -146,9 +151,15 @@ const RegisterForm = ({ onSuccess, onError, darkMode, language = "ar" }) => {
         }
       );
       
+      // Handle redirect path for workers
+      if (result.redirectPath) {
+        console.log('[DEBUG] RegisterForm: Redirecting to:', result.redirectPath);
+        window.location.href = result.redirectPath;
+        return;
+      }
+      
       if (onSuccess) onSuccess(result.data);
-        navigate("/");
-   } catch (err) {
+    } catch (err) {
       const errorMsg = err.message || t.registerError;
       setErrors({ general: errorMsg });
       if (onError) onError(errorMsg);
@@ -239,29 +250,53 @@ const RegisterForm = ({ onSuccess, onError, darkMode, language = "ar" }) => {
       <div className="form-row">
         <div className="form-group">
           <label className="form-label">{t.password}</label>
-          <input
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            disabled={isLoading}
-            className={`form-input ${errors.password ? "error" : ""}`}
-            placeholder={t.passwordPlaceholder}
-          />
+          <div className="password-input-container">
+            <input
+              type={showPassword ? "text" : "password"}
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
+              disabled={isLoading}
+              className={`form-input ${errors.password ? "error" : ""}`}
+              placeholder={t.passwordPlaceholder}
+            />
+            <button
+              type="button"
+              className="password-toggle-btn"
+              onClick={() => setShowPassword(!showPassword)}
+              disabled={isLoading}
+              title={showPassword ? t.hidePassword : t.showPassword}
+              aria-label={showPassword ? t.hidePassword : t.showPassword}
+            >
+              {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
           {errors.password && <span className="error-text">{errors.password}</span>}
         </div>
 
         <div className="form-group">
           <label className="form-label">{t.confirmPassword}</label>
-          <input
-            type="password"
-            name="confirmPassword"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            disabled={isLoading}
-            className={`form-input ${errors.confirmPassword ? "error" : ""}`}
-            placeholder={t.confirmPasswordPlaceholder}
-          />
+          <div className="password-input-container">
+            <input
+              type={showConfirmPassword ? "text" : "password"}
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              disabled={isLoading}
+              className={`form-input ${errors.confirmPassword ? "error" : ""}`}
+              placeholder={t.confirmPasswordPlaceholder}
+            />
+            <button
+              type="button"
+              className="password-toggle-btn"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              disabled={isLoading}
+              title={showConfirmPassword ? t.hidePassword : t.showPassword}
+              aria-label={showConfirmPassword ? t.hidePassword : t.showPassword}
+            >
+              {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+            </button>
+          </div>
           {errors.confirmPassword && <span className="error-text">{errors.confirmPassword}</span>}
         </div>
       </div>

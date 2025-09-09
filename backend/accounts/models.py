@@ -129,10 +129,32 @@ class WorkerProfile(BaseProfile):
         blank=True, null=True,
         help_text="Estimated price for services"
     )
+    certifications = models.TextField(
+        blank=True,
+        default='',
+        verbose_name="Certifications",
+        help_text="Professional certifications and qualifications"
+    )
+    neighborhood = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        verbose_name="Neighborhood",
+        help_text="Worker's neighborhood or area"
+    )
 
     class Meta:
         verbose_name = 'Worker Profile'
         verbose_name_plural = 'Worker Profiles'
+
+    @property
+    def is_complete(self):
+        """Check if the worker profile has all essential information"""
+        has_job_title = bool(self.job_title and self.job_title.strip())
+        has_skills = bool(self.skills and self.skills.strip())
+        has_services = bool(self.services_provided and self.services_provided.strip())
+        
+        return has_job_title and has_skills and has_services
 
     def __str__(self):
         # return f"{self.user.username} - {self.job_title or 'No Title'}"
@@ -159,6 +181,26 @@ class ClientProfile(BaseProfile):
         default='phone',
         verbose_name="Preferred Contact Method"
     )
+    address = models.TextField(
+        blank=True,
+        verbose_name="Detailed Address"
+    )
+    notes = models.TextField(
+        blank=True,
+        verbose_name="Additional Notes"
+    )
+
+    class Meta:
+        verbose_name = 'Client Profile'
+        verbose_name_plural = 'Client Profiles'
+
+    def __str__(self):
+        return f"{self.user.username} - Client"
+
+    def clean(self):
+        if self.user.role != 'client':
+            raise ValidationError("This profile is for clients only")
+
     address = models.TextField(
         blank=True,
         verbose_name="Detailed Address"

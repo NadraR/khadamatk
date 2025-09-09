@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import "bootstrap/dist/css/bootstrap.min.css";
 import { 
   BsBell, BsCheck2All, BsFilter, BsSearch, BsX,
@@ -120,7 +120,7 @@ const NotificationsPage = () => {
   // Apply filters when they change
   useEffect(() => {
     applyFilters();
-  }, [notifications, filterLevel, filterRead, searchTerm]);
+  }, [applyFilters]);
 
   const loadNotifications = async (pageNum = 1, append = false) => {
     setLoading(true);
@@ -164,7 +164,7 @@ const NotificationsPage = () => {
     }
   };
 
-  const applyFilters = () => {
+  const applyFilters = useCallback(() => {
     let filtered = [...notifications];
     
     // Filter by level
@@ -190,7 +190,7 @@ const NotificationsPage = () => {
     }
     
     setFilteredNotifications(filtered);
-  };
+  }, [notifications, filterLevel, filterRead, searchTerm]);
 
   const handleNotificationClick = async (notification) => {
     // Mark as read if unread
@@ -206,11 +206,37 @@ const NotificationsPage = () => {
       loadStats();
     }
 
-    // Navigate to notification URL if available
+    // Get current user role to determine redirect
+    const userData = localStorage.getItem('user');
+    let userRole = 'client'; // default
+    if (userData) {
+      try {
+        const user = JSON.parse(userData);
+        userRole = user.role || 'client';
+        console.log('[DEBUG] NotificationsPage: User role detected:', userRole, 'User data:', user);
+      } catch (e) {
+        console.error('Error parsing user data:', e);
+      }
+    } else {
+      console.log('[DEBUG] NotificationsPage: No user data found in localStorage');
+    }
+
+    // Navigate based on user role and notification type
     if (notification.target_url) {
+      console.log('[DEBUG] NotificationsPage: Redirecting to target_url:', notification.target_url);
       navigate(notification.target_url);
     } else if (notification.url) {
+      console.log('[DEBUG] NotificationsPage: Redirecting to url:', notification.url);
       navigate(notification.url);
+    } else {
+      // Default redirect based on user role
+      if (userRole === 'worker' || userRole === 'provider') {
+        console.log('[DEBUG] NotificationsPage: Redirecting worker to /orders');
+        navigate('/orders');
+      } else {
+        console.log('[DEBUG] NotificationsPage: Redirecting client to /track-order');
+        navigate('/track-order');
+      }
     }
   };
 
@@ -231,11 +257,21 @@ const NotificationsPage = () => {
     setActionLoading(prev => ({ ...prev, [notificationId]: action }));
     
     try {
-      const response = await apiService.post(`/api/notifications/${notificationId}/action/`, {
-        action: action
-      });
+      // Find the notification to get the order ID
+      const notification = notifications.find(n => n.id === notificationId);
+      if (!notification || !notification.order_id) {
+        alert('لا يمكن العثور على معرف الطلب');
+        return;
+      }
+
+      // Use the same endpoints as Orders.jsx
+      const endpoint = action === 'accept' 
+        ? `/api/orders/${notification.order_id}/accept/`
+        : `/api/orders/${notification.order_id}/decline/`;
       
-      if (response.success || response.message) {
+      const response = await apiService.post(endpoint, {});
+      
+      if (response) {
         // Update the notification in the local state
         setNotifications(prev => 
           prev.map(n => 
@@ -253,12 +289,13 @@ const NotificationsPage = () => {
         // Show success message
         alert(response.message || `تم ${action === 'accept' ? 'قبول' : 'رفض'} الطلب بنجاح`);
         
-        // Refresh stats
+        // Refresh stats and notifications to get updated data
         loadStats();
+        loadNotifications();
       }
     } catch (error) {
       console.error('Error handling notification action:', error);
-      alert('حدث خطأ أثناء معالجة الطلب. يرجى المحاولة مرة أخرى.');
+      alert(error.response?.data?.error || 'حدث خطأ أثناء معالجة الطلب. يرجى المحاولة مرة أخرى.');
     } finally {
       setActionLoading(prev => ({ ...prev, [notificationId]: null }));
     }
@@ -632,6 +669,3 @@ const NotificationsPage = () => {
 };
 
 export default NotificationsPage;
-
-
-

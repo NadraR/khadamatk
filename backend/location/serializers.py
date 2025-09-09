@@ -73,3 +73,70 @@ class UserLocationSerializer(serializers.ModelSerializer):
             instance.location = Point(float(lng), float(lat), srid=4326)
         
         return super().update(instance, validated_data)
+class ProviderSearchSerializer(serializers.Serializer):
+    """Serializer للبحث عن مزودي الخدمة بالاسم"""
+    lat = serializers.FloatField(
+        required=True,
+        min_value=-90,
+        max_value=90,
+        help_text="خط العرض"
+    )
+    lng = serializers.FloatField(
+        required=True,
+        min_value=-180,
+        max_value=180,
+        help_text="خط الطول"
+    )
+    radius = serializers.FloatField(
+        required=False,
+        default=50,
+        min_value=1,
+        max_value=500,
+        help_text="نطاق البحث بالكيلومتر"
+    )
+    q = serializers.CharField(
+        required=True,
+        max_length=100,
+        help_text="نص البحث (اسم مزود الخدمة)"
+    )
+    max_results = serializers.IntegerField(
+        required=False,
+        default=50,
+        min_value=1,
+        max_value=100,
+        help_text="الحد الأقصى لعدد النتائج"
+    )
+
+    def validate(self, data):
+        """تحقق من صحة البيانات"""
+        lat = data.get('lat')
+        lng = data.get('lng')
+        q = data.get('q', '').strip()
+        
+        if not q:
+            raise serializers.ValidationError({
+                'q': 'نص البحث مطلوب'
+            })
+        
+        if len(q) < 2:
+            raise serializers.ValidationError({
+                'q': 'نص البحث يجب أن يكون حرفين على الأقل'
+            })
+        
+        return data
+
+
+class ProviderSearchResultSerializer(serializers.Serializer):
+    """Serializer لنتائج البحث عن مزودي الخدمة"""
+    id = serializers.IntegerField()
+    user_id = serializers.IntegerField()
+    provider = serializers.DictField()
+    location = serializers.DictField()
+    distance_km = serializers.FloatField()
+    services = serializers.ListField()
+    services_count = serializers.IntegerField()
+    rating = serializers.FloatField()
+    worker_profile = serializers.DictField()
+    created_at = serializers.DateTimeField()
+    search_metadata = serializers.DictField()
+

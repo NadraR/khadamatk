@@ -9,6 +9,7 @@ class NotificationSerializer(serializers.ModelSerializer):
     recipient_full_name = serializers.SerializerMethodField(read_only=True)
     time_since = serializers.SerializerMethodField(read_only=True)
     target_url = serializers.SerializerMethodField(read_only=True)
+    order_id = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Notification
@@ -27,6 +28,7 @@ class NotificationSerializer(serializers.ModelSerializer):
             'url',
             'target_url',
             'target_repr',
+            'order_id',
             'offered_price',
             'service_price',
             'service_name',
@@ -119,6 +121,17 @@ class NotificationSerializer(serializers.ModelSerializer):
             except Exception:
                 pass
         return obj.url
+
+    def get_order_id(self, obj):
+        """Extract order ID if the target is an Order"""
+        if obj.target and obj.target_content_type:
+            try:
+                model_name = obj.target_content_type.model
+                if model_name == 'order':
+                    return obj.target_object_id
+            except Exception:
+                pass
+        return None
 
     def get_time_since(self, obj):
         from django.utils import timezone

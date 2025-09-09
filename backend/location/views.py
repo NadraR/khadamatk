@@ -17,25 +17,19 @@ class UserLocationViewSet(viewsets.ModelViewSet):
     """
     queryset = UserLocation.objects.all()
     serializer_class = UserLocationSerializer
-    permission_classes = [permissions.AllowAny]  # السماح بالوصول بدون تسجيل دخول
+    permission_classes = [permissions.IsAuthenticated]  # يتطلب تسجيل الدخول
 
     def get_queryset(self):
         user = self.request.user
         if user.is_staff:
             return UserLocation.objects.select_related('user').all()
-        elif user.is_authenticated:
-            return UserLocation.objects.filter(user=user).order_by('-created_at')
         else:
-            # للمستخدمين غير المسجلين، إرجاع المواقع العامة أو فارغ
-            return UserLocation.objects.filter(user__isnull=True).order_by('-created_at')
+            # للمستخدمين المسجلين، إرجاع مواقعهم فقط
+            return UserLocation.objects.filter(user=user).order_by('-created_at')
 
     def perform_create(self, serializer):
-        """ربط الموقع بالمستخدم الحالي تلقائياً (إذا كان مسجل دخول)"""
-        if self.request.user.is_authenticated:
-            serializer.save(user=self.request.user)
-        else:
-            # حفظ الموقع بدون ربطه بمستخدم (للمستخدمين غير المسجلين)
-            serializer.save(user=None)
+        """ربط الموقع بالمستخدم الحالي تلقائياً"""
+        serializer.save(user=self.request.user)
 
     @action(detail=False, methods=['get'], url_path='my-locations')
     def my_locations(self, request):
@@ -59,12 +53,30 @@ class UserLocationViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='save-location')
     def save_location(self, request):
-        """حفظ موقع جديد للمستخدم"""
+        """حفظ موقع جديد للمستخدم مع دعم جميع الحقول"""
+        # التحقق من المصادقة
+        if not request.user.is_authenticated:
+            return Response(
+                {"error": "يجب تسجيل الدخول أولاً"},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        
         lat = request.data.get('lat')
         lng = request.data.get('lng')
         address = request.data.get('address', '')
         city = request.data.get('city', '')
         country = request.data.get('country', 'مصر')
+        
+        # الحقول الإضافية
+        name = request.data.get('name', '')
+        location_type = request.data.get('location_type', 'other')
+        neighborhood = request.data.get('neighborhood', '')
+        building_number = request.data.get('building_number', '')
+        apartment_number = request.data.get('apartment_number', '')
+        floor_number = request.data.get('floor_number', '')
+        landmark = request.data.get('landmark', '')
+        additional_details = request.data.get('additional_details', '')
+        is_primary = request.data.get('is_primary', False)
 
         if not lat or not lng:
             return Response(
@@ -85,13 +97,27 @@ class UserLocationViewSet(viewsets.ModelViewSet):
 
             point = Point(lng_float, lat_float, srid=4326)
             
-            # إنشاء موقع جديد
+            # التحقق من صحة نوع الموقع
+            valid_location_types = ['home', 'work', 'favorite', 'other']
+            if location_type not in valid_location_types:
+                location_type = 'other'
+            
+            # إنشاء موقع جديد مع جميع الحقول
             location = UserLocation.objects.create(
                 user=request.user,
                 location=point,
                 address=address,
                 city=city,
-                country=country
+                country=country,
+                name=name,
+                location_type=location_type,
+                neighborhood=neighborhood,
+                building_number=building_number,
+                apartment_number=apartment_number,
+                floor_number=floor_number,
+                landmark=landmark,
+                additional_details=additional_details,
+                is_primary=bool(is_primary)
             )
             
             serializer = self.get_serializer(location)
@@ -101,9 +127,9 @@ class UserLocationViewSet(viewsets.ModelViewSet):
                 'data': serializer.data
             }, status=status.HTTP_201_CREATED)
             
-        except ValueError:
+        except ValueError as e:
             return Response(
-                {"error": "الإحداثيات يجب أن تكون أرقاماً صحيحة"},
+                {"error": f"الإحداثيات يجب أن تكون أرقاماً صحيحة: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST
             )
         except Exception as e:
@@ -227,4 +253,3 @@ class UserLocationViewSet(viewsets.ModelViewSet):
                 'created_at': latest.created_at
             }
         
-        return Response(stats)

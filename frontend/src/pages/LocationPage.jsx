@@ -1,5 +1,5 @@
 // src/pages/LocationPage.jsx
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { 
   Box, Typography, CircularProgress, Chip, Button, List, ListItem, Paper,
   FormControl, InputLabel, Select, MenuItem, Container, IconButton, Card, CardContent
@@ -12,10 +12,11 @@ import {
   EventAvailable as EventIcon
 } from "@mui/icons-material";
 import { locationService } from '../services/LocationService';
+import RatingService from '../services/RatingService';
+import RatingStars from '../components/RatingStars';
 import LocationPicker from '../components/LocationPicker';
 import Navbar from '../components/Navbar';
 import "bootstrap/dist/css/bootstrap.min.css";
-import './LocationPage.css';
 
 export default function LocationPage() {
   
@@ -23,15 +24,6 @@ export default function LocationPage() {
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [citySearch, setCitySearch] = useState("");
   const [searchSuggestions, setSearchSuggestions] = useState([]);
-  
-  // تفاصيل الموقع الإضافية للعملاء
-  const [locationDetails, setLocationDetails] = useState({
-    building_number: '',
-    apartment_number: '',
-    floor_number: '',
-    landmark: '',
-    additional_details: ''
-  });
 
   // نتائج الخدمات
   const [results, setResults] = useState([]);
@@ -54,11 +46,90 @@ export default function LocationPage() {
     minRating: 0,
     maxPrice: 1000
   });
+  
+  // Rating data
+  const [providersRatings, setProvidersRatings] = useState({});
+  const [sortByRating, setSortByRating] = useState(false);
+
+  // Helper function to build location address
+  const buildLocationAddress = (location) => {
+    if (!location) return '';
+    
+    const parts = [];
+    if (location.address) parts.push(location.address);
+    if (location.city && location.city !== location.address) parts.push(location.city);
+    if (location.neighborhood && location.neighborhood !== location.city) parts.push(location.neighborhood);
+    
+    return parts.join(', ') || `${location.lat?.toFixed(6)}, ${location.lng?.toFixed(6)}`;
+  };
+
+  // Load ratings for providers
+  const loadProviderRatings = useCallback(async (providers) => {
+    // Check if user is authenticated before trying to load ratings
+    const accessToken = localStorage.getItem('access');
+    if (!accessToken) {
+      console.log('User not authenticated, skipping ratings load');
+      return;
+    }
+
+    const ratingsMap = {};
+    for (const provider of providers) {
+      try {
+        // Get user/provider ID for ratings
+        const providerId = provider.user?.id || provider.worker?.id || provider.provider?.id || provider.provider_id || provider.id;
+        if (providerId && !providersRatings[providerId]) {
+          const result = await RatingService.getProviderRating(providerId);
+          if (result.success) {
+            ratingsMap[providerId] = result.data;
+          }
+        }
+      } catch (error) {
+        // Don't log 401 errors as they're expected for unauthenticated users
+        if (error.response?.status !== 401) {
+        console.error('Error loading provider rating:', error);
+        }
+      }
+    }
+    
+    if (Object.keys(ratingsMap).length > 0) {
+      setProvidersRatings(prev => ({ ...prev, ...ratingsMap }));
+    }
+  }, [providersRatings]);
+
+  // Filter and sort results by rating
+  const filteredAndSortedResults = useMemo(() => {
+    let filtered = results.filter(service => {
+      // Get user/provider ID for ratings
+      const providerId = service.user?.id || service.worker?.id || service.provider?.id || service.provider_id || service.id;
+      const rating = providersRatings[providerId];
+      const avgRating = rating?.average_rating || 0;
+      
+      // Apply rating filter
+      if (filters.minRating > 0 && avgRating < filters.minRating) {
+        return false;
+      }
+      
+      return true;
+    });
+
+    // Sort by rating if enabled
+    if (sortByRating) {
+      filtered = filtered.sort((a, b) => {
+        const providerIdA = a.user?.id || a.worker?.id || a.provider?.id || a.provider_id || a.id;
+        const providerIdB = b.user?.id || b.worker?.id || b.provider?.id || b.provider_id || b.id;
+        const ratingA = providersRatings[providerIdA]?.average_rating || 0;
+        const ratingB = providersRatings[providerIdB]?.average_rating || 0;
+        return ratingB - ratingA; // Sort descending (highest first)
+      });
+    }
+
+    return filtered;
+  }, [results, providersRatings, filters.minRating, sortByRating]);
 
   // الدوال الجديدة للزرين
   const handleShowProviderProfile = (service) => {
     // الانتقال إلى صفحة الملف الشخصي لمزود الخدمة
-    const providerId = service.provider?.id || service.provider_id;
+    const providerId = service.user?.id || service.worker?.id || service.provider?.id || service.provider_id || service.id;
     if (providerId) {
       window.open(`/provider/${providerId}`, '_blank');
     } else {
@@ -67,21 +138,43 @@ export default function LocationPage() {
     }
   };
 
-  const handleBookService = (service) => {
-    // الانتقال إلى صفحة الطلب
+  const handleBookService = async (service) => {
     const serviceId = service.id;
     if (serviceId) {
-      // Store service data and location details in localStorage for the order page
-      const serviceData = {
-        ...service,
-        selectedLocation: selectedLocation,
-        locationDetails: locationDetails
-      };
-      localStorage.setItem('selectedService', JSON.stringify(serviceData));
-      // Navigate to order page
+      // ✅ Store service data
+      localStorage.setItem('selectedService', JSON.stringify(service));
+
+      // ✅ Store location data (if available)
+      if (selectedLocation) {
+        localStorage.setItem('selectedLocation', JSON.stringify(selectedLocation));
+      }
+
+      // (اختياري) حفظ الموقع في السيرفر إذا المستخدم مسجل
+      if (selectedLocation) {
+        const accessToken = localStorage.getItem('access');
+        if (accessToken && accessToken.trim() !== '' && accessToken !== 'null' && accessToken !== 'undefined') {
+          try {
+            const { locationService } = await import('../services/LocationService');
+            await locationService.saveLocation({
+              lat: selectedLocation.lat,
+              lng: selectedLocation.lng,
+              address: buildLocationAddress(selectedLocation) || citySearch,
+              city: selectedLocation.city || '',
+              neighborhood: selectedLocation.neighborhood || '',
+              location_type: 'service_booking',
+              name: 'موقع حجز الخدمة'
+            });
+          } catch (error) {
+            console.error('[DEBUG] LocationPage: Error saving location:', error);
+          }
+        } else {
+          console.log('[DEBUG] LocationPage: User not authenticated, skipping location save');
+        }
+      }
+
+      // ✅ Navigate to order page
       window.location.href = '/order';
     } else {
-      console.error('لا يوجد معرف للخدمة', service);
       setError('لا يمكن حجز الخدمة - المعرف غير متوفر');
     }
   };
@@ -258,9 +351,17 @@ export default function LocationPage() {
         );
 
         if (result.success) {
-          setResults(result.data || []);
+          const providers = result.data || [];
+          setResults(providers);
           setError(null);
-          console.log('Search successful, found', result.data?.length || 0, 'results');
+          console.log('Search successful, found', providers.length, 'results');
+          // console.log('Sample provider data:', providers[0]); // Debug provider structure
+          // console.log('All providers data:', providers); // Debug all providers
+          
+          // Load ratings for providers
+          if (providers.length > 0) {
+            loadProviderRatings(providers);
+          }
           
           if (result.data?.length === 0) {
             setError('لم يتم العثور على مزودي خدمات في هذه المنطقة. جرب البحث في منطقة أخرى أو غير نوع الخدمة.');
@@ -279,7 +380,7 @@ export default function LocationPage() {
         setIsSearching(false);
       }
     }, 300);
-  }, [selectedService, customService, isSearching]);
+  }, [selectedService, customService, isSearching, loadProviderRatings]);
 
   // جلب آخر موقع محفوظ
   useEffect(() => {
@@ -320,7 +421,7 @@ export default function LocationPage() {
         fetchNearbyServices(selectedLocation, searchTerm);
       }
     }
-  }, [selectedLocation, selectedService, serviceData, isSearching, isInitialized]);
+  }, [selectedLocation, selectedService, serviceData, isSearching, isInitialized, fetchNearbyServices]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -376,27 +477,6 @@ export default function LocationPage() {
     setSearchSuggestions([]);
   };
 
-  // التعامل مع تغيير تفاصيل الموقع
-  const handleLocationDetailsChange = (e) => {
-    const { name, value } = e.target;
-    setLocationDetails(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  // تطبيق الفلاتر
-  const applyFilters = (services) => {
-    return services.filter(service => {
-      const distance = service.distance_km || 0;
-      const rating = service.rating || 0;
-      const price = service.price || 0;
-      
-      return distance <= filters.maxDistance && 
-             rating >= filters.minRating && 
-             price <= filters.maxPrice;
-    });
-  };
 
   // Show loading state during initialization
   if (!isInitialized) {
@@ -442,35 +522,27 @@ export default function LocationPage() {
       <Navbar />
       
       {/* Header Section */}
-      <div className="feature-section location-banner">
-        <div className="feature-content">
-          <div className="container">
-            <div className="row align-items-center">
-              <div className="col-md-7">
-                <div className="header-content">
-                  <h1 className="header-title">
-                    <SearchIcon className="header-icon" />
-                    ابحث عن مزودي الخدمة
-                  </h1>
-                  <p className="header-subtitle">
-                    حدد موقعك واختر الخدمة المناسبة لك من أفضل مقدمي الخدمات
-                  </p>
+      <div className="container-fluid py-4" style={{ background: 'linear-gradient(135deg, #0077ff, #4da6ff)' }}>
+        <div className="container">
+          <div className="row align-items-center">
+            <div className="col-md-8">
+              <h1 className="text-white mb-2" style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>
+                ابحث عن مزودي الخدمة
+              </h1>
+              <p className="text-white-50 mb-0" style={{ fontSize: '1.1rem' }}>
+                اختر موقعك وابحث عن أفضل مزودي الخدمة في منطقتك
+              </p>
+            </div>
+            <div className="col-md-4 text-end">
+              <div className="d-flex align-items-center justify-content-end">
+                <div className="me-3">
+                  <div className="text-white fw-bold">الخطوة 1 من 3</div>
+                  <div className="text-white-50 small">اختيار الموقع والخدمة</div>
                 </div>
-              </div>
-              <div className="col-md-4">
                 <div className="step-indicator">
-                  <div className="step-text">
-                    <span className="step-number">الخطوة 1 من 2</span>
-                    <span className="step-description">تحديد الموقع والخدمة</span>
-                  </div>
-                  <div className="step-circles">
-                    <div className="step-circle active">
-                      <span>1</span>
-                    </div>
-                    <div className="step-circle">
-                      <span>2</span>
-                    </div>
-                  </div>
+                  <div className="step active">1</div>
+                  <div className="step">2</div>
+                  <div className="step">3</div>
                 </div>
               </div>
             </div>
@@ -600,75 +672,6 @@ export default function LocationPage() {
               </CardContent>
             </Card>
 
-            {/* Location Details Card */}
-            <Card className="mb-4" style={{ borderRadius: '16px', boxShadow: '0 6px 18px rgba(0,0,0,0.05)' }}>
-              <CardContent className="p-4">
-                <div className="d-flex align-items-center mb-3">
-                  <LocationIcon className="text-primary me-2" />
-                  <h5 className="mb-0 fw-bold">تفاصيل الموقع</h5>
-                </div>
-                <p className="text-muted small mb-3">أضف تفاصيل إضافية لمساعدة مزود الخدمة في الوصول إليك</p>
-                
-                <div className="row g-3">
-                  <div className="col-6">
-                    <label className="form-label small fw-bold">رقم العمارة</label>
-                    <input
-                      type="text"
-                      name="building_number"
-                      value={locationDetails.building_number}
-                      onChange={handleLocationDetailsChange}
-                      className="form-control"
-                      placeholder="مثال: 15"
-                    />
-                  </div>
-                  <div className="col-6">
-                    <label className="form-label small fw-bold">رقم الشقة</label>
-                    <input
-                      type="text"
-                      name="apartment_number"
-                      value={locationDetails.apartment_number}
-                      onChange={handleLocationDetailsChange}
-                      className="form-control"
-                      placeholder="مثال: 3أ"
-                    />
-                  </div>
-                  <div className="col-12">
-                    <label className="form-label small fw-bold">الطابق</label>
-                    <input
-                      type="text"
-                      name="floor_number"
-                      value={locationDetails.floor_number}
-                      onChange={handleLocationDetailsChange}
-                      className="form-control"
-                      placeholder="مثال: الثالث"
-                    />
-                  </div>
-                  <div className="col-12">
-                    <label className="form-label small fw-bold">معلم مميز</label>
-                    <input
-                      type="text"
-                      name="landmark"
-                      value={locationDetails.landmark}
-                      onChange={handleLocationDetailsChange}
-                      className="form-control"
-                      placeholder="مثال: بجوار مدرسة الأمل، أمام محطة البنزين"
-                    />
-                  </div>
-                  <div className="col-12">
-                    <label className="form-label small fw-bold">تفاصيل إضافية</label>
-                    <textarea
-                      name="additional_details"
-                      value={locationDetails.additional_details}
-                      onChange={handleLocationDetailsChange}
-                      className="form-control"
-                      rows="2"
-                      placeholder="أي تفاصيل أخرى تساعد في الوصول..."
-                    />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Filters Card */}
             <Card className="mb-4" style={{ borderRadius: '16px', boxShadow: '0 6px 18px rgba(0,0,0,0.05)' }}>
               <CardContent className="p-4">
@@ -708,6 +711,21 @@ export default function LocationPage() {
                     <small className="text-muted">5 ⭐</small>
                   </div>
                 </div>
+
+                <div className="mb-3">
+                  <div className="form-check">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      id="sortByRating"
+                      checked={sortByRating}
+                      onChange={(e) => setSortByRating(e.target.checked)}
+                    />
+                    <label className="form-check-label fw-bold" htmlFor="sortByRating">
+                      ترتيب حسب التقييم (الأعلى أولاً)
+                    </label>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -745,27 +763,16 @@ export default function LocationPage() {
           <div className="col-lg-8">
             
             {/* Results Header */}
-            <div className="results-header mb-4">
-              <div className="results-info">
-                <h4 className="results-title">أقرب مزودي الخدمة</h4>
-                <div className="results-count">
-                  {loading ? (
-                    <span className="loading-text">جاري البحث...</span>
-                  ) : (
-                    <span className={`count-badge ${results.length > 0 ? 'success' : 'empty'}`}>
-                      {results.length > 0 ? `${results.length} مزود خدمة` : 'لا توجد نتائج'}
-                    </span>
-                  )}
-                </div>
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <div>
+                <h4 className="fw-bold mb-1">أقرب مزودي الخدمة</h4>
+                <p className="text-muted mb-0">
+                  {filteredAndSortedResults.length > 0 ? `تم العثور على ${filteredAndSortedResults.length} مزود خدمة` : 'لم يتم العثور على نتائج'}
+                </p>
               </div>
-              <button 
-                className="refresh-btn"
-                onClick={handleRefresh} 
-                disabled={loading || !selectedService}
-                title="تحديث النتائج"
-              >
+              <IconButton onClick={handleRefresh} disabled={loading || !selectedService}>
                 <RefreshIcon />
-              </button>
+              </IconButton>
             </div>
 
             {/* Results List */}
@@ -774,19 +781,103 @@ export default function LocationPage() {
                 <CircularProgress size={40} />
                 <div className="mt-3">جارٍ تحميل الخدمات...</div>
               </div>
-            ) : results.length > 0 ? (
+            ) : filteredAndSortedResults.length > 0 ? (
               <div className="row g-3">
-                {applyFilters(results).map(service => (
+                {filteredAndSortedResults.map(service => (
                   <div key={service.id} className="col-12">
                     <Card style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
                       <CardContent className="p-4">
                         <div className="row align-items-center">
                           <div className="col-md-8">
                             <h6 className="fw-bold mb-2 text-primary">
-                              {service.provider?.first_name && service.provider?.last_name 
-                                ? `${service.provider.first_name} ${service.provider.last_name}`
-                                : service.provider?.username || service.title || 'مزود خدمة'}
+                              {(() => {
+                                // Debug: Log the service data to see what's available
+                                // console.log('Service data for name display:', service);
+                                // console.log('User object:', service.user);
+                                
+                                // Try different ways to get user/provider name
+                                // Based on console logs, some users have empty first_name/last_name
+                                if (service.user?.first_name && service.user?.last_name) {
+                                  return `${service.user.first_name} ${service.user.last_name}`;
+                                }
+                                if (service.user?.first_name) {
+                                  return service.user.first_name;
+                                }
+                                if (service.user?.last_name) {
+                                  return service.user.last_name;
+                                }
+                                if (service.user?.username) {
+                                  return service.user.username;
+                                }
+                                if (service.user?.name) {
+                                  return service.user.name;
+                                }
+                                if (service.worker?.first_name && service.worker?.last_name) {
+                                  return `${service.worker.first_name} ${service.worker.last_name}`;
+                                }
+                                if (service.worker?.name) {
+                                  return service.worker.name;
+                                }
+                                if (service.worker?.username) {
+                                  return service.worker.username;
+                                }
+                                if (service.first_name && service.last_name) {
+                                  return `${service.first_name} ${service.last_name}`;
+                                }
+                                if (service.name) {
+                                  return service.name;
+                                }
+                                if (service.username) {
+                                  return service.username;
+                                }
+                                if (service.worker_name) {
+                                  return service.worker_name;
+                                }
+                                if (service.worker_username) {
+                                  return service.worker_username;
+                                }
+                                if (service.provider?.first_name && service.provider?.last_name) {
+                                  return `${service.provider.first_name} ${service.provider.last_name}`;
+                                }
+                                if (service.provider?.name) {
+                                  return service.provider.name;
+                                }
+                                if (service.provider?.username) {
+                                  return service.provider.username;
+                                }
+                                if (service.provider_username) {
+                                  return service.provider_username;
+                                }
+                                if (service.title) {
+                                  return service.title;
+                                }
+                                return 'مزود خدمة';
+                              })()}
                             </h6>
+                            
+                            {/* Rating Display */}
+                            {(() => {
+                              // Get user/provider ID for ratings
+                              const providerId = service.user?.id || service.worker?.id || service.provider?.id || service.provider_id || service.id;
+                              const rating = providersRatings[providerId];
+                              
+                              // Use rating from API if available, otherwise use rating from service data
+                              const displayRating = rating?.average_rating || service.user?.rating || service.rating;
+                              const totalRatings = rating?.total_ratings || 0;
+                              
+                              return displayRating > 0 && (
+                                <div className="d-flex align-items-center mb-2">
+                                  <RatingStars 
+                                    rating={displayRating} 
+                                    size="small" 
+                                    readOnly={true}
+                                  />
+                                  <span className="ms-2 text-muted small">
+                                    ({displayRating.toFixed(1)} {totalRatings > 0 ? `- ${totalRatings} تقييم` : ''})
+                                  </span>
+                                </div>
+                              );
+                            })()}
                             
                             {service.title && (
                               <p className="text-muted mb-1 small">
@@ -809,6 +900,14 @@ export default function LocationPage() {
                                   size="small" 
                                   variant="outlined" 
                                   color="primary"
+                                />
+                              )}
+                              {service.user?.price > 0 && (
+                                <Chip 
+                                  label={`${service.user.price} جنيه/ساعة`} 
+                                  size="small" 
+                                  variant="outlined" 
+                                  color="success"
                                 />
                               )}
                               {service.rating && (
@@ -886,21 +985,41 @@ export default function LocationPage() {
                 <CardContent className="p-0">
                   <div className="p-3 border-bottom">
                     <h6 className="fw-bold mb-0">الخريطة التفاعلية</h6>
-                    <small className="text-muted">انقر على الخريطة لتحديد موقعك أو ابحث عن مكان</small>
+                    <small className="text-muted">انقر على الخريطة لتحديد موقعك</small>
                   </div>
                   <LocationPicker 
-                    onLocationSelect={(loc) => {
+                    onLocationSelect={async (loc) => {
                       setSelectedLocation(loc);
-                      // Auto-trigger search when location is selected
-                      if (selectedService && !isSearching) {
-                        hasSearchedRef.current = false;
-                        fetchNearbyServices(loc);
+                      
+                      // Save location data if user is authenticated
+                      if (loc && loc.lat && loc.lng) {
+                        const accessToken = localStorage.getItem('access');
+                        if (accessToken && accessToken.trim() !== '' && accessToken !== 'null' && accessToken !== 'undefined') {
+                          try {
+                            const { locationService } = await import('../services/LocationService');
+                            const locationData = {
+                              lat: loc.lat,
+                              lng: loc.lng,
+                              address: buildLocationAddress(loc) || citySearch,
+                              city: loc.city || '',
+                              neighborhood: loc.neighborhood || '',
+                              location_type: 'map_selection',
+                              name: 'موقع محدد على الخريطة'
+                            };
+                            
+                            const result = await locationService.saveLocation(locationData);
+                            if (result.success) {
+                              console.log('[DEBUG] LocationPage: Map location saved successfully');
+                            }
+                          } catch (error) {
+                            console.error('[DEBUG] LocationPage: Error saving map location:', error);
+                          }
+                        } else {
+                          console.log('[DEBUG] LocationPage: User not authenticated, skipping map location save');
+                        }
                       }
                     }}
-                    initialLocation={selectedLocation}
                     height={400}
-                    showSaveButton={true}
-                    showSearchBox={true}
                   />
                 </CardContent>
               </Card>
@@ -909,6 +1028,55 @@ export default function LocationPage() {
         </div>
       </Container>
 
+      {/* Custom Styles */}
+      <style jsx="true">{`
+        .step-indicator {
+          display: flex;
+          gap: 8px;
+        }
+        .step {
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: bold;
+          font-size: 14px;
+          background: rgba(255,255,255,0.3);
+          color: white;
+        }
+        .step.active {
+          background: white;
+          color: #0077ff;
+        }
+        .suggestions-dropdown {
+          position: absolute;
+          top: 100%;
+          left: 0;
+          right: 0;
+          background: white;
+          border: 1px solid #e5e7eb;
+          border-radius: 8px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+          z-index: 1000;
+          max-height: 200px;
+          overflow-y: auto;
+        }
+        .suggestion-item {
+          padding: 12px 16px;
+          cursor: pointer;
+          border-bottom: 1px solid #f3f4f6;
+          display: flex;
+          align-items: center;
+        }
+        .suggestion-item:hover {
+          background: #f9fafb;
+        }
+        .suggestion-item:last-child {
+          border-bottom: none;
+        }
+      `}</style>
     </div>
   );
 }

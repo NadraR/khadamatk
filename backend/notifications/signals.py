@@ -27,12 +27,12 @@ def order_created_or_updated(sender, instance: Order, created, **kwargs):
                 recipient=provider,
                 actor=customer,
                 verb='order_created',
-                message=f"طلب جديد لخدمة '{instance.service.name}' من {customer.get_full_name() or customer.username}",
+                message=f"طلب جديد لخدمة '{instance.service.title}' من {customer.get_full_name() or customer.username}",
                 target=instance,
                 url=order_url,
                 level='info',
                 offered_price=instance.offered_price,
-                service_name=instance.service.name,
+                service_name=instance.service.title,
                 job_description=instance.description,  # The specific work details from the client
                 location_lat=instance.location_lat,
                 location_lng=instance.location_lng,
@@ -51,6 +51,11 @@ def order_created_or_updated(sender, instance: Order, created, **kwargs):
             level='success',
             offered_price=instance.offered_price,
             service_price=instance.service.price if hasattr(instance.service, 'price') else None,
+            service_name=instance.service.title,
+            job_description=instance.description or 'طلب جديد',  # Provide default value
+            location_lat=instance.location_lat,
+            location_lng=instance.location_lng,
+            location_address=location_address,
             requires_action=False  # Customers don't need to take action on confirmation
         )
     
@@ -101,24 +106,42 @@ def _create_notification(recipient, actor, verb, message, target, url, level=Non
     if not level:
         level = _get_notification_level(verb)
     
-    Notification.objects.create(
-        recipient=recipient,
-        actor=actor,
-        verb=verb,
-        message=message,
-        short_message=message[:100],
-        target=target,
-        url=url,
-        level=level,
-        offered_price=offered_price,
-        service_price=service_price,
-        service_name=service_name,
-        job_description=job_description,
-        location_lat=location_lat,
-        location_lng=location_lng,
-        location_address=location_address,
-        requires_action=requires_action
-    )
+    try:
+        from django.contrib.contenttypes.models import ContentType
+        
+        # Get content type for recipient
+        recipient_content_type = ContentType.objects.get_for_model(recipient)
+        
+        # Get content type for target if target is provided
+        target_content_type = None
+        target_object_id = None
+        if target:
+            target_content_type = ContentType.objects.get_for_model(target)
+            target_object_id = target.id
+        
+        Notification.objects.create(
+            recipient_content_type=recipient_content_type,
+            recipient_object_id=recipient.id,
+            actor=actor,
+            verb=verb,
+            message=message,
+            short_message=message[:100],
+            target_content_type=target_content_type,
+            target_object_id=target_object_id,
+            url=url,
+            level=level,
+            offered_price=offered_price,
+            service_price=service_price,
+            service_name=service_name,
+            job_description=job_description,
+            location_lat=location_lat,
+            location_lng=location_lng,
+            location_address=location_address,
+            requires_action=requires_action
+        )
+    except Exception as e:
+        print(f"Error creating notification: {e}")
+        # Don't fail the order creation if notification fails
 
 
 def _get_notification_level(verb):
@@ -156,6 +179,7 @@ def save_old_status(sender, instance, **kwargs):
             old_instance = Order.objects.get(pk=instance.pk)
             instance._old_status = old_instance.status
         except Order.DoesNotExist:
-            instance._old_status = None
+            instance._old_status = None    
     else:
         instance._old_status = None
+

@@ -55,7 +55,7 @@ class Notification(models.Model):
     job_description = models.TextField(blank=True, verbose_name="وصف العمل المطلوب")
     location_lat = models.FloatField(null=True, blank=True, verbose_name="خط العرض")
     location_lng = models.FloatField(null=True, blank=True, verbose_name="خط الطول")
-    location_address = models.TextField(blank=True, verbose_name="عنوان الموقع")
+    location_address = models.TextField(blank=True, default='عنوان غير محدد', verbose_name="عنوان الموقع")
     
     # إجراءات الإشعار (للعمال)
     requires_action = models.BooleanField(default=False, verbose_name="يتطلب إجراءً")
@@ -86,8 +86,7 @@ class Notification(models.Model):
     def mark_as_unread(self):
         if self.read_at:
             self.read_at = None
-            self.save()
-    
+            self.save()    
     def take_action(self, action_type):
         """Mark notification action as taken"""
         if not self.action_taken:

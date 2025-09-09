@@ -1,24 +1,22 @@
 import axios from "axios";
 
 class ApiService {
-  constructor(baseURL = import.meta.env.VITE_API_URL || "http://localhost:8001") {
+  constructor(baseURL = import.meta.env.VITE_API_URL || "http://localhost:8000") {
     this.baseURL = baseURL;
     this.retryCount = 0;
     this.maxRetries = 1;
 
+    // إنشاء instance من axios
     this.api = axios.create({
       baseURL: this.baseURL,
       headers: { "Content-Type": "application/json" },
-      timeout: 30000, // 30 ثانية - زيادة timeout
+      timeout: 15000, // 15 ثانية - تقليل timeout
     });
 
-    // ⬅️ Interceptor لإضافة الـ access token
+    // interceptor لإضافة token تلقائياً
     this.api.interceptors.request.use(
       (config) => {
         const accessToken = localStorage.getItem("access");
-        console.log("[DEBUG][Request] →", config.url);
-        console.log("[DEBUG][Request] Access token:", accessToken);
-
         if (accessToken) {
           config.headers.Authorization = `Bearer ${accessToken}`;
         }
@@ -27,7 +25,7 @@ class ApiService {
       (error) => Promise.reject(error)
     );
 
-    // ⬅️ Interceptor لتجديد التوكن عند 401
+    // interceptor للتعامل مع الأخطاء و retry لتجديد التوكن
     this.api.interceptors.response.use(
       (response) => response,
       async (error) => {
@@ -42,17 +40,14 @@ class ApiService {
           this.retryCount++;
           originalRequest._retry = true;
 
-          console.log("[DEBUG] 401 detected → Trying refresh...");
           const newTokens = await this.refreshToken(localStorage.getItem("refresh"));
-
           if (newTokens?.access) {
             localStorage.setItem("access", newTokens.access);
             if (newTokens.refresh) localStorage.setItem("refresh", newTokens.refresh);
 
-            console.log("[DEBUG] Token refreshed, retrying request:", originalRequest.url);
+            // إعادة المحاولة بعد تحديث التوكن
             return this.api(originalRequest);
           } else {
-            console.warn("[DEBUG] Refresh token failed → clearing auth");
             this.clearAuth();
           }
         }
@@ -66,15 +61,13 @@ class ApiService {
   async refreshToken(refreshToken) {
     try {
       // Fixed: use the correct endpoint that matches backend
-      console.log("[DEBUG] Calling refresh endpoint with token:", refreshToken);
       const response = await axios.post(`${this.baseURL}/api/accounts/token/refresh/`, {
         refresh: refreshToken,
       });
-      console.log("[DEBUG] Refresh response:", response.data);
       return response.data;
     } catch (err) {
       this.clearAuth();
-      console.error("[DEBUG] Error refreshing token:", err.response?.data || err.message);
+      console.error("Error refreshing token:", err);
       return null;
     }
   }
@@ -93,60 +86,67 @@ class ApiService {
 
   // دوال مساعدة للطلبات مع معالجة أفضل للأخطاء
   async get(endpoint, headers = {}) {
-    try {
+    return this.retryRequest(async () => {
       return await this.api.get(endpoint, { headers }).then((res) => res.data);
-    } catch (error) {
-      this.handleRequestError(error, 'GET', endpoint);
-      throw error;
-    }
+    }, 'GET', endpoint);
   }
+
+  async retryRequest(requestFn, method, endpoint, maxRetries = 2) {
+    let lastError;
+    
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        return await requestFn();
+      } catch (error) {
+        lastError = error;
+        this.handleRequestError(error, method, endpoint, attempt, maxRetries);
+        
+        // إذا كانت هذه المحاولة الأخيرة، ارمي الخطأ
+        if (attempt === maxRetries) {
+          throw error;
+        }
+        
+        // انتظار قبل المحاولة التالية (1 ثانية * رقم المحاولة)
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+      }
+    }
+    
+    throw lastError;
+  }
+
   async post(endpoint, body, headers = {}) {
-    try {
+    return this.retryRequest(async () => {
       return await this.api.post(endpoint, body, { headers }).then((res) => res.data);
-    } catch (error) {
-      this.handleRequestError(error, 'POST', endpoint);
-      throw error;
-    }
+    }, 'POST', endpoint);
   }
+
   async put(endpoint, body, headers = {}) {
-    try {
+    return this.retryRequest(async () => {
       return await this.api.put(endpoint, body, { headers }).then((res) => res.data);
-    } catch (error) {
-      this.handleRequestError(error, 'PUT', endpoint);
-      throw error;
-    }
+    }, 'PUT', endpoint);
   }
+
   async patch(endpoint, body, headers = {}) {
-    try {
+    return this.retryRequest(async () => {
       return await this.api.patch(endpoint, body, { headers }).then((res) => res.data);
-    } catch (error) {
-      this.handleRequestError(error, 'PATCH', endpoint);
-      throw error;
-    }
+    }, 'PATCH', endpoint);
   }
+
   async delete(endpoint, headers = {}) {
-    try {
+    return this.retryRequest(async () => {
       return await this.api.delete(endpoint, { headers }).then((res) => res.data);
-    } catch (error) {
-      this.handleRequestError(error, 'DELETE', endpoint);
-      throw error;
-    }
+    }, 'DELETE', endpoint);
   }
 
   // معالجة أخطاء الطلبات
-  handleRequestError(error, method, endpoint) {
-    // Don't log 404 errors for endpoints that are not implemented yet
-    if (error.response?.status === 404 && 
-        (endpoint.includes('/favorites/') || 
-         endpoint.includes('/reviews/my-reviews/') || 
-         endpoint.includes('/ratings/my-ratings/'))) {
-      return; // Silent handling for unimplemented endpoints
-    }
-    
-    console.error(`[API Error] ${method} ${endpoint}:`, error);
+  handleRequestError(error, method, endpoint, attempt = 1, maxRetries = 1) {
+    console.error(`[API Error] ${method} ${endpoint} (Attempt ${attempt}/${maxRetries}):`, error);
     
     if (error.code === 'ECONNABORTED') {
       console.error('Request timeout - الخادم لا يستجيب في الوقت المحدد');
+      if (attempt < maxRetries) {
+        console.log(`سيتم إعادة المحاولة خلال ${attempt} ثانية...`);
+      }
       error.message = 'انتهت مهلة الاتصال. يرجى التحقق من اتصال الإنترنت أو المحاولة مرة أخرى.';
     } else if (error.code === 'ECONNREFUSED') {
       console.error('Connection refused - الخادم غير متاح');
