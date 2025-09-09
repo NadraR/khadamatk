@@ -13,28 +13,33 @@ def handle_booking_status_change(sender, instance, created, **kwargs):
     """
     إدارة الفواتير تلقائياً عند تغيير حالة الحجز
     """
+    logger.info(f"Signal triggered for Order {instance.id}: status={instance.status}, created={created}")
+    
     if instance.status == 'completed':
         invoice_exists = Invoice.objects.filter(order=instance).exists()
+        logger.info(f"Invoice exists for order {instance.id}: {invoice_exists}")
         
         if not invoice_exists:
             try:
                 # استخدام السعر المعروض من العميل أو السعر الأساسي للخدمة
                 amount = instance.offered_price or instance.service.price
+                logger.info(f"Creating invoice for order {instance.id} with amount: {amount}")
                 
                 # تحديد تاريخ الاستحقاق (7 أيام من تاريخ الاكتمال)
                 due_date = timezone.now() + timezone.timedelta(days=7)
                 
-                Invoice.objects.create(
+                invoice = Invoice.objects.create(
                     order=instance,
                     amount=amount,
                     status=Invoice.STATUS_UNPAID,
                     due_date=due_date,
                     notes=f"فاتورة للخدمة: {instance.service.title}"
                 )
-                logger.info(f"تم إنشاء فاتورة جديدة للحجز #{instance.id} بمبلغ {amount}")
+                logger.info(f"تم إنشاء فاتورة جديدة للحجز #{instance.id} بمبلغ {amount}, Invoice ID: {invoice.id}")
                 
-            except AttributeError as e:
+            except Exception as e:
                 logger.error(f"خطأ في إنشاء الفاتورة: {e}")
+                logger.error(f"Order details: id={instance.id}, status={instance.status}, service={instance.service}")
     
     elif instance.status in ['cancelled', 'pending']:
         try:

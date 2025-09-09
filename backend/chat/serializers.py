@@ -43,10 +43,10 @@ class ConversationListSerializer(serializers.ModelSerializer):
     def get_other_participant(self, obj):
         """Get the other participant in the conversation (not the current user)"""
         current_user = self.context['request'].user
-        if obj.order.client == current_user:
+        if obj.order.customer == current_user:
             other_user = obj.order.worker
         else:
-            other_user = obj.order.client
+            other_user = obj.order.customer
         
         return {
             'id': other_user.id if other_user else None,

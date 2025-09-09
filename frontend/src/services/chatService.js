@@ -9,6 +9,16 @@ class ChatService {
   // Get all conversations for the current user
   async getUserConversations() {
     try {
+      // Check if user is authenticated
+      const accessToken = localStorage.getItem('access');
+      if (!accessToken) {
+        return {
+          success: false,
+          error: 'User not authenticated',
+          data: []
+        };
+      }
+
       const response = await apiService.get(`${this.baseEndpoint}/conversations/`);
       return {
         success: true,
@@ -16,9 +26,20 @@ class ChatService {
       };
     } catch (error) {
       console.error('Error fetching user conversations:', error);
+      
+      // Handle authentication errors specifically
+      if (error.response?.status === 401) {
+        return {
+          success: false,
+          error: 'Authentication failed',
+          data: []
+        };
+      }
+      
       return {
         success: false,
-        error: error.response?.data?.detail || error.message || 'Failed to fetch conversations'
+        error: error.response?.data?.detail || error.message || 'Failed to fetch conversations',
+        data: []
       };
     }
   }
@@ -167,6 +188,147 @@ class ChatService {
     return language === 'ar' 
       ? this.formatMessageTime(timestamp) 
       : this.formatMessageTimeEn(timestamp);
+  }
+
+  // Get user orders (fallback for conversations)
+  async getUserOrders() {
+    try {
+      // Check if user is authenticated
+      const accessToken = localStorage.getItem('access');
+      if (!accessToken) {
+        return {
+          success: false,
+          error: 'User not authenticated',
+          data: []
+        };
+      }
+
+      const response = await apiService.get('/api/orders/');
+      return {
+        success: true,
+        data: response
+      };
+    } catch (error) {
+      console.error('Error fetching user orders:', error);
+      
+      // Handle authentication errors specifically
+      if (error.response?.status === 401) {
+        return {
+          success: false,
+          error: 'Authentication failed',
+          data: []
+        };
+      }
+      
+      return {
+        success: false,
+        error: error.response?.data?.detail || error.message || 'Failed to fetch orders',
+        data: []
+      };
+    }
+  }
+
+  // Get messages for a specific order/conversation
+  async getMessages(orderId) {
+    try {
+      // Check if user is authenticated
+      const accessToken = localStorage.getItem('access');
+      if (!accessToken) {
+        return {
+          success: false,
+          error: 'User not authenticated',
+          data: []
+        };
+      }
+
+      const response = await apiService.get(`${this.baseEndpoint}/orders/${orderId}/messages/`);
+      return {
+        success: true,
+        data: response
+      };
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      
+      // Handle authentication errors specifically
+      if (error.response?.status === 401) {
+        return {
+          success: false,
+          error: 'Authentication failed',
+          data: []
+        };
+      }
+      
+      return {
+        success: false,
+        error: error.response?.data?.detail || error.message || 'Failed to fetch messages',
+        data: []
+      };
+    }
+  }
+
+  // Send a message
+  async sendMessage(orderId, messageData) {
+    try {
+      const accessToken = localStorage.getItem('access');
+      if (!accessToken) {
+        return {
+          success: false,
+          error: 'User not authenticated'
+        };
+      }
+
+      const response = await apiService.post(`${this.baseEndpoint}/orders/${orderId}/messages/`, messageData);
+      return {
+        success: true,
+        data: response
+      };
+    } catch (error) {
+      console.error('Error sending message:', error);
+      return {
+        success: false,
+        error: error.response?.data?.detail || error.message || 'Failed to send message'
+      };
+    }
+  }
+
+  // Connect to WebSocket (placeholder implementation)
+  connectWebSocket(orderId, onMessageReceived = null) {
+    try {
+      console.log(`[DEBUG] Connecting WebSocket for order ${orderId}`);
+      
+      // For now, return a mock connection
+      // In a real implementation, you would create a WebSocket connection here
+      const mockConnection = {
+        close: () => {
+          console.log(`[DEBUG] Closing WebSocket for order ${orderId}`);
+        },
+        send: (message) => {
+          console.log(`[DEBUG] Sending message via WebSocket:`, message);
+        }
+      };
+
+      // Store the connection
+      this.wsConnections.set(orderId, mockConnection);
+      
+      return mockConnection;
+    } catch (error) {
+      console.error('Error connecting WebSocket:', error);
+      return null;
+    }
+  }
+
+  // Disconnect WebSocket
+  disconnectWebSocket(orderId) {
+    try {
+      const connection = this.wsConnections.get(orderId);
+      if (connection && connection.close) {
+        connection.close();
+        this.wsConnections.delete(orderId);
+        console.log(`[DEBUG] Disconnected WebSocket for order ${orderId}`);
+      }
+    } catch (error) {
+      console.error('Error disconnecting WebSocket:', error);
+    }
   }
 }
 

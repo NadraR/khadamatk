@@ -173,6 +173,39 @@ class LocationService {
       };
     }
   }
+
+  async searchNearbyServices(lat, lng, radius = 10, serviceType = null, query = '') {
+    try {
+      console.log('[LocationService] Searching nearby services with serviceType:', serviceType);
+      
+      // Use services/nearby endpoint which supports service_type filtering
+      let url = `/api/services/nearby/?lat=${lat}&lng=${lng}&radius_km=${radius}&max_results=50`;
+      
+      if (serviceType) {
+        url += `&service_type=${serviceType}`;
+      }
+      
+      if (query && query.trim()) {
+        url += `&q=${encodeURIComponent(query.trim())}`;
+      }
+      
+      console.log('[LocationService] Services API URL:', url);
+      
+      const response = await apiService.get(url);
+      return {
+        success: true,
+        data: response,
+        message: 'تم البحث في الخدمات بنجاح'
+      };
+    } catch (error) {
+      console.error('[LocationService] Services search error:', error);
+      return {
+        success: false,
+        error: error.message || 'فشل في البحث عن الخدمات القريبة',
+        status: error.status
+      };
+    }
+  }
 }
 
 export const locationService = new LocationService();

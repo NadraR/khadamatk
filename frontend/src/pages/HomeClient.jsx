@@ -500,7 +500,7 @@ const HomeClient = () => {
     if (activeTab === 'invoices' || activeTab === 'overview') {
       await loadInvoices();
     }
-  }, [activeTab, loadInvoices, user?.id]);
+  }, [activeTab, loadInvoices]);
 
   // Function to refresh orders when returning to the page
   const refreshOrders = useCallback(async () => {
@@ -517,7 +517,7 @@ const HomeClient = () => {
       console.error('Error loading reviews:', error);
       setReviews([]);
     }
-  }, [user?.id]);
+  }, []);
 
   const loadRatings = useCallback(async () => {
     try {
@@ -533,7 +533,7 @@ const HomeClient = () => {
       console.error('Error loading ratings:', error);
       // setRatings([]);
     }
-  }, [user?.id]);
+  }, []);
 
   const loadClientData = useCallback(async () => {
     try {
@@ -1359,7 +1359,7 @@ const HomeClient = () => {
                 عرض جميع الطلبات
               </button>
               <button 
-                className="btn btn-sm btn-warning"
+                className="btn btn-sm btn-warning me-2"
                 onClick={() => {
                   console.log('[DEBUG] Deep analysis of current user and orders...');
                   console.log('[DEBUG] Current user:', user);
@@ -1423,6 +1423,69 @@ const HomeClient = () => {
                 }}
               >
                 تحليل عميق
+              </button>
+              <button 
+                className="btn btn-sm btn-info me-2"
+                onClick={async () => {
+                  console.log('[DEBUG] Creating invoices for completed orders...');
+                  try {
+                    const response = await apiService.post('/api/invoices/create-missing/');
+                    console.log('[DEBUG] Invoices created:', response);
+                    
+                    // إعادة تحميل الفواتير
+                    await loadInvoices();
+                    
+                    if (response.created_invoices && response.created_invoices.length > 0) {
+                      alert(`تم إنشاء ${response.created_invoices.length} فاتورة بنجاح!`);
+                      console.log('[DEBUG] Created invoices:', response.created_invoices);
+                    } else {
+                      alert('لا توجد طلبات مكتملة تحتاج لفواتير');
+                    }
+                    
+                  } catch (error) {
+                    console.error('[DEBUG] Error creating invoices:', error);
+                    alert('حدث خطأ في إنشاء الفواتير: ' + (error.response?.data?.error || error.message));
+                  }
+                }}
+              >
+                إنشاء فواتير للطلبات المكتملة
+              </button>
+              <button 
+                className="btn btn-sm btn-warning"
+                onClick={async () => {
+                  console.log('[DEBUG] Testing invoice signal...');
+                  try {
+                    // البحث عن طلب مكتمل
+                    const completedOrder = orders.find(order => order.status === 'completed');
+                    if (!completedOrder) {
+                      alert('لا يوجد طلبات مكتملة لاختبار الـ signal');
+                      return;
+                    }
+                    
+                    console.log('[DEBUG] Testing signal for order:', completedOrder.id);
+                    
+                    const response = await apiService.post('/api/invoices/trigger-signal/', {
+                      order_id: completedOrder.id
+                    });
+                    
+                    console.log('[DEBUG] Signal test result:', response);
+                    
+                    // إعادة تحميل الفواتير
+                    await loadInvoices();
+                    
+                    if (response.invoice_id) {
+                      alert(`تم اختبار الـ signal بنجاح! تم إنشاء فاتورة #${response.invoice_id}`);
+                    } else {
+                      alert(response.message || 'تم اختبار الـ signal');
+                    }
+                    
+                  } catch (error) {
+                    console.error('[DEBUG] Error testing signal:', error);
+                    alert('حدث خطأ في اختبار الـ signal: ' + (error.response?.data?.error || error.message));
+                  }
+                }}
+              >
+                اختبار Signal للفواتير
               </button>
             </div>
           </div>

@@ -34,9 +34,21 @@ const ReviewModal = ({
   const handleSubmit = (e) => {
     e.preventDefault();
     if (onSubmit) {
+      // استخدام service_id من الطلب إذا لم يكن service object موجود
+      const serviceId = service?.id || order?.service_id;
+      
+      console.log('[DEBUG] ReviewModal submit:', {
+        service_id: serviceId,
+        order_id: order?.id,
+        score: formData.score,
+        comment: formData.comment,
+        service: service,
+        order: order
+      });
+      
       onSubmit({
         ...formData,
-        service_id: service?.id,
+        service_id: serviceId,
         order_id: order?.id
       });
     }
@@ -68,12 +80,19 @@ const ReviewModal = ({
           <form onSubmit={handleSubmit}>
             <div className="modal-body">
               {/* Service Info */}
-              {service && (
+              {(service || order) && (
                 <div className="service-info mb-4 p-3 bg-light rounded">
-                  <h6 className="mb-1">{service.title || service.name}</h6>
-                  {service.provider && (
+                  <h6 className="mb-1">
+                    {service?.title || service?.name || order?.service_name || 'خدمة غير محددة'}
+                  </h6>
+                  {service?.provider && (
                     <small className="text-muted">
                       مقدم الخدمة: {service.provider.first_name} {service.provider.last_name}
+                    </small>
+                  )}
+                  {order && (
+                    <small className="text-muted d-block">
+                      رقم الطلب: #{order.id}
                     </small>
                   )}
                 </div>
@@ -158,4 +177,3 @@ const ReviewModal = ({
 };
 
 export default ReviewModal;
-

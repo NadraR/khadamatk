@@ -85,46 +85,116 @@ export default function NearbyServiceSearch() {
   }, [location.state]);
 
   const fetchNearbyServices = useCallback(async (location) => {
-    if (!location || !selectedService) return;
+    if (!location) return;
     
     try {
       setLoading(true);
       console.log('[NearbyServiceSearch] Searching for service type:', selectedService);
       console.log('[NearbyServiceSearch] Location:', location);
       
-      const result = await locationService.searchNearbyLocations(
+      let allResults = [];
+      
+      // 1. البحث في الخدمات (إذا تم تحديد نوع خدمة)
+      if (selectedService) {
+        console.log('[NearbyServiceSearch] Searching services with type:', selectedService);
+        const servicesResult = await locationService.searchNearbyServices(
+          location.lat, 
+          location.lng, 
+          150, // radius in km
+          selectedService,
+          ''
+        );
+        
+        if (servicesResult.success && servicesResult.data) {
+          let servicesData = Array.isArray(servicesResult.data) ? servicesResult.data : [];
+          console.log('[NearbyServiceSearch] Services found:', servicesData.length);
+          
+          // تحويل بيانات الخدمات لتنسيق موحد
+          const formattedServices = servicesData.map(service => ({
+            id: `service_${service.id}`,
+            type: 'service',
+            title: service.title,
+            description: service.description,
+            provider_username: service.provider_username,
+            provider_id: service.provider,
+            category: service.category,
+            price: service.price,
+            currency: service.currency,
+            rating_avg: service.rating_avg,
+            rating_count: service.rating_count,
+            city: service.city,
+            distance_km: service.distance_km,
+            provider_location: service.provider_location,
+            original_data: service
+          }));
+          
+          allResults.push(...formattedServices);
+        }
+      }
+      
+      // 2. البحث في المواقع (العمال القريبين)
+      console.log('[NearbyServiceSearch] Searching nearby workers...');
+      const locationsResult = await locationService.searchNearbyLocations(
         location.lat, 
         location.lng, 
-        150, // radius in km - increased for better results
-        selectedService, // pass the selected service type
-        ''   // no text search query
+        150, // radius in km
+        selectedService // سيتم تجاهله في location endpoint لكن لا مشكلة
       );
       
-      console.log('[NearbyServiceSearch] LocationService result:', result);
-      
-      if (result.success) {
-        // Handle the response structure properly
-        let resultsData = [];
+      if (locationsResult.success && locationsResult.data) {
+        let locationsData = Array.isArray(locationsResult.data) ? locationsResult.data : [];
+        console.log('[NearbyServiceSearch] Workers found:', locationsData.length);
         
-        if (result.data && Array.isArray(result.data)) {
-          // If data is directly an array
-          resultsData = result.data;
-        } else if (result.data && result.data.results && Array.isArray(result.data.results)) {
-          // If data has results property
-          resultsData = result.data.results;
-        } else if (result.data && result.data.data && Array.isArray(result.data.data)) {
-          // If data has nested data property
-          resultsData = result.data.data;
-        }
+        // تحويل بيانات المواقع لتنسيق موحد
+        const formattedWorkers = locationsData.map(worker => ({
+          id: `worker_${worker.id}`,
+          type: 'worker',
+          title: worker.user?.first_name && worker.user?.last_name 
+            ? `${worker.user.first_name} ${worker.user.last_name}`
+            : worker.user?.username || 'عامل',
+          description: `عامل في ${worker.city || 'المنطقة'}`,
+          provider_username: worker.user?.username,
+          provider_id: worker.user?.id,
+          category: { name: 'عامل' },
+          price: worker.user?.hourly_rate || 0,
+          currency: 'ج.م',
+          rating_avg: worker.user?.rating || 0,
+          rating_count: 0,
+          city: worker.city,
+          distance_km: worker.distance_km,
+          provider_location: {
+            lat: worker.lat,
+            lng: worker.lng
+          },
+          worker_profile: {
+            job_title: worker.user?.role === 'worker' ? 'عامل' : 'مقدم خدمة',
+            skills: 'مهارات متنوعة',
+            services_provided: 'خدمات عامة'
+          },
+          original_data: worker
+        }));
         
-        console.log('[NearbyServiceSearch] Processed results:', resultsData);
-        setResults(resultsData);
-        setLastUpdated(new Date());
-        setError(null);
-      } else {
-        console.error('[NearbyServiceSearch] Search failed:', result.error);
-        setError(result.error || "فشل في تحميل الخدمات القريبة");
+        allResults.push(...formattedWorkers);
       }
+      
+      // 3. إزالة التكرار وترتيب النتائج
+      const uniqueResults = allResults.filter((item, index, self) => 
+        index === self.findIndex((t) => t.provider_id === item.provider_id)
+      );
+      
+      // ترتيب حسب المسافة أولاً ثم التقييم
+      uniqueResults.sort((a, b) => {
+        if (a.distance_km !== b.distance_km) {
+          return (a.distance_km || 999) - (b.distance_km || 999);
+        }
+        return (b.rating_avg || 0) - (a.rating_avg || 0);
+      });
+      
+      console.log('[NearbyServiceSearch] Total unique results:', uniqueResults.length);
+      setResults(uniqueResults);
+      setLastUpdated(new Date());
+      setError(null);
+      
     } catch (err) {
       console.error('[NearbyServiceSearch] Search error:', err);
       setError("فشل في تحميل الخدمات القريبة");
@@ -139,14 +209,9 @@ export default function NearbyServiceSearch() {
     }
   }, [userLocation, fetchNearbyServices]);
 
-  const getDirectionsUrl = (worker) => {
-    const lat = worker.location?.lat || worker.lat || worker.location_lat;
-    const lng = worker.location?.lng || worker.lng || worker.location_lng;
-    return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
-  };
 
   useEffect(() => {
-    if (userLocation && selectedService) {
+    if (userLocation) {
       fetchNearbyServices(userLocation);
     }
   }, [userLocation, selectedService, fetchNearbyServices]);
@@ -243,26 +308,18 @@ export default function NearbyServiceSearch() {
               تحديد الموقع
             </Button>
           </Box>
-        ) : !selectedService ? (
-          <Box sx={{ textAlign: "center", py: 3, color: "text.secondary" }}>
-            <LocationIcon sx={{ fontSize: 40, opacity: 0.5, mb: 1 }} />
-            <Typography>يرجى اختيار نوع الخدمة لعرض النتائج</Typography>
-          </Box>
-        ) : locationLoading ? (
+        ) : locationLoading || loading ? (
           <Box sx={{ textAlign: "center", py: 3 }}>
             <CircularProgress size={24} />
-            <Typography>جارٍ تحديد موقعك...</Typography>
-          </Box>
-        ) : loading ? (
-          <Box sx={{ textAlign: "center", py: 3 }}>
-            <CircularProgress size={24} />
-            <Typography>جارٍ تحميل الخدمات...</Typography>
+            <Typography>
+              {locationLoading ? 'جارٍ تحديد موقعك...' : 'جارٍ تحميل الخدمات...'}
+            </Typography>
           </Box>
         ) : results.length > 0 ? (
           <List sx={{ maxHeight: 400, overflow: "auto" }}>
-            {results.map(worker => (
+            {results.map(service => (
               <ListItem 
-                key={worker.id} 
+                key={service.id} 
                 sx={{ 
                   flexDirection: "column", 
                   alignItems: "flex-start",
@@ -277,25 +334,30 @@ export default function NearbyServiceSearch() {
                 }}
               >
                 <Box sx={{ display: "flex", justifyContent: "space-between", width: "100%", alignItems: "center" }}>
-                  <Typography 
-                    component={Link} 
-                    to={`/provider/${worker.provider.id}`} 
-                    sx={{ 
-                      textDecoration: "none", 
-                      color: "primary.main",
-                      fontWeight: "medium",
-                      "&:hover": { textDecoration: "underline" }
-                    }}
-                  >
-                    {worker.provider?.first_name && worker.provider?.last_name 
-                      ? `${worker.provider.first_name} ${worker.provider.last_name}`
-                      : worker.provider?.username || 'مزود خدمة'
-                    }
-                  </Typography>
-                  {worker.distance_km != null && (
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Typography 
+                      component={service.type === 'service' ? Link : 'span'}
+                      to={service.type === 'service' ? `/service/${service.original_data?.id}` : undefined}
+                      sx={{ 
+                        textDecoration: "none", 
+                        color: "primary.main",
+                        fontWeight: "medium",
+                        "&:hover": service.type === 'service' ? { textDecoration: "underline" } : {}
+                      }}
+                    >
+                      {service.title}
+                    </Typography>
+                    <Chip 
+                      label={service.type === 'service' ? 'خدمة' : 'عامل'}
+                      size="small"
+                      color={service.type === 'service' ? 'primary' : 'secondary'}
+                      variant="outlined"
+                    />
+                  </Box>
+                  {service.distance_km != null && (
                     <Chip 
                       icon={<LocationIcon />}
-                      label={`${worker.distance_km.toFixed(1)} كم`}
+                      label={`${service.distance_km.toFixed(1)} كم`}
                       size="small"
                       variant="outlined"
                       color="primary"
@@ -303,66 +365,78 @@ export default function NearbyServiceSearch() {
                   )}
                 </Box>
                 
-                {/* Display worker profile information */}
-                {worker.worker_profile?.job_title && (
-                  <Typography variant="body2" color="primary" sx={{ mt: 1, fontWeight: 'bold' }}>
-                    💼 {worker.worker_profile.job_title}
-                  </Typography>
-                )}
-                
-                {worker.worker_profile?.skills && (
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                    🛠️ المهارات: {worker.worker_profile.skills}
-                  </Typography>
-                )}
-                
-                {worker.worker_profile?.services_provided && (
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                    📋 الخدمات: {worker.worker_profile.services_provided}
-                  </Typography>
-                )}
-                
-                {worker.location?.address && (
+                {/* Service description */}
+                {service.description && (
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                    📍 {worker.location.address}
+                    📋 {service.description}
                   </Typography>
                 )}
                 
-                {/* Display services offered */}
-                {worker.services && worker.services.length > 0 && (
-                  <Box sx={{ mt: 1 }}>
-                    <Typography variant="caption" color="text.secondary">
-                      الخدمات المتاحة:
-                    </Typography>
-                    {worker.services.map((service) => (
-                      <Chip
-                        key={service.id}
-                        label={`${service.title} - ${service.base_price} ج.م`}
-                        size="small"
-                        variant="outlined"
-                        sx={{ ml: 0.5, mt: 0.5 }}
-                      />
-                    ))}
-                  </Box>
-                )}
+                {/* Provider information */}
+                <Typography variant="body2" color="primary" sx={{ mt: 1, fontWeight: 'bold' }}>
+                  👤 مقدم الخدمة: {service.provider_username}
+                </Typography>
                 
-                {worker.provider?.role && (
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                    {worker.provider.role === 'worker' && '👷‍♂️ عامل'}
-                    {worker.provider.role === 'client' && '👤 عميل'}
+                {/* Category */}
+                {service.category && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    🏷️ الفئة: {service.category.name}
                   </Typography>
                 )}
                 
-                <Button
-                  size="small"
-                  startIcon={<DirectionsIcon />}
-                  href={getDirectionsUrl(worker)}
-                  target="_blank"
-                  rel="noopener"
-                  sx={{ mt: 1 }}
-                >
-                  عرض الاتجاهات
-                </Button>
+                {/* Price */}
+                <Typography variant="body2" color="success.main" sx={{ mt: 0.5, fontWeight: 'bold' }}>
+                  💰 السعر: {service.price} {service.currency || 'ج.م'}
+                </Typography>
+                
+                {/* Rating */}
+                {service.rating_avg > 0 && (
+                  <Typography variant="body2" color="warning.main" sx={{ mt: 0.5 }}>
+                    ⭐ التقييم: {service.rating_avg.toFixed(1)} ({service.rating_count} تقييم)
+                  </Typography>
+                )}
+                
+                {/* City */}
+                {service.city && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                    📍 المدينة: {service.city}
+                  </Typography>
+                )}
+                
+                <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                  {service.type === 'service' ? (
+                    <Button
+                      size="small"
+                      component={Link}
+                      to={`/service/${service.original_data?.id}`}
+                      variant="outlined"
+                    >
+                      عرض تفاصيل الخدمة
+                    </Button>
+                  ) : (
+                    <Button
+                      size="small"
+                      component={Link}
+                      to={`/provider/${service.provider_id}`}
+                      variant="outlined"
+                    >
+                      عرض ملف العامل
+                    </Button>
+                  )}
+                  
+                  {service.provider_location && (
+                    <Button
+                      size="small"
+                      startIcon={<DirectionsIcon />}
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${service.provider_location.lat},${service.provider_location.lng}`}
+                      target="_blank"
+                      rel="noopener"
+                      variant="text"
+                    >
+                      الاتجاهات
+                    </Button>
+                  )}
+                </Box>
               </ListItem>
             ))}
           </List>
