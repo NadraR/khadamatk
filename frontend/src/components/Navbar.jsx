@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { FaScrewdriver, FaBell, FaSun, FaMoon, FaGlobe, FaHeart, FaComments, FaStar, FaBars, FaSignInAlt, FaSignOutAlt, FaEnvelope, FaEnvelopeOpen } from 'react-icons/fa';
 import './Navbar.css';
 import Sidebar from './Sidebar';
@@ -21,7 +21,6 @@ const Navbar = () => {
   const [messageLoading, setMessageLoading] = useState(false); // حالة تحميل الرسائل
   const { t, i18n } = useTranslation();
   const location = useLocation();
-  const navigate = useNavigate();
 
   useEffect(() => {
     // Check if user is logged in with proper validation
@@ -211,43 +210,33 @@ const Navbar = () => {
   const fetchMessageCount = async () => {
     if (!isLoggedIn) return;
     
-    // Temporarily disabled - chat service not available
-    setMessageCount(0);
-    setUnreadMessages(false);
-    setMessageLoading(false);
-    return;
-    
-    // try {
-    //   setMessageLoading(true);
-    //   const result = await chatService.getUnreadMessageCount();
-    //   
-    //   if (result.success) {
-    //     const { unread_count, has_unread } = result.data;
-    //     setMessageCount(unread_count);
-    //     setUnreadMessages(has_unread);
-    //     console.log(`[DEBUG] Navbar: Fetched ${unread_count} unread messages`);
-    //   } else {
-    //     console.warn('Failed to fetch message count:', result.error);
-    //     // Fallback to 0 if API fails
-    //     setMessageCount(0);
-    //     setUnreadMessages(false);
-    //   }
-    // } catch (error) {
-    //   console.error('Error fetching message count:', error);
-    //   setMessageCount(0);
-    //   setUnreadMessages(false);
-    // } finally {
-    //   setMessageLoading(false);
-    // }
+    try {
+      setMessageLoading(true);
+      const result = await chatService.getUnreadMessageCount();
+      
+      if (result.success) {
+        const { unread_count, has_unread } = result.data;
+        setMessageCount(unread_count);
+        setUnreadMessages(has_unread);
+        console.log(`[DEBUG] Navbar: Fetched ${unread_count} unread messages`);
+      } else {
+        console.warn('Failed to fetch message count:', result.error);
+        // Fallback to 0 if API fails
+        setMessageCount(0);
+        setUnreadMessages(false);
+      }
+    } catch (error) {
+      console.error('Error fetching message count:', error);
+      setMessageCount(0);
+      setUnreadMessages(false);
+    } finally {
+      setMessageLoading(false);
+    }
   };
 
-  // Fetch recent messages for dropdown - Temporarily disabled
+  // Fetch recent messages for dropdown
   const fetchRecentMessages = async () => {
     if (!isLoggedIn) return;
-    
-    // Temporarily disabled - chat service not available
-    setRecentMessages([]);
-    return;
     
     try {
       const result = await chatService.getRecentMessages(3); // Get 3 recent messages
@@ -854,6 +843,64 @@ const Navbar = () => {
         left: 0;
       }
 
+      /* Avatar Clickable Styles */
+      .user-avatar {
+        transition: all 0.3s ease;
+        border-radius: 50%;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .user-avatar:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+      }
+
+      .user-avatar:active {
+        transform: scale(0.95);
+      }
+
+      .user-avatar::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(0, 123, 255, 0.1) 0%, rgba(0, 86, 179, 0.1) 100%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        border-radius: 50%;
+      }
+
+      .user-avatar:hover::before {
+        opacity: 1;
+      }
+
+      .avatar-initials {
+        position: relative;
+        z-index: 2;
+        transition: all 0.3s ease;
+      }
+
+      .user-avatar:hover .avatar-initials {
+        color: #007bff;
+        font-weight: 700;
+      }
+
+      /* Dark mode avatar styles */
+      .dark-mode .user-avatar:hover {
+        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.4);
+      }
+
+      .dark-mode .user-avatar::before {
+        background: linear-gradient(135deg, rgba(0, 123, 255, 0.2) 0%, rgba(0, 86, 179, 0.2) 100%);
+      }
+
+      .dark-mode .user-avatar:hover .avatar-initials {
+        color: #4da6ff;
+      }
+
       /* Mobile responsiveness */
       @media (max-width: 768px) {
         .message-dropdown {
@@ -863,6 +910,10 @@ const Navbar = () => {
 
         [dir="rtl"] .message-dropdown {
           left: -20px;
+        }
+
+        .user-avatar:hover {
+          transform: scale(1.02);
         }
       }
     `;
@@ -916,48 +967,24 @@ const Navbar = () => {
     return 'U';
   };
 
-  // Handle profile navigation
-  const handleProfileClick = () => {
+  // Handle avatar click to redirect based on user role
+  const handleAvatarClick = () => {
+    if (!isLoggedIn) {
+      handleLoginClick();
+      return;
+    }
+
+    console.log('[DEBUG] Navbar: Avatar clicked, user role:', userRole);
+    
     if (userRole === 'client') {
-      // Get user data from localStorage to get the client ID
-      const userData = localStorage.getItem('user');
-      if (userData) {
-        try {
-          const user = JSON.parse(userData);
-          const clientId = user.id || user.user_id;
-          if (clientId) {
-            navigate(`/homeClient/${clientId}`);
-          } else {
-            navigate('/homeClient');
-          }
-        } catch (error) {
-          console.error('Error parsing user data:', error);
-          navigate('/homeClient');
-        }
-      } else {
-        navigate('/homeClient');
-      }
-    } else if (userRole === 'worker') {
-      // Get worker ID similarly
-      const userData = localStorage.getItem('user');
-      if (userData) {
-        try {
-          const user = JSON.parse(userData);
-          const workerId = user.id || user.user_id;
-          if (workerId) {
-            navigate(`/homeProvider/${workerId}`);
-          } else {
-            navigate('/homeProvider');
-          }
-        } catch (error) {
-          console.error('Error parsing user data:', error);
-          navigate('/homeProvider');
-        }
-      } else {
-        navigate('/homeProvider');
-      }
-    } else if (userRole === 'admin') {
-      navigate('/adminDashboard');
+      console.log('[DEBUG] Navbar: Redirecting client to HomeClient');
+      window.location.href = '/home-client';
+    } else if (userRole === 'worker' || userRole === 'provider') {
+      console.log('[DEBUG] Navbar: Redirecting worker/provider to HomeProvider');
+      window.location.href = '/home-provider';
+    } else {
+      console.log('[DEBUG] Navbar: Unknown user role, redirecting to home');
+      window.location.href = '/';
     }
   };
 
@@ -1061,26 +1088,14 @@ const Navbar = () => {
             <div className={`user-section ${isLoggedIn ? 'user-logged-in' : 'user-not-logged-in'}`}>
               {isLoggedIn ? (
                 <div className="user-info">
-                  <button
-  className="btn btn-primary rounded-circle d-flex align-items-center justify-content-center"
-  style={{ 
-    width: "40px", 
-    height: "40px", 
-    minWidth: "40px", 
-    minHeight: "40px",
-    padding: "0",
-    border: "none"
-  }}
-  onClick={handleProfileClick}
-  title={i18n.language === "ar" ? "عرض الملف الشخصي" : "View Profile"}
->
-  {username
-    ? username.charAt(0).toUpperCase()
-    : (localStorage.getItem("user")
-        ? JSON.parse(localStorage.getItem("user"))?.email?.charAt(0).toUpperCase()
-        : "?")}
-</button>
-
+                  <div 
+                    className="user-avatar" 
+                    onClick={handleAvatarClick}
+                    style={{ cursor: 'pointer' }}
+                    title={i18n.language === "ar" ? "عرض الملف الشخصي" : "View Profile"}
+                  >
+                    <span className="avatar-initials">{getAvatarInitials(username)}</span>
+                  </div>
                   <div className="user-details">
                     <span className="username">{username}</span>
                     <span className="user-role">

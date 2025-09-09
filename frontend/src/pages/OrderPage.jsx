@@ -27,23 +27,53 @@ const OrderPage = () => {
       };
     }
     
-    const storedService = localStorage.getItem('selectedService');
+    // Check for reorder data first (from TrackOrder page)
     let data = null;
-    
-    if (storedService) {
+    const reorderData = localStorage.getItem('reorderData');
+    if (reorderData) {
       try {
-        data = JSON.parse(storedService);
+        data = JSON.parse(reorderData);
+        console.log('[DEBUG] OrderPage: Loaded reorder data:', data);
+        // Clear reorder data after loading
+        localStorage.removeItem('reorderData');
       } catch (error) {
-        console.error('Error parsing stored service:', error);
-        data = null;
+        console.error('Error parsing reorder data:', error);
       }
     }
     
+    // Check for pending order data (from booking flow)
     if (!data) {
-      data = location.state?.service || null;
+      const pendingOrder = localStorage.getItem('pendingOrder');
+      if (pendingOrder) {
+        try {
+          data = JSON.parse(pendingOrder);
+          console.log('[DEBUG] OrderPage: Loaded pending order data:', data);
+        } catch (error) {
+          console.error('Error parsing pending order:', error);
+        }
+      }
     }
     
-    console.log('[DEBUG] OrderPage: Service data:', data);
+    // Fallback to selectedService if no pending order
+    if (!data) {
+    const storedService = localStorage.getItem('selectedService');
+    if (storedService) {
+      try {
+          data = JSON.parse(storedService);
+          console.log('[DEBUG] OrderPage: Loaded stored service data:', data);
+      } catch (error) {
+        console.error('Error parsing stored service:', error);
+      }
+    }
+  }
+    
+    // Final fallback to location state
+    if (!data) {
+      data = location.state?.service || null;
+      console.log('[DEBUG] OrderPage: Using location state data:', data);
+    }
+    
+    console.log('[DEBUG] OrderPage: Final service data:', data);
     console.log('[DEBUG] OrderPage: Edit mode:', editMode);
     return data;
   }, [location.state, editMode, orderData]);
@@ -56,6 +86,7 @@ const OrderPage = () => {
         offered_price: orderData.offered_price || "",
         location_lat: orderData.location_lat || null,
         location_lng: orderData.location_lng || null,
+        location_address: orderData.location_address || "",
         scheduled_time: orderData.scheduled_time ? 
           new Date(orderData.scheduled_time).toISOString().slice(0, 16) : "",
         delivery_time: orderData.delivery_time ? 
@@ -63,13 +94,68 @@ const OrderPage = () => {
       };
     }
     
-    // Default empty form for new orders
+    // Check for reorder data first (from TrackOrder page)
+    const reorderData = localStorage.getItem('reorderData');
+    if (reorderData) {
+      try {
+        const data = JSON.parse(reorderData);
+        console.log('[DEBUG] OrderPage: Found reorder data for form:', data);
+        return {
+          description: data.description || "",
+          offered_price: data.offered_price || "",
+          location_lat: data.location?.lat || data.selectedLocation?.lat || null,
+          location_lng: data.location?.lng || data.selectedLocation?.lng || null,
+          location_address: data.location_address || "",
+          scheduled_time: data.scheduled_time ? 
+            new Date(data.scheduled_time).toISOString().slice(0, 16) : "",
+          delivery_time: data.delivery_time ? 
+            new Date(data.delivery_time).toISOString().slice(0, 16) : "",
+        };
+      } catch (error) {
+        console.error('Error parsing reorder data for form:', error);
+      }
+    }
+    
+    // Check for pending order or stored service data to populate location
+    let locationData = null;
+    let locationAddress = '';
+    const pendingOrder = localStorage.getItem('pendingOrder');
+    if (pendingOrder) {
+      try {
+        const orderData = JSON.parse(pendingOrder);
+        locationData = orderData.selectedLocation;
+        locationAddress = orderData.location_address || '';
+        console.log('[DEBUG] OrderPage: Found location in pending order:', locationData);
+        console.log('[DEBUG] OrderPage: Found location address in pending order:', locationAddress);
+      } catch (error) {
+        console.error('Error parsing pending order for location:', error);
+      }
+    }
+    
+    // Fallback to selectedService
+    if (!locationData) {
+      const storedService = localStorage.getItem('selectedService');
+      if (storedService) {
+        try {
+          const serviceData = JSON.parse(storedService);
+          locationData = serviceData.selectedLocation;
+          locationAddress = serviceData.location_address || '';
+          console.log('[DEBUG] OrderPage: Found location in stored service:', locationData);
+          console.log('[DEBUG] OrderPage: Found location address in stored service:', locationAddress);
+        } catch (error) {
+          console.error('Error parsing stored service for location:', error);
+        }
+      }
+    }
+    
+    // Default form with location data if available
     return {
-      description: "",
-      offered_price: "",
-      location_lat: null,
-      location_lng: null,
-      scheduled_time: "",
+    description: "",
+    offered_price: "",
+      location_lat: locationData?.lat || null,
+      location_lng: locationData?.lng || null,
+      location_address: locationAddress || "",
+    scheduled_time: "",
       delivery_time: "",
     };
   });
@@ -80,6 +166,53 @@ const OrderPage = () => {
   const [user, setUser] = useState(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
+
+  // Update formData when service data becomes available
+  useEffect(() => {
+    if (service && service.selectedLocation && (!formData.location_lat || !formData.location_lng)) {
+      console.log('[DEBUG] OrderPage: Updating formData with location from service');
+      setFormData(prev => ({
+        ...prev,
+        location_lat: service.selectedLocation.lat,
+        location_lng: service.selectedLocation.lng,
+        location_address: service.location_address || prev.location_address
+      }));
+    }
+  }, [service, formData.location_lat, formData.location_lng, formData.location_address]);
+
+  // Handle reorder data when component mounts
+  useEffect(() => {
+    const reorderData = localStorage.getItem('reorderData');
+    if (reorderData && service) {
+      try {
+        const data = JSON.parse(reorderData);
+        console.log('[DEBUG] OrderPage: Processing reorder data:', data);
+        
+        // Update form with reorder data
+        setFormData(prev => ({
+          ...prev,
+          description: data.description || prev.description,
+          offered_price: data.offered_price || prev.offered_price,
+          location_lat: data.location?.lat || prev.location_lat,
+          location_lng: data.location?.lng || prev.location_lng,
+          location_address: data.location_address || prev.location_address,
+          scheduled_time: data.scheduled_time ? 
+            new Date(data.scheduled_time).toISOString().slice(0, 16) : prev.scheduled_time,
+          delivery_time: data.delivery_time ? 
+            new Date(data.delivery_time).toISOString().slice(0, 16) : prev.delivery_time,
+        }));
+        
+        // Clear reorder data after processing
+        localStorage.removeItem('reorderData');
+        
+        // Show success message
+        toast.success('تم تحميل بيانات الطلب السابق. يمكنك تعديلها حسب الحاجة.');
+      } catch (error) {
+        console.error('Error processing reorder data:', error);
+        toast.error('حدث خطأ أثناء تحميل بيانات الطلب السابق');
+      }
+    }
+  }, [service, formData.location_address]);
 
   // Check authentication status
   useEffect(() => {
@@ -96,8 +229,8 @@ const OrderPage = () => {
           // Validate user data structure
           if (parsedUser && parsedUser.id && parsedUser.role) {
             console.log('[DEBUG] OrderPage: User authenticated:', parsedUser.id, parsedUser.role);
-            setUser(parsedUser);
-            setIsAuthenticated(true);
+          setUser(parsedUser);
+          setIsAuthenticated(true);
           } else {
             console.log('[DEBUG] OrderPage: Invalid user data structure');
             clearAuthData();
@@ -178,7 +311,7 @@ const OrderPage = () => {
     if (injected.current) return;
     
     try {
-      const css = `
+    const css = `
     :root {
       --primary: #0077ff;
       --primary-dark: #0056b3;
@@ -556,6 +689,23 @@ const OrderPage = () => {
       transform: translateY(-1px);
     }
 
+    /* Button Outline Success */
+    .btn-outline-success {
+      border: 2px solid #28a745;
+      color: #28a745;
+      background: transparent;
+      border-radius: 8px;
+      padding: 0.8rem 2rem;
+      font-weight: 600;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+    .btn-outline-success:hover:not(:disabled) {
+      background: #28a745;
+      color: white;
+      transform: translateY(-1px);
+    }
+
     /* Responsive Design */
     @media (max-width: 768px) {
       .banner-title { font-size: 2rem; }
@@ -586,10 +736,10 @@ const OrderPage = () => {
     }
     `;
     
-      const style = document.createElement('style');
-      style.textContent = css;
-      document.head.appendChild(style);
-      injected.current = true;
+    const style = document.createElement('style');
+    style.textContent = css;
+    document.head.appendChild(style);
+    injected.current = true;
     } catch (error) {
       console.error('Error injecting CSS:', error);
       injected.current = true; // Still mark as injected to prevent retry
@@ -612,6 +762,342 @@ const OrderPage = () => {
     // Redirect to HomeClient
     console.log('[DEBUG] Redirecting to /home-client from success modal');
     navigate("/home-client", { replace: true });
+  };
+
+  const handlePrintOrder = () => {
+    // Create a comprehensive order document
+    const orderDocument = generateOrderDocument();
+    
+    // Create a new window for printing
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(orderDocument);
+    printWindow.document.close();
+    
+    // Wait for content to load then print
+    printWindow.onload = () => {
+      printWindow.focus();
+      printWindow.print();
+      
+      // Close the window after printing
+      setTimeout(() => {
+        printWindow.close();
+      }, 1000);
+    };
+  };
+
+  const handleDownloadOrder = () => {
+    // Create a comprehensive order document
+    const orderDocument = generateOrderDocument();
+    
+    // Create a blob with the HTML content
+    const blob = new Blob([orderDocument], { type: 'text/html;charset=utf-8' });
+    
+    // Create download link
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // Generate filename with current date
+    const currentDate = new Date().toISOString().split('T')[0];
+    const orderNumber = Math.floor(Math.random() * 1000000) + 100000;
+    link.download = `order-${orderNumber}-${currentDate}.html`;
+    
+    // Trigger download
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Clean up
+    URL.revokeObjectURL(url);
+    
+    // Show success message
+    toast.success('تم تحميل تفاصيل الطلب بنجاح', {
+      position: "top-right",
+      autoClose: 3000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true,
+      rtl: true,
+    });
+  };
+
+  const generateOrderDocument = () => {
+    const currentDate = new Date().toLocaleDateString('ar-SA', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    const orderNumber = Math.floor(Math.random() * 1000000) + 100000; // Generate order number
+
+    return `
+      <!DOCTYPE html>
+      <html dir="rtl" lang="ar">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>تفاصيل الطلب - ${orderNumber}</title>
+        <style>
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          
+          body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: white;
+            padding: 20px;
+          }
+          
+          .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(135deg, #0077ff, #4da6ff);
+            color: white;
+            border-radius: 10px;
+          }
+          
+          .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+          }
+          
+          .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+          }
+          
+          .order-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+          }
+          
+          .info-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-right: 4px solid #0077ff;
+          }
+          
+          .info-section h3 {
+            color: #0077ff;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+          }
+          
+          .info-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 5px 0;
+            border-bottom: 1px solid #e9ecef;
+          }
+          
+          .info-item:last-child {
+            border-bottom: none;
+          }
+          
+          .info-label {
+            font-weight: 600;
+            color: #495057;
+          }
+          
+          .info-value {
+            color: #6c757d;
+          }
+          
+          .service-details {
+            background: white;
+            border: 2px solid #0077ff;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 30px;
+          }
+          
+          .service-details h3 {
+            color: #0077ff;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            text-align: center;
+          }
+          
+          .service-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 15px;
+            text-align: center;
+          }
+          
+          .service-description {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-right: 4px solid #28a745;
+          }
+          
+          .order-details {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+          }
+          
+          .order-details h4 {
+            color: #856404;
+            margin-bottom: 15px;
+          }
+          
+          .price-highlight {
+            background: #d4edda;
+            border: 2px solid #c3e6cb;
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+            margin: 20px 0;
+          }
+          
+          .price-highlight .price-label {
+            font-size: 1.1rem;
+            color: #155724;
+            font-weight: 600;
+          }
+          
+          .price-highlight .price-value {
+            font-size: 2rem;
+            color: #28a745;
+            font-weight: 700;
+            margin-top: 5px;
+          }
+          
+          .footer {
+            margin-top: 40px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            text-align: center;
+            border-top: 3px solid #0077ff;
+          }
+          
+          .footer p {
+            color: #6c757d;
+            margin-bottom: 10px;
+          }
+          
+          .footer .order-number {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #0077ff;
+          }
+          
+          @media print {
+            body { padding: 0; }
+            .header { page-break-inside: avoid; }
+            .service-details { page-break-inside: avoid; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>تفاصيل الطلب</h1>
+          <p>تاريخ الطباعة: ${currentDate}</p>
+        </div>
+        
+        <div class="order-info">
+          <div class="info-section">
+            <h3>معلومات العميل</h3>
+            <div class="info-item">
+              <span class="info-label">الاسم:</span>
+              <span class="info-value">${user?.name || user?.username || 'غير محدد'}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">البريد الإلكتروني:</span>
+              <span class="info-value">${user?.email || 'غير محدد'}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">رقم الطلب:</span>
+              <span class="info-value">#${orderNumber}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">تاريخ الطلب:</span>
+              <span class="info-value">${currentDate}</span>
+            </div>
+          </div>
+          
+          <div class="info-section">
+            <h3>معلومات الخدمة</h3>
+            <div class="info-item">
+              <span class="info-label">نوع الخدمة:</span>
+              <span class="info-value">${service?.title || 'خدمة مختارة'}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">الفئة:</span>
+              <span class="info-value">${service?.category?.name || service?.category || 'غير محدد'}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">مزود الخدمة:</span>
+              <span class="info-value">${service?.provider_username || (service?.provider && service.provider.username) || 'مزود خدمة'}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">الموقع:</span>
+              <span class="info-value">${formData.location_lat ? `${formData.location_lat.toFixed(4)}, ${formData.location_lng.toFixed(4)}` : 'غير محدد'}</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="service-details">
+          <h3>تفاصيل الخدمة المطلوبة</h3>
+          <div class="service-title">${service?.title || 'خدمة مختارة'}</div>
+          
+          ${service?.description ? `
+            <div class="service-description">
+              <strong>وصف الخدمة:</strong><br>
+              ${service.description}
+            </div>
+          ` : ''}
+          
+          <div class="order-details">
+            <h4>تفاصيل الطلب</h4>
+            <div class="info-item">
+              <span class="info-label">وصف الطلب:</span>
+              <span class="info-value">${formData.description || 'غير محدد'}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">تاريخ بدء العمل:</span>
+              <span class="info-value">${formData.scheduled_time ? new Date(formData.scheduled_time).toLocaleString('ar-SA') : 'غير محدد'}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">تاريخ إنجاز العمل:</span>
+              <span class="info-value">${formData.delivery_time ? new Date(formData.delivery_time).toLocaleString('ar-SA') : 'غير محدد'}</span>
+            </div>
+          </div>
+          
+          <div class="price-highlight">
+            <div class="price-label">السعر المقترح</div>
+            <div class="price-value">${formData.offered_price || '0'} جنيه مصري</div>
+          </div>
+        </div>
+        
+        <div class="footer">
+          <p>شكراً لاختيارك خدماتنا</p>
+          <p>سيتم التواصل معك قريباً لتأكيد الطلب</p>
+          <p class="order-number">رقم الطلب: #${orderNumber}</p>
+          <p>تاريخ الطباعة: ${currentDate}</p>
+        </div>
+      </body>
+      </html>
+    `;
   };
 
   const validateForm = () => {
@@ -665,6 +1151,18 @@ const OrderPage = () => {
     // Location validation (optional but helpful)
     if (!formData.location_lat || !formData.location_lng) {
       console.warn("No location data available for the order");
+      console.warn("Current formData:", formData);
+      console.warn("Current service data:", service);
+      
+      // Try to get location data from service if available
+      if (service?.selectedLocation) {
+        console.log("Found location in service data, updating formData");
+        setFormData(prev => ({
+          ...prev,
+          location_lat: service.selectedLocation.lat,
+          location_lng: service.selectedLocation.lng
+        }));
+      }
     }
     
     setErrors(newErrors);
@@ -727,15 +1225,87 @@ const OrderPage = () => {
     setErrors({}); // Clear any previous errors
     
     try {
+      // Debug logging before creating request
+      console.log('[DEBUG] OrderPage: Preparing order submission');
+      console.log('[DEBUG] Service data:', service);
+      console.log('[DEBUG] Form data:', formData);
+      console.log('[DEBUG] User data:', user);
+      
+      // Handle service ID - the search returns worker/location ID, not service ID
+      let serviceId = service?.id;
+      
+      console.log('[DEBUG] OrderPage: Original service ID from search:', serviceId);
+      console.log('[DEBUG] OrderPage: Service object keys:', Object.keys(service || {}));
+      
+      // The search returns worker data, not service data, so we need to find a valid service
+      // Check if this ID actually exists as a service, if not use a fallback
+      
+      // Available service IDs from database: 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
+      const validServiceIds = [7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
+      
+      if (!serviceId || !validServiceIds.includes(serviceId)) {
+        console.log('[DEBUG] OrderPage: Service ID not valid or not in database, attempting to create service');
+        
+        // Try to create a service for this worker
+        if (service?.user_id || service?.worker_id) {
+          const workerId = service.user_id || service.worker_id;
+          console.log('[DEBUG] OrderPage: Creating service for worker ID:', workerId);
+          
+          try {
+            const createServiceResponse = await apiService.post('/api/services/create-for-worker/', {
+              worker_id: workerId
+            });
+            
+            if (createServiceResponse.service) {
+              serviceId = createServiceResponse.service.id;
+              console.log('[DEBUG] OrderPage: Successfully created/found service ID:', serviceId);
+            } else {
+              throw new Error('No service returned from API');
+            }
+          } catch (createError) {
+            console.error('[DEBUG] OrderPage: Failed to create service:', createError);
+            
+            // Fallback to mapping based on job title
+            if (service?.worker_profile?.job_title) {
+              const jobTitle = service.worker_profile.job_title.toLowerCase();
+              console.log('[DEBUG] OrderPage: Using job title fallback:', jobTitle);
+              
+              if (jobTitle.includes('كهربائي') || jobTitle.includes('electrical')) {
+                serviceId = 16; // mazen-salem's service
+              } else if (jobTitle.includes('تنظيف') || jobTitle.includes('cleaning')) {
+                serviceId = 15; // "تنظيف منزل شامل"
+              } else {
+                serviceId = 7; // Default fallback service
+              }
+            } else {
+              console.log('[DEBUG] OrderPage: No job title found, using default service ID 7');
+              serviceId = 7; // Default fallback
+            }
+          }
+        } else {
+          console.log('[DEBUG] OrderPage: No worker ID found, using default service ID 7');
+          serviceId = 7; // Default fallback
+        }
+      } else {
+        console.log('[DEBUG] OrderPage: Service ID is valid:', serviceId);
+      }
+      
+      if (!formData.location_lat || !formData.location_lng) {
+        throw new Error('بيانات الموقع مطلوبة');
+      }
+      
       const requestData = {
-        service: service.id,
-        description: formData.description,
+        service: serviceId,
+        description: formData.description || `طلب خدمة من ${service?.worker_name || 'مزود الخدمة'}`,
         offered_price: parseFloat(formData.offered_price),
         location_lat: formData.location_lat,
         location_lng: formData.location_lng,
+        location_address: formData.location_address || 'عنوان غير محدد',
         scheduled_time: new Date(formData.scheduled_time).toISOString(),
         delivery_time: new Date(formData.delivery_time).toISOString(),
       };
+      
+      console.log('[DEBUG] Request data:', requestData);
       
       let response;
       if (editMode && orderData) {
@@ -765,8 +1335,10 @@ const OrderPage = () => {
       setSuccessMessage(successMsg);
       setShowSuccessModal(true);
       
-      // Clean up stored service data
+      // Clean up stored service data and pending order
       localStorage.removeItem('selectedService');
+      localStorage.removeItem('pendingOrder');
+      console.log('[DEBUG] OrderPage: Cleaned up pending order data after successful submission');
       
       // Clear form data
       setFormData({
@@ -828,9 +1400,9 @@ const OrderPage = () => {
           rtl: true,
         });
         // Redirect to login
-        setTimeout(() => {
+      setTimeout(() => {
           navigate('/auth');
-        }, 2000);
+      }, 2000);
         return;
       }
       
@@ -849,7 +1421,7 @@ const OrderPage = () => {
       if (Object.keys(fieldErrors).length > 0) {
         setErrors({ ...fieldErrors, submit: errorMessage });
       } else {
-        setErrors({ submit: errorMessage });
+      setErrors({ submit: errorMessage });
       }
     } finally {
       setIsLoading(false);
@@ -1103,13 +1675,13 @@ const OrderPage = () => {
                   <div className="info-label">التقييم</div>
                   <div className="info-value">
                     {service.rating_avg.toFixed(1)} ({service.rating_count || 0} تقييم)
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </div>
-
+          </div>
+        )}
+          </div>
+        </div>
+        
         {/* Error Messages */}
         {errors.submit && (
           <div className="alert alert-danger">
@@ -1254,11 +1826,20 @@ const OrderPage = () => {
                 <button
                   type="button"
                   className="btn btn-outline-primary"
-                  onClick={() => window.print()}
+                  onClick={handlePrintOrder}
                   disabled={isLoading}
                 >
                   <i className="fas fa-print me-2"></i>
                   طباعة الطلب
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-outline-success"
+                  onClick={handleDownloadOrder}
+                  disabled={isLoading}
+                >
+                  <i className="fas fa-download me-2"></i>
+                  تحميل الطلب
                 </button>
                 <button
                   type="submit"

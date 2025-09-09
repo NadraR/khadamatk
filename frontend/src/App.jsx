@@ -1,168 +1,76 @@
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import FontProvider from './components/FontProvider';
-import ErrorBoundary from './components/ErrorBoundary';
-
-// Auth & Layout
-import AuthPage from './pages/AuthPage';
-import Layout from './Layout';
-import OAuthCallback from "./pages/OAuthCallback";
-
-// Home pages
-import Home from './pages/Home';
-import HomeClient from './pages/HomeClient';
-import HomeProvider from './pages/HomeProvider';
-import About from './pages/About';
-
-// Admin pages
-import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminLogin from './pages/admin/AdminLogin';
-import UsersPage from './pages/admin/UsersPage';
-import ServicesPage from './pages/admin/ServicesPage';
-import OrdersPage from './pages/admin/OrdersPage';
-import ReviewsPage from './pages/admin/ReviewsPage';
-import RatingsPage from './pages/admin/RatingsPage';
-import InvoicesPage from './pages/admin/InvoicesPage';
-import AdminNotifications from './pages/admin/AdminNotifications';
-import SettingsPage from './pages/admin/SettingsPage';
-import AdminLogsPage from './pages/admin/AdminLogsPage';
-import CategoriesPage from './pages/admin/CategoriesPage';
-import AdminLayout from './layouts/AdminLayout';
-import { AdminAuthProvider, useAdminAuth } from './contexts/AdminAuthContext';
-
-// Service-related pages
-import ServiceDetails from './pages/ServiceDetails';
-import Services from './pages/Services';
-import Orders from './pages/Orders';
-import OrderPage from './pages/OrderPage';
-import Reviews from './pages/Reviews';
-import Ratings from './pages/Ratings';
-
-// General pages
-import Clients from './pages/Clients';
-import Settings from './pages/Settings';
-import Painting from './pages/Painting';
-import Carpentry from './pages/Carpentry';
-import Electricity from './pages/Electricity';
-import Plumbing from './pages/Plumbing';
-import LocationPage from './pages/LocationPage';
-import MessagesPage from "./pages/MessagesPage";
-import NotificationsPage from "./pages/NotificationsPage";
-import InvoiceDetails from "./pages/InvoiceDetails";
-import WorkerProfileCompletion from "./pages/WorkerProfileCompletion";
-import FontTest from "./components/FontTest";
-
-// ✅ Protected Route Component for Admin
-const ProtectedAdminRoute = ({ children }) => {
-  const { isAuthenticated, loading } = useAdminAuth();
-
-  if (loading) {
-    return <div>Loading...</div>;
+// Font loading utility for better performance
+export const loadFonts = () => {
+  // Check if fonts are already loaded
+  if (document.documentElement.classList.contains('fonts-loaded')) {
+    return Promise.resolve();
   }
 
-  return isAuthenticated ? <>{children}</> : <Navigate to="/admin/login" />;
+  // Create a promise that resolves when fonts are loaded
+  return new Promise((resolve) => {
+    if ('fonts' in document) {
+      const fontPromises = [
+        // Load only essential font weights
+        document.fonts.load('400 16px Poppins'),
+        document.fonts.load('500 16px Poppins'),
+        document.fonts.load('600 16px Poppins'),
+        document.fonts.load('700 16px Poppins'),
+        document.fonts.load('400 16px "Noto Sans Arabic"'),
+        document.fonts.load('500 16px "Noto Sans Arabic"'),
+        document.fonts.load('600 16px "Noto Sans Arabic"'),
+        document.fonts.load('700 16px "Noto Sans Arabic"'),
+        document.fonts.load('400 16px Cairo'),
+        document.fonts.load('500 16px Cairo'),
+        document.fonts.load('600 16px Cairo'),
+        document.fonts.load('700 16px Cairo'),
+      ];
+
+      Promise.all(fontPromises)
+        .then(() => {
+          document.documentElement.classList.add('fonts-loaded');
+          resolve();
+        })
+        .catch(() => {
+          // Fallback: add class anyway after timeout
+          document.documentElement.classList.add('fonts-loaded');
+          resolve();
+        });
+    } else {
+      // Fallback for browsers without Font Loading API
+      setTimeout(() => {
+        document.documentElement.classList.add('fonts-loaded');
+        resolve();
+      }, 1000);
+    }
+  });
 };
 
-function App() {
-  // redirect handling (optional from your second file)
-  React.useEffect(() => {
-    const isAuthenticated = localStorage.getItem('access') && localStorage.getItem('user');
-    if (window.location.pathname === '/auth' && isAuthenticated) {
-      window.history.replaceState(null, '', '/');
-    }
-  }, []);
+// Preload critical fonts
+export const preloadFonts = () => {
+  // Use the correct Google Fonts CSS URL instead of individual font files
+  const fontCssUrl = 'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Noto+Sans+Arabic:wght@400;500;600;700&family=Cairo:wght@400;500;600;700&display=swap';
+  
+  // Preload the CSS file
+  const link = document.createElement('link');
+  link.rel = 'preload';
+  link.href = fontCssUrl;
+  link.as = 'style';
+  link.onload = function() {
+    this.onload = null;
+    this.rel = 'stylesheet';
+  };
+  document.head.appendChild(link);
+  
+  // Fallback for browsers that don't support onload
+  const noscript = document.createElement('noscript');
+  const fallbackLink = document.createElement('link');
+  fallbackLink.rel = 'stylesheet';
+  fallbackLink.href = fontCssUrl;
+  noscript.appendChild(fallbackLink);
+  document.head.appendChild(noscript);
+};
 
-  return (
-    <FontProvider>
-      <AdminAuthProvider>
-        <Routes>
-          {/* Auth */}
-          <Route path="/auth" element={<AuthPage />} />
-          <Route path="/oauth2callback" element={<OAuthCallback />} />
-          <Route path="/worker" element={<WorkerProfileCompletion />} />
-          <Route path="/worker-profile-completion" element={<WorkerProfileCompletion />} />
-
-        {/* Home */}
-        <Route path="/" element={<Layout><Home /></Layout>} />
-        <Route path="/home" element={<Layout><Home /></Layout>} />
-        <Route path="/homeClient" element={<Layout><HomeClient /></Layout>} />
-        {/* <Route path="/homeClient/:id" element={<Layout><HomeClient /></Layout>} /> */}
-        {/* <Route path="/home-client" element={<Layout><HomeClient /></Layout>} /> */}
-        {/* <Route path="/homeProvider" element={<Layout><HomeProvider /></Layout>} /> */}
-        {/* <Route path="/homeProvider/:id" element={<Layout><HomeProvider /></Layout>} /> */}
-        <Route path="/worker/:id" element={<Layout><HomeProvider /></Layout>} />
-        <Route path="/adminDashboard" element={<Layout><AdminDashboard /></Layout>} />
-        <Route path="/about" element={<Layout><About /></Layout>} />
-          {/* Home */}
-          {/* <Route path="/" element={<Layout><Home /></Layout>} />
-          <Route path="/home" element={<Layout><Home /></Layout>} />
-          <Route path="/homeClient" element={<Layout><HomeClient /></Layout>} />
-          <Route path="/home-client" element={<Layout><HomeClient /></Layout>} />
-          <Route path="/homeProvider" element={<Layout><HomeProvider /></Layout>} />
-          <Route path="/about" element={<Layout><About /></Layout>} /> */}
-
-          {/* Admin */}
-          <Route path="/admin/login" element={<AdminLogin />} />
-          <Route
-            path="/admin"
-            element={
-              <ProtectedAdminRoute>
-                <AdminLayout />
-              </ProtectedAdminRoute>
-            }
-          >
-            <Route index element={<AdminDashboard />} />
-            <Route path="users" element={<UsersPage />} />
-            <Route path="services" element={<ServicesPage />} />
-            <Route path="categories" element={<CategoriesPage />} />
-            <Route path="orders" element={<OrdersPage />} />
-            <Route path="reviews" element={<ReviewsPage />} />
-            <Route path="ratings" element={<RatingsPage />} />
-            <Route path="invoices" element={<InvoicesPage />} />
-            <Route path="notifications" element={<AdminNotifications />} />
-            <Route path="settings" element={<SettingsPage />} />
-            <Route path="logs" element={<AdminLogsPage />} />
-          </Route>
-          <Route path="/adminDashboard" element={<Navigate to="/admin" />} />
-
-          {/* Services */}
-          <Route path="/service/:id" element={<Layout><ServiceDetails /></Layout>} />
-          <Route path="/services" element={<Layout><Services /></Layout>} />
-          <Route path="/order" element={<Layout><OrderPage /></Layout>} />
-          <Route path="/order-page" element={<Layout><OrderPage /></Layout>} />
-          <Route path="/orders" element={<Layout><Orders /></Layout>} />
-          <Route path="/reviews/:serviceId" element={<Layout><Reviews /></Layout>} />
-          <Route path="/ratings/:serviceId" element={<Layout><Ratings /></Layout>} />
-
-          {/* General */}
-          <Route path="/clients" element={<Layout><Clients /></Layout>} />
-          <Route path="/settings" element={<Layout><Settings /></Layout>} />
-
-          {/* Categories */}
-          <Route path="/category/painting" element={<Layout><Painting /></Layout>} />
-          <Route path="/category/carpentry" element={<Layout><Carpentry /></Layout>} />
-          <Route path="/category/electricity" element={<Layout><Electricity /></Layout>} />
-          <Route path="/category/plumbing" element={<Layout><Plumbing /></Layout>} />
-
-          {/* Location */}
-          <Route path="/location" element={<ErrorBoundary><LocationPage /></ErrorBoundary>} />
-          <Route path="/location/my-location" element={<ErrorBoundary><LocationPage /></ErrorBoundary>} />
-
-          {/* Messages */}
-          <Route path="/messages" element={<Layout><MessagesPage /></Layout>} />
-
-          {/* Notifications */}
-          <Route path="/notifications" element={<Layout><NotificationsPage /></Layout>} />
-
-          {/* Invoice Details */}
-          <Route path="/invoice/:id" element={<Layout><InvoiceDetails /></Layout>} />
-
-          {/* Font Test (Development) */}
-          <Route path="/font-test" element={<Layout><FontTest /></Layout>} />
-        </Routes>
-      </AdminAuthProvider>
-    </FontProvider>
-  );
-}
-
-export default App;
+// Initialize font loading
+export const initFontLoading = () => {
+  preloadFonts();
+  return loadFonts();
+};

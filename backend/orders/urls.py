@@ -6,6 +6,11 @@ urlpatterns = [
     path("", views.order_list, name="order_list"),
     path("<int:pk>/", views.order_detail, name="order_detail"),
 
+    # Order Actions
+    path("<int:pk>/accept/", views.accept_order, name="accept_order"),
+    path("<int:pk>/decline/", views.decline_order, name="decline_order"),
+    path("<int:pk>/complete/", views.complete_order, name="complete_order"),
+
     # Offers (GET list / POST create)
     path("<int:order_id>/offers/", views.offer_list, name="offer_list"),
 

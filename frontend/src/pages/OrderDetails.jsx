@@ -12,7 +12,7 @@ const OrderDetails = () => {
   useEffect(() => {
     const fetchOrder = async () => {
       try {
-        const res = await apiService.get(`/orders/${id}/`);
+        const res = await apiService.get(`/api/orders/${id}/`);
         setOrder(res.data);
       } catch (err) {
         console.error("Error fetching order:", err);

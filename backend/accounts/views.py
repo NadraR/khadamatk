@@ -43,39 +43,140 @@ class UserRegisterView(generics.CreateAPIView):
         refresh = RefreshToken.for_user(user)
         access = refresh.access_token
         
+        # Check if user has saved locations (new users won't have any)
+        from location.models import UserLocation
+        has_location = UserLocation.objects.filter(user=user).exists()
+        
+        # Check if worker profile is complete (new workers won't have complete profiles)
+        profile_completed = True
+        if user.role == 'worker':
+            profile_completed = False  # New workers need to complete their profile
+        
         response_data.update({
             'refresh': str(refresh),
             'access': str(access),
             'user_id': user.id,
+            'has_location': has_location,
+            'profile_completed': profile_completed,
         })
         
         return Response(response_data, status=status.HTTP_201_CREATED)
 
 
-class WorkerProfileCreateView(generics.CreateAPIView):
+class WorkerProfileCreateView(generics.CreateAPIView, generics.RetrieveAPIView):
     serializer_class = WorkerProfileSerializer
     permission_classes = [permissions.IsAuthenticated]
+    
+    def get_object(self):
+        """Get the worker profile for the current user"""
+        if hasattr(self.request.user, 'worker_profile'):
+            return self.request.user.worker_profile
+        else:
+            from django.http import Http404
+            raise Http404("Worker profile not found")
+    
+    def get(self, request, *args, **kwargs):
+        """Handle GET requests to retrieve worker profile"""
+        print(f"[DEBUG] WorkerProfileCreateView.get called for user {request.user.id}")
+        
+        try:
+            profile = self.get_object()
+            serializer = self.get_serializer(profile)
+            
+            print(f"[DEBUG] Returning profile data: {serializer.data}")
+            
+            return Response({
+                'profile': serializer.data,
+                'profile_completed': profile.is_complete,
+                'message': 'Profile retrieved successfully'
+            })
+        except Exception as e:
+            print(f"[DEBUG] Error retrieving profile: {e}")
+            return Response({
+                'error': 'Worker profile not found',
+                'profile_completed': False
+            }, status=status.HTTP_404_NOT_FOUND)
 
     def perform_create(self, serializer):
+        print(f"[DEBUG] perform_create called for user {self.request.user.id}")
+        print(f"[DEBUG] User role: {self.request.user.role}")
+        print(f"[DEBUG] Serializer validated_data: {serializer.validated_data}")
+        
         # Allow any authenticated user to create a worker profile
         # Update user role to worker if they're creating a worker profile
         if self.request.user.role != 'worker':
             self.request.user.role = 'worker'
             self.request.user.save()
-            print(f"Updated user {self.request.user.id} role from {self.request.user.role} to worker")
+            print(f"[DEBUG] Updated user {self.request.user.id} role to worker")
         
         # Check if user already has a worker profile
         if hasattr(self.request.user, 'worker_profile'):
+            print(f"[DEBUG] User already has worker profile, updating...")
             # Update existing profile
             existing_profile = self.request.user.worker_profile
             for field, value in serializer.validated_data.items():
+                print(f"[DEBUG] Setting {field} = {value}")
                 setattr(existing_profile, field, value)
             existing_profile.save()
-            print(f"Updated existing worker profile for user {self.request.user.id}")
+            print(f"[DEBUG] Updated existing worker profile for user {self.request.user.id}")
+            self.profile_instance = existing_profile
         else:
+            print(f"[DEBUG] Creating new worker profile...")
             # Create new profile
-            serializer.save(user=self.request.user)
-            print(f"Created new worker profile for user {self.request.user.id}")
+            profile = serializer.save(user=self.request.user)
+            print(f"[DEBUG] Created new worker profile for user {self.request.user.id}")
+            self.profile_instance = profile
+    
+    def create(self, request, *args, **kwargs):
+        """Override create to return custom response with completion status"""
+        print(f"[DEBUG] WorkerProfileCreateView.create called for user {request.user.id}")
+        print(f"[DEBUG] Request data: {request.data}")
+        
+        serializer = self.get_serializer(data=request.data)
+        print(f"[DEBUG] Serializer data: {serializer.initial_data}")
+        
+        if not serializer.is_valid():
+            print(f"[DEBUG] Serializer validation errors: {serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        print(f"[DEBUG] Serializer is valid, calling perform_create")
+        self.perform_create(serializer)
+        
+        # Return the profile data with completion status
+        profile_serializer = WorkerProfileSerializer(self.profile_instance)
+        print(f"[DEBUG] Profile instance: {self.profile_instance}")
+        print(f"[DEBUG] Profile is_complete: {self.profile_instance.is_complete}")
+        
+        # Create a service automatically for this worker if profile is complete
+        if self.profile_instance.is_complete:
+            try:
+                from services.views import create_service_for_worker
+                from django.test import RequestFactory
+                
+                # Create a mock request for the service creation
+                factory = RequestFactory()
+                service_request = factory.post('/api/services/create-for-worker/', {
+                    'worker_id': request.user.id
+                })
+                service_request.user = request.user
+                
+                # Call the service creation function
+                service_response = create_service_for_worker(service_request)
+                print(f"[DEBUG] Service creation response: {service_response.data}")
+                
+            except Exception as e:
+                print(f"[DEBUG] Error creating service for worker: {e}")
+                # Don't fail the profile creation if service creation fails
+        
+        response_data = {
+            'profile': profile_serializer.data,
+            'profile_completed': self.profile_instance.is_complete,
+            'message': 'Profile updated successfully' if hasattr(request.user, 'worker_profile') else 'Profile created successfully'
+        }
+        
+        print(f"[DEBUG] Returning response: {response_data}")
+        
+        return Response(response_data, status=status.HTTP_201_CREATED)
 
 
 class ClientProfileCreateView(generics.CreateAPIView):
@@ -86,6 +187,16 @@ class ClientProfileCreateView(generics.CreateAPIView):
         if self.request.user.role != 'client':
             raise PermissionDenied("Only clients can create a client profile.")
         serializer.save(user=self.request.user) 
+
+class WorkerProfileView(generics.RetrieveUpdateAPIView):
+    serializer_class = WorkerProfileSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        try:
+            return WorkerProfile.objects.get(user=self.request.user)
+        except WorkerProfile.DoesNotExist:
+            raise NotFound("Worker profile does not exist. Please create it first.")
 
 class ClientProfileView(generics.RetrieveUpdateAPIView):
     serializer_class = ClientProfileSerializer
@@ -273,6 +384,19 @@ class LoginView(generics.GenericAPIView):
         refresh = RefreshToken.for_user(user)
         access = refresh.access_token
 
+        # Check if user has saved locations
+        from location.models import UserLocation
+        has_location = UserLocation.objects.filter(user=user).exists()
+        
+        # Check if worker profile is complete
+        profile_completed = True
+        if user.role == 'worker':
+            try:
+                worker_profile = user.worker_profile
+                profile_completed = worker_profile.is_complete
+            except:
+                profile_completed = False
+
         return Response({
             'refresh': str(refresh),
             'access': str(access),
@@ -280,6 +404,8 @@ class LoginView(generics.GenericAPIView):
             'username': user.username,
             'email': user.email,
             'role': getattr(user, 'role', None),
+            'has_location': has_location,
+            'profile_completed': profile_completed,
         }, status=status.HTTP_200_OK)
     
 class LogoutView(APIView):
@@ -378,6 +504,19 @@ class GoogleLoginView(APIView):
             refresh = RefreshToken.for_user(user)
             access = refresh.access_token
 
+            # Check if user has saved locations
+            from location.models import UserLocation
+            has_location = UserLocation.objects.filter(user=user).exists()
+            
+            # Check if worker profile is complete
+            profile_completed = True
+            if user.role == 'worker':
+                try:
+                    worker_profile = user.worker_profile
+                    profile_completed = worker_profile.is_complete
+                except:
+                    profile_completed = False
+
             logger.info(f"[GoogleLogin DEBUG] Login successful for {email}")
             return Response({
                 "refresh": str(refresh),
@@ -389,6 +528,8 @@ class GoogleLoginView(APIView):
                 "first_name": user.first_name,
                 "last_name": user.last_name,
                 "is_new_user": created,
+                "has_location": has_location,
+                "profile_completed": profile_completed,
             }, status=status.HTTP_200_OK)
 
         except Exception as e:

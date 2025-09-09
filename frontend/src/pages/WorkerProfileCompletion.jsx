@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import LocationPicker from '../components/LocationPicker';
 import { authService } from '../services/authService';
 import apiService from '../services/ApiService';
+import { locationService } from '../services/LocationService';
 import { FaUser, FaClock, FaMapMarkerAlt, FaTools, FaStar, FaSpinner, FaCheck } from 'react-icons/fa';
 import './WorkerProfileCompletion.css';
 
@@ -66,6 +67,7 @@ const WorkerProfileCompletion = () => {
         
         if (profileCompleted) {
           // إذا كان الملف مكتمل، وجهه لصفحة مزود الخدمة
+          console.log('[DEBUG] Worker profile is complete, redirecting to HomeProvider');
           navigate('/homeProvider');
         } else {
           // إذا لم يكن الملف مكتمل، ابقى في هذه الصفحة
@@ -84,44 +86,44 @@ const WorkerProfileCompletion = () => {
   // Function to check if worker profile is truly complete
   const checkWorkerProfileCompletion = async (userData) => {
     try {
-      // First check the local flag
+      console.log('[DEBUG] Checking worker profile completion for:', userData);
+      
+      // First check the local flag - if it's false, definitely incomplete
       if (!userData.profile_completed) {
+        console.log('[DEBUG] Local profile_completed flag is false');
         return false;
       }
       
-      // Then check the server for actual profile data
-      const response = await authService.checkProfileCompletion();
-      if (!response) {
-        return false;
-      }
-      
-      // Additionally, check if worker has essential profile data
+      // If local flag is true, verify with server data
       try {
-        const profileResponse = await apiService.get(`/api/accounts/user/${userData.id}/profile/`);
+        const profileResponse = await apiService.get('/api/accounts/worker/profile/');
         const profile = profileResponse.worker_profile || profileResponse;
+        
+        console.log('[DEBUG] Server profile data:', profile);
         
         // Check if essential fields are filled
         const hasJobTitle = profile.job_title && profile.job_title.trim();
         const hasSkills = profile.skills && profile.skills.trim();
         const hasServices = profile.services_provided && profile.services_provided.trim();
-        const hasExperience = profile.experience_years !== null && profile.experience_years !== undefined;
-        const hasRate = profile.hourly_rate !== null && profile.hourly_rate !== undefined;
         
-        console.log('[DEBUG] Profile check:', {
+        console.log('[DEBUG] Profile completeness check:', {
           hasJobTitle,
           hasSkills,
           hasServices,
-          hasExperience,
-          hasRate,
-          profile
+          job_title: profile.job_title,
+          skills: profile.skills,
+          services_provided: profile.services_provided
         });
         
         // Profile is complete if user has job title, skills, and services
-        return hasJobTitle && hasSkills && hasServices;
+        const isComplete = hasJobTitle && hasSkills && hasServices;
+        console.log('[DEBUG] Profile is complete:', isComplete);
+        
+        return isComplete;
         
       } catch (profileError) {
         console.warn('[DEBUG] Could not fetch profile details:', profileError);
-        // If we can't fetch profile details, assume incomplete
+        // If we can't fetch profile details, assume incomplete to be safe
         return false;
       }
       
@@ -227,6 +229,39 @@ const WorkerProfileCompletion = () => {
 
     setIsLoading(true);
     try {
+      console.log('[DEBUG] Starting worker profile completion...');
+      
+      // First, save location if provided
+      let savedLocationId = null;
+      if (selectedLocation) {
+        console.log('[DEBUG] Saving worker location:', selectedLocation);
+        
+        const locationData = {
+          lat: selectedLocation.lat,
+          lng: selectedLocation.lng,
+          address: selectedLocation.address || '',
+          city: selectedLocation.city || '',
+          country: selectedLocation.country || 'مصر',
+          neighborhood: neighborhood.trim(),
+          location_type: 'work',
+          name: 'موقع العمل',
+          is_primary: true
+        };
+        
+        const locationResult = await locationService.saveLocation(locationData);
+        
+        if (locationResult.success) {
+          savedLocationId = locationResult.data?.data?.id || locationResult.data?.id;
+          console.log('[DEBUG] Location saved successfully:', savedLocationId);
+          toast.success(i18n.language === 'ar' ? 'تم حفظ الموقع بنجاح' : 'Location saved successfully');
+        } else {
+          console.warn('[DEBUG] Failed to save location:', locationResult.error);
+          // Continue with profile completion even if location save fails
+          toast.warning(i18n.language === 'ar' ? 'تعذر حفظ الموقع ولكن سيتم إكمال الملف الشخصي' : 'Could not save location but will continue with profile');
+        }
+      }
+      
+      // Prepare profile data - only send fields that exist in WorkerProfile model
       const profileData = {
         job_title: formData.job_title.trim(),
         experience_years: parseInt(formData.experience_years),
@@ -234,13 +269,28 @@ const WorkerProfileCompletion = () => {
         skills: formData.skills.join(', '),
         services_provided: formData.description.trim(),
         estimated_price: formData.estimated_price ? parseFloat(formData.estimated_price) : null,
-        location: selectedLocation,
         neighborhood: neighborhood.trim()
       };
 
+      console.log('[DEBUG] Completing worker profile with data:', profileData);
+      console.log('[DEBUG] Profile data validation:', {
+        job_title: profileData.job_title,
+        experience_years: profileData.experience_years,
+        hourly_rate: profileData.hourly_rate,
+        skills: profileData.skills,
+        services_provided: profileData.services_provided,
+        estimated_price: profileData.estimated_price,
+        neighborhood: profileData.neighborhood
+      });
+      
+      console.log('[DEBUG] Calling authService.completeWorkerProfile...');
       const result = await authService.completeWorkerProfile(profileData);
+      console.log('[DEBUG] AuthService response:', result);
       
       if (result.success) {
+        console.log('[DEBUG] Worker profile completed successfully');
+        console.log('[DEBUG] Profile completion status:', result.profile_completed);
+        
         toast.success(i18n.language === 'ar' ? 
           'تم إكمال الملف الشخصي بنجاح!' : 
           'Profile completed successfully!');
@@ -248,28 +298,53 @@ const WorkerProfileCompletion = () => {
         // تحديث بيانات المستخدم
         const userData = authService.getCurrentUser();
         if (userData) {
-          userData.profile_completed = true;
+          // Use the backend response to set the completion status
+          userData.profile_completed = result.profile_completed || true;
           authService.saveUserToStorage(userData);
           localStorage.setItem('user', JSON.stringify(userData));
+          console.log('[DEBUG] User data updated in localStorage with profile_completed:', userData.profile_completed);
         }
         
         // الانتقال للصفحة المناسبة بعد ثانيتين
         setTimeout(() => {
+          console.log('[DEBUG] Redirecting to HomeProvider...');
           navigate('/homeProvider');
         }, 2000);
         
       } else {
+        console.error('[DEBUG] Failed to complete worker profile:', result);
         toast.error(result.message || (i18n.language === 'ar' ? 
           'فشل في إكمال الملف الشخصي' : 
           'Failed to complete profile'));
       }
     } catch (error) {
-      console.error('Profile completion error:', error);
-      const errorMessage = error.response?.data?.detail || 
-                          error.message || 
-                          (i18n.language === 'ar' ? 
-                           'حدث خطأ أثناء إكمال الملف الشخصي' : 
-                           'Error completing profile');
+      console.error('[DEBUG] Profile completion error:', error);
+      console.error('[DEBUG] Error response:', error.response);
+      console.error('[DEBUG] Error response data:', error.response?.data);
+      console.error('[DEBUG] Error status:', error.response?.status);
+      
+      let errorMessage = '';
+      if (error.response?.data) {
+        if (typeof error.response.data === 'string') {
+          errorMessage = error.response.data;
+        } else if (error.response.data.detail) {
+          errorMessage = error.response.data.detail;
+        } else if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.response.data.error) {
+          errorMessage = error.response.data.error;
+        } else {
+          // Handle validation errors
+          const validationErrors = Object.values(error.response.data).flat();
+          errorMessage = validationErrors.join(', ');
+        }
+      } else {
+        errorMessage = error.message || (i18n.language === 'ar' ? 
+          'حدث خطأ أثناء إكمال الملف الشخصي' : 
+          'Error completing profile');
+      }
+      
+      console.error('[DEBUG] Final error message:', errorMessage);
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -507,13 +582,13 @@ const WorkerProfileCompletion = () => {
                 {/* حقل الحي */}
                 <div className="form-group mb-4">
                   <label className="form-label">
-                    {i18n.language === 'ar' ? 'الحي (اختياري)' : 'Neighborhood (Optional)'}
+                    {i18n.language === 'ar' ? 'الحي *' : 'Neighborhood *'}
                   </label>
                   <input
                     type="text"
                     value={neighborhood}
                     onChange={(e) => setNeighborhood(e.target.value)}
-                    className="form-input"
+                    className={`form-input ${errors.location && !selectedLocation && !neighborhood.trim() ? 'error' : ''}`}
                     placeholder={i18n.language === 'ar' 
                       ? 'مثال: المعادي، الزمالك، النزهة...' 
                       : 'e.g., Maadi, Zamalek, Nozha...'

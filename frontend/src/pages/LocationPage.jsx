@@ -48,7 +48,12 @@ export default function LocationPage() {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const hasSearchedRef = useRef(false);
+  const isManualSearchRef = useRef(false);
   const searchTimeoutRef = useRef(null);
+
+  // البحث عن مزود الخدمة بالاسم
+  const [providerSearch, setProviderSearch] = useState("");
+  const [searchByProvider, setSearchByProvider] = useState(false);
 
   // فلاتر إضافية
   const [filters, setFilters] = useState({
@@ -56,6 +61,43 @@ export default function LocationPage() {
     minRating: 0,
     maxPrice: 1000
   });
+
+  // دالة لبناء العنوان الكامل من الموقع وتفاصيله
+  const buildLocationAddress = (location, details) => {
+    if (!location) return 'عنوان غير محدد';
+    
+    let address = location.address || '';
+    
+    // إضافة تفاصيل الموقع
+    const addressParts = [];
+    
+    if (details.building_number) {
+      addressParts.push(`عمارة ${details.building_number}`);
+    }
+    
+    if (details.apartment_number) {
+      addressParts.push(`شقة ${details.apartment_number}`);
+    }
+    
+    if (details.floor_number) {
+      addressParts.push(`الطابق ${details.floor_number}`);
+    }
+    
+    if (details.landmark) {
+      addressParts.push(`بجوار ${details.landmark}`);
+    }
+    
+    if (details.additional_details) {
+      addressParts.push(details.additional_details);
+    }
+    
+    // دمج العنوان الأساسي مع التفاصيل
+    if (addressParts.length > 0) {
+      address += (address ? ' - ' : '') + addressParts.join('، ');
+    }
+    
+    return address || 'عنوان غير محدد';
+  };
 
   // الدوال الجديدة للزرين
   const handleShowProviderProfile = (service) => {
@@ -70,21 +112,47 @@ export default function LocationPage() {
   };
 
   const handleBookService = (service) => {
-    // الانتقال إلى صفحة الطلب
+    // التحقق من تسجيل الدخول أولاً
+    const accessToken = localStorage.getItem('access');
+    const userData = localStorage.getItem('user');
+    
     const serviceId = service.id;
-    if (serviceId) {
-      // Store service data and location details in localStorage for the order page
-      const serviceData = {
-        ...service,
-        selectedLocation: selectedLocation,
-        locationDetails: locationDetails
-      };
-      localStorage.setItem('selectedService', JSON.stringify(serviceData));
-      // Navigate to order page
-      window.location.href = '/order';
-    } else {
+    if (!serviceId) {
       console.error('لا يوجد معرف للخدمة', service);
       setError('لا يمكن حجز الخدمة - المعرف غير متوفر');
+      return;
+    }
+
+    // إعداد بيانات الطلب
+    const orderData = {
+      ...service,
+      selectedLocation: selectedLocation,
+      locationDetails: locationDetails,
+      timestamp: Date.now(), // لتتبع وقت الطلب
+      // إضافة معلومات مفيدة للطلب
+      worker_id: service.user?.id || service.provider?.id,
+      worker_name: service.user?.username || service.provider?.username || 'Unknown',
+      service_title: service.title || service.job_title || selectedService,
+      distance: service.distance_km,
+      // إضافة عنوان الموقع من تفاصيل الموقع
+      location_address: buildLocationAddress(selectedLocation, locationDetails)
+    };
+
+    // حفظ بيانات الطلب في localStorage
+    localStorage.setItem('pendingOrder', JSON.stringify(orderData));
+    localStorage.setItem('selectedService', JSON.stringify(orderData)); // للتوافق مع الكود الموجود
+    
+    console.log('[BOOKING] Order data saved to localStorage:', orderData);
+
+    if (!accessToken || !userData) {
+      // المستخدم غير مسجل دخول - حفظ البيانات وتوجيهه لتسجيل الدخول
+      console.log('[BOOKING] User not logged in, redirecting to login');
+      localStorage.setItem('redirectAfterLogin', '/order'); // حفظ وجهة التوجيه بعد تسجيل الدخول
+      window.location.href = '/auth';
+    } else {
+      // المستخدم مسجل دخول - توجيهه مباشرة لصفحة الطلب
+      console.log('[BOOKING] User logged in, redirecting to order page');
+      window.location.href = '/order';
     }
   };
 
@@ -210,18 +278,28 @@ export default function LocationPage() {
 
   // استدعاء البحث عن الخدمات القريبة
   const fetchNearbyServices = useCallback(async (location, serviceTerm = null) => {
+    const searchId = Date.now(); // Unique ID for this search
+    console.log(`[SEARCH ${searchId}] fetchNearbyServices called`, {
+      hasLocation: !!location,
+      isSearching,
+      serviceTerm,
+      selectedService
+    });
+    
     if (!location || isSearching) {
-      console.log('Skipping search - no location or already searching');
+      console.log(`[SEARCH ${searchId}] Skipping search - no location or already searching`);
       return;
     }
 
     // Clear any existing timeout
     if (searchTimeoutRef.current) {
+      console.log(`[SEARCH ${searchId}] Clearing existing timeout`);
       clearTimeout(searchTimeoutRef.current);
     }
 
-    // Debounce the search by 300ms
+    // Debounce the search by 100ms (reduced from 300ms)
     searchTimeoutRef.current = setTimeout(async () => {
+      console.log(`[SEARCH ${searchId}] Starting debounced search`);
       // Use serviceTerm if provided, otherwise use selectedService
       let searchTerm = serviceTerm || selectedService;
       
@@ -255,7 +333,7 @@ export default function LocationPage() {
         const result = await locationService.searchNearbyLocations(
           location.lat,
           location.lng,
-          10,
+          150, // Increased radius to 150km to find more workers
           serviceTypeId
         );
 
@@ -279,28 +357,57 @@ export default function LocationPage() {
       } finally {
         setLoading(false);
         setIsSearching(false);
+        console.log(`[SEARCH ${searchId}] Search completed - setting hasSearched to true`);
+        hasSearchedRef.current = true; // Mark as searched regardless of manual/auto
       }
-    }, 300);
-  }, [selectedService, customService, isSearching]);
+    }, 100);
+  }, [selectedService, customService]);
 
   // جلب آخر موقع محفوظ
   useEffect(() => {
     const fetchUserLocation = async () => {
       try {
-        console.log('Fetching user location...');
-        const result = await locationService.getLatestLocation();
-        if (result.success && result.data) {
-          const locationData = result.data;
-          if (locationData.lat && locationData.lng) {
-            setSelectedLocation({
-              lat: locationData.lat,
-              lng: locationData.lng,
-              address: locationData.address
-            });
-            console.log('User location loaded:', locationData.address);
+        // أولاً، جرب تحميل الموقع من localStorage
+        const savedLocation = localStorage.getItem('selectedLocation');
+        const savedDetails = localStorage.getItem('locationDetails');
+        
+        if (savedLocation) {
+          try {
+            const locationData = JSON.parse(savedLocation);
+            setSelectedLocation(locationData);
+            console.log('Location loaded from localStorage:', locationData);
+          } catch (e) {
+            console.error('Error parsing saved location:', e);
           }
-        } else {
-          console.log('No saved location found');
+        }
+        
+        if (savedDetails) {
+          try {
+            const detailsData = JSON.parse(savedDetails);
+            setLocationDetails(detailsData);
+            console.log('Location details loaded from localStorage:', detailsData);
+          } catch (e) {
+            console.error('Error parsing saved location details:', e);
+          }
+        }
+        
+        // إذا لم يكن هناك موقع محفوظ في localStorage، جرب تحميله من الخادم
+        if (!savedLocation) {
+          console.log('Fetching user location from server...');
+          const result = await locationService.getLatestLocation();
+          if (result.success && result.data) {
+            const locationData = result.data;
+            if (locationData.lat && locationData.lng) {
+              setSelectedLocation({
+                lat: locationData.lat,
+                lng: locationData.lng,
+                address: locationData.address
+              });
+              console.log('User location loaded from server:', locationData.address);
+            }
+          } else {
+            console.log('No saved location found on server');
+          }
         }
       } catch (err) {
         console.error('Error fetching user location:', err);
@@ -314,13 +421,46 @@ export default function LocationPage() {
 
   // Auto-search when both location and service are available (only once)
   useEffect(() => {
-    if (selectedLocation && selectedService && serviceData && !isSearching && isInitialized && !hasSearchedRef.current) {
-      const searchTerm = serviceData.searchTerm || serviceData.name?.ar || serviceData.name?.en || '';
-      if (searchTerm) {
-        console.log('Auto-triggering search with:', searchTerm);
-        hasSearchedRef.current = true; // Mark as searched to prevent re-triggering
-        fetchNearbyServices(selectedLocation, searchTerm);
-      }
+    console.log('[USEEFFECT] Auto-search useEffect triggered', {
+      hasLocation: !!selectedLocation,
+      hasService: !!selectedService,
+      isSearching,
+      isInitialized,
+      hasSearched: hasSearchedRef.current,
+      isManualSearch: isManualSearchRef.current
+    });
+    
+    // Don't auto-search if this is after a manual search
+    if (isManualSearchRef.current) {
+      console.log('[USEEFFECT] Skipping auto-search - manual search was performed');
+      // Reset the flag after a delay to ensure proper state management
+      setTimeout(() => {
+        isManualSearchRef.current = false;
+        console.log('[USEEFFECT] Reset manual search flag');
+      }, 1000);
+      return;
+    }
+    
+    if (selectedLocation && selectedService && !isSearching && isInitialized && !hasSearchedRef.current) {
+      console.log('[USEEFFECT] Conditions met, setting up auto-search timer');
+      // Add a small delay to prevent multiple rapid calls
+      const searchTimer = setTimeout(() => {
+        const searchTerm = serviceData?.searchTerm || serviceData?.name?.ar || serviceData?.name?.en || selectedService;
+        if (searchTerm) {
+          console.log('[USEEFFECT] Auto-triggering search with:', searchTerm);
+          hasSearchedRef.current = true; // Mark as searched to prevent re-triggering
+          fetchNearbyServices(selectedLocation, searchTerm);
+        } else {
+          console.log('[USEEFFECT] No search term found');
+        }
+      }, 500);
+      
+      return () => {
+        console.log('[USEEFFECT] Cleaning up auto-search timer');
+        clearTimeout(searchTimer);
+      };
+    } else {
+      console.log('[USEEFFECT] Auto-search conditions not met');
     }
   }, [selectedLocation, selectedService, serviceData, isSearching, isInitialized]);
 
@@ -334,12 +474,64 @@ export default function LocationPage() {
   }, []);
 
   const handleRefresh = () => {
+    console.log('[REFRESH] Manual refresh triggered', {
+      hasLocation: !!selectedLocation,
+      isSearching,
+      hasSearched: hasSearchedRef.current
+    });
+    
     if (selectedLocation && !isSearching) {
-      console.log('Manual refresh triggered');
-      hasSearchedRef.current = false; // Reset search flag for manual refresh
+      console.log('[REFRESH] Starting manual refresh');
+      isManualSearchRef.current = true; // Mark as manual search
+      // Don't reset hasSearchedRef here - let the search completion handle it
       fetchNearbyServices(selectedLocation);
     } else {
-      console.log('Refresh skipped - no location or already searching');
+      console.log('[REFRESH] Refresh skipped - no location or already searching');
+    }
+  };
+
+  // البحث عن مزود الخدمة بالاسم
+  const handleProviderSearch = async () => {
+    if (!providerSearch.trim() || !selectedLocation) {
+      setError('يرجى إدخال اسم مزود الخدمة وتحديد الموقع');
+      return;
+    }
+
+    try {
+      setIsSearching(true);
+      setLoading(true);
+      setError(null);
+      
+      console.log('Searching for provider:', providerSearch);
+      
+      const result = await locationService.searchNearbyLocations(
+        selectedLocation.lat,
+        selectedLocation.lng,
+        200, // زيادة النطاق للبحث بالاسم
+        null, // لا نحدد نوع خدمة معين
+        providerSearch.trim() // نص البحث
+      );
+
+      if (result.success) {
+        setResults(result.data || []);
+        setError(null);
+        console.log('Provider search successful, found', result.data?.length || 0, 'results');
+        
+        if (result.data?.length === 0) {
+          setError(`لم يتم العثور على مزود خدمة بالاسم "${providerSearch}". جرب اسم آخر أو تحقق من الإملاء.`);
+        } else {
+          setError(null);
+        }
+      } else {
+        setError(result.error || "فشل في البحث عن مزود الخدمة");
+        console.error('Provider search failed:', result.error);
+      }
+    } catch (err) {
+      setError("فشل في البحث عن مزود الخدمة");
+      console.error('Provider search error:', err);
+    } finally {
+      setLoading(false);
+      setIsSearching(false);
     }
   };
 
@@ -376,15 +568,32 @@ export default function LocationPage() {
     setCitySearch(suggestion.address);
     setSelectedLocation(suggestion.location);
     setSearchSuggestions([]);
+    
+    // حفظ الموقع المختار في localStorage
+    const locationData = {
+      ...suggestion.location,
+      address: suggestion.address,
+      timestamp: Date.now()
+    };
+    localStorage.setItem('selectedLocation', JSON.stringify(locationData));
+    console.log('[LOCATION] Location saved to localStorage:', locationData);
   };
 
   // التعامل مع تغيير تفاصيل الموقع
   const handleLocationDetailsChange = (e) => {
     const { name, value } = e.target;
-    setLocationDetails(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setLocationDetails(prev => {
+      const newDetails = {
+        ...prev,
+        [name]: value
+      };
+      
+      // حفظ تفاصيل الموقع في localStorage
+      localStorage.setItem('locationDetails', JSON.stringify(newDetails));
+      console.log('[LOCATION] Location details saved to localStorage:', newDetails);
+      
+      return newDetails;
+    });
   };
 
   // تطبيق الفلاتر
@@ -599,6 +808,64 @@ export default function LocationPage() {
                     </div>
         </div>
       )}
+              </CardContent>
+            </Card>
+
+            {/* Provider Search Card */}
+            <Card className="mb-4" style={{ borderRadius: '16px', boxShadow: '0 6px 18px rgba(0,0,0,0.05)' }}>
+              <CardContent className="p-4">
+                <div className="d-flex align-items-center mb-3">
+                  <PersonIcon className="text-primary me-2" />
+                  <h5 className="mb-0 fw-bold">البحث عن مزود خدمة</h5>
+                </div>
+                <p className="text-muted small mb-3">ابحث عن مزود خدمة معين بالاسم</p>
+                
+                <div className="d-flex gap-2 mb-3">
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="أدخل اسم مزود الخدمة..."
+                    value={providerSearch}
+                    onChange={(e) => setProviderSearch(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        handleProviderSearch();
+                      }
+                    }}
+                    style={{ borderRadius: '12px', border: '2px solid #e5e7eb' }}
+                  />
+                  <Button
+                    variant="contained"
+                    onClick={handleProviderSearch}
+                    disabled={!providerSearch.trim() || !selectedLocation || loading || isSearching}
+                    style={{
+                      borderRadius: '12px',
+                      minWidth: '120px',
+                      background: 'linear-gradient(135deg, #28a745, #20c997)',
+                      border: 'none'
+                    }}
+                  >
+                    {loading || isSearching ? (
+                      <CircularProgress size={16} color="inherit" />
+                    ) : (
+                      'بحث'
+                    )}
+                  </Button>
+                </div>
+
+                {providerSearch && (
+                  <div className="mt-3 p-3 bg-light rounded-3">
+                    <div className="d-flex align-items-center">
+                      <div className="bg-info rounded-circle p-2 me-3">
+                        <i className="bi bi-search text-white"></i>
+                      </div>
+                      <div>
+                        <div className="fw-bold text-info">البحث عن: {providerSearch}</div>
+                        <div className="text-muted small">سيتم البحث في نطاق 200 كم</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
 
@@ -893,11 +1160,16 @@ export default function LocationPage() {
                   <LocationPicker 
                     onLocationSelect={(loc) => {
                       setSelectedLocation(loc);
-                      // Auto-trigger search when location is selected
-                      if (selectedService && !isSearching) {
-                        hasSearchedRef.current = false;
-                        fetchNearbyServices(loc);
-                      }
+                      // Don't auto-trigger search here - let useEffect handle it
+                      console.log('Location selected from map:', loc.address || 'No address');
+                      
+                      // حفظ الموقع المختار في localStorage
+                      const locationData = {
+                        ...loc,
+                        timestamp: Date.now()
+                      };
+                      localStorage.setItem('selectedLocation', JSON.stringify(locationData));
+                      console.log('[LOCATION] Location from map saved to localStorage:', locationData);
                     }}
                     initialLocation={selectedLocation}
                     height={400}

@@ -9,13 +9,13 @@ import { useTranslation } from "react-i18next";
 import Navbar from "../components/Navbar";
 import SearchBar from "../components/SearchBar";
 import ImageTicker from "../components/ImageTicker";
+import { authService } from "../services/authService";
 import assemblyImg from "../images/assembly.jpg";
 import movingImg from "../images/moving.jpeg";
 import cleaningImg from "../images/cleaning.jpg";
 import repairsImg from "../images/repairs.jpg";
 import paintingImg from "../images/Painting.jpg";
 import searchImage from "../images/search.jpg";
-import apiService from "../services/ApiService";
 
 const services = [
   { key: "assembly", title: "Assembly", icon: <BsTools />, img: assemblyImg, desc: "Assemble or disassemble furniture items with care." },
@@ -47,101 +47,36 @@ const Home = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [activeService, setActiveService] = useState(() => services[0]);
-   const [client, setClients] = useState([]);
-   const [worker, setWorkers] = useState([]);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-     const [selectedClient, setSelectedClient] = useState(null);
-     const [selectedWorker, setSelectedWorker] = useState(null);
-     const [errorMsg, setErrorMsg] = useState("");
-
-     useEffect(() => {
-      const fetchClientProfile = async () => {
-      try {
-      // للـ Home page نستخدم الـ current user profile
-      const url = `api/accounts/client/profile/`;
-      const data = await apiService.get(url);
-      setClient(data);
-      } catch (err) {
-      console.error("❌ Error fetching client profile:", err);
-      setErrorMsg("فشل في تحميل بيانات البروفايل");
-      }
-      };
-      fetchClientProfile();
-      }, []); // No dependencies needed
-
-  const fetchWorkerDetails = (id) => {
-    fetch(`http://127.0.0.1:8000/api/accounts/workers/${id}/`)
-      .then((res) => res.json())
-      .then((data) => setSelectedWorker(data))
-      .catch((err) => console.error("Error fetching worker details:", err));
-  };
-
-
-  // useEffect(() => {
-  //   const fetchClients = async () => {
-  //     try {
-  //       const data = await apiService.get("api/accounts/users/");
-  //       console.log("DEBUG RESPONSE:", data);
-  
-  //       if (Array.isArray(data)) {
-  //         const clientUsers = data.filter((user) => user.role === "client");
-  //         setClients(clientUsers);
-  //       } else {
-  //         console.error("Unexpected response:", data);
-  //       }
-  //     } catch (err) {
-  //       console.error("❌ Error fetching clients:", err);
-  //     }
-  //   };
-  
-  //   fetchClients();
-  // }, []);
-  
-  
-  // useEffect(() => {
-  //   const fetchWorkers = async () => {
-  //     try {
-  //       const data = await apiService.get("api/accounts/workers/");
-  //       console.log("DEBUG WORKERS RESPONSE:", data);
-    
-  //       if (Array.isArray(data)) {
-  //         setWorkers(data); // دول profiles بتوع العمال
-  //       } else {
-  //         console.error("Unexpected response:", data);
-  //       }
-  //     } catch (err) {
-  //       console.error("❌ Error fetching workers:", err);
-  //     }
-  //   };
-    
-
-  //   fetchWorkers();
-  // }, []);
-
+  // Check if user is logged in
   useEffect(() => {
-    const fetchUsers = async () => {
+    const checkAuthStatus = async () => {
       try {
-        const data = await apiService.get("api/accounts/users/");
-        console.log("DEBUG USERS RESPONSE:", data);
-  
-        if (Array.isArray(data)) {
-          const clientUsers = data.filter((user) => user.role === "client");
-          const workerUsers = data.filter((user) => user.role === "worker");
-  
-          setClients(clientUsers);
-          setWorkers(workerUsers);
-        } else {
-          console.error("Unexpected response:", data);
-        }
-      } catch (err) {
-        console.error("❌ Error fetching users:", err);
+        const isAuthenticated = await authService.isAuthenticated();
+        setIsLoggedIn(isAuthenticated);
+      } catch (error) {
+        console.error('Error checking auth status:', error);
+        setIsLoggedIn(false);
       }
     };
-  
-    fetchUsers();
+    
+    checkAuthStatus();
+
+    // Listen for auth changes
+    const handleAuthChange = () => {
+      checkAuthStatus();
+    };
+
+    // Add event listeners for auth changes
+    window.addEventListener('userLogin', handleAuthChange);
+    window.addEventListener('userLogout', handleAuthChange);
+
+    return () => {
+      window.removeEventListener('userLogin', handleAuthChange);
+      window.removeEventListener('userLogout', handleAuthChange);
+    };
   }, []);
-  
-  
 
   useEffect(() => {
     if (injected.current) return;
@@ -216,55 +151,57 @@ const Home = () => {
     <div>
       <Navbar />
       
-      {/* Join as Service Provider Banner */}
-      <div className="container-fluid py-3" style={{ 
-        background: 'linear-gradient(135deg,rgb(199, 212, 228),rgb(125, 185, 245))', 
-        borderBottom: '3px solid #fff',
-        boxShadow: '0 4px 15px rgba(7, 52, 102, 0.3)'
-      }}>
-        <div className="container">
-          <div className="row align-items-center justify-content-center">
-            <div className="col-md-8 text-center">
-              <div className="d-flex align-items-center justify-content-center gap-3">
-                <div className="text-white">
-                  <i className="bi bi-star-fill me-2" style={{ fontSize: '1.5rem' }}></i>
-                  <span className="fw-bold" style={{ fontSize: '1.2rem' }}>
-                    {t("joinBannerText")}
-                  </span>
+      {/* Join as Service Provider Banner - Only show if user is not logged in */}
+      {!isLoggedIn && (
+        <div className="container-fluid py-3" style={{ 
+          background: 'linear-gradient(135deg,rgb(199, 212, 228),rgb(125, 185, 245))', 
+          borderBottom: '3px solid #fff',
+          boxShadow: '0 4px 15px rgba(7, 52, 102, 0.3)'
+        }}>
+          <div className="container">
+            <div className="row align-items-center justify-content-center">
+              <div className="col-md-8 text-center">
+                <div className="d-flex align-items-center justify-content-center gap-3">
+                  <div className="text-white">
+                    <i className="bi bi-star-fill me-2" style={{ fontSize: '1.5rem' }}></i>
+                    <span className="fw-bold" style={{ fontSize: '1.2rem' }}>
+                      {t("joinBannerText")}
+                    </span>
+                  </div>
+                  <button
+                    className="btn btn-lg fw-bold px-4 py-2 ms-3"
+                    onClick={() => navigate('/auth')}
+                    style={{
+                      borderRadius: '50px',
+                      backgroundColor: '#7dd3fc',
+                      color: '#0f172a',
+                      boxShadow: '0 4px 15px rgba(125, 211, 252, 0.4)',
+                      transition: 'all 0.3s ease',
+                      border: '3px solid #fff',
+                      animation: 'pulse 2s infinite'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.transform = 'scale(1.05) translateY(-2px)';
+                      e.target.style.backgroundColor = '#38bdf8';
+                      e.target.style.boxShadow = '0 8px 25px rgba(125, 211, 252, 0.6)';
+                      e.target.style.animation = 'none';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.transform = 'scale(1) translateY(0)';
+                      e.target.style.backgroundColor = '#7dd3fc';
+                      e.target.style.boxShadow = '0 4px 15px rgba(125, 211, 252, 0.4)';
+                      e.target.style.animation = 'pulse 2s infinite';
+                    }}
+                  >
+                    <i className="bi bi-plus-circle-fill me-2"></i>
+                    {t("joinNowButton")}
+                  </button>
                 </div>
-                <button
-                  className="btn btn-lg fw-bold px-4 py-2 ms-3"
-                  onClick={() => navigate('/auth')}
-                  style={{
-                    borderRadius: '50px',
-                    backgroundColor: '#7dd3fc',
-                    color: '#0f172a',
-                    boxShadow: '0 4px 15px rgba(125, 211, 252, 0.4)',
-                    transition: 'all 0.3s ease',
-                    border: '3px solid #fff',
-                    animation: 'pulse 2s infinite'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.transform = 'scale(1.05) translateY(-2px)';
-                    e.target.style.backgroundColor = '#38bdf8';
-                    e.target.style.boxShadow = '0 8px 25px rgba(125, 211, 252, 0.6)';
-                    e.target.style.animation = 'none';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.transform = 'scale(1) translateY(0)';
-                    e.target.style.backgroundColor = '#7dd3fc';
-                    e.target.style.boxShadow = '0 4px 15px rgba(125, 211, 252, 0.4)';
-                    e.target.style.animation = 'pulse 2s infinite';
-                  }}
-                >
-                  <i className="bi bi-plus-circle-fill me-2"></i>
-                  {t("joinNowButton")}
-                </button>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
       
       {/* Search Bar Section */}
       <section className="container my-4">
@@ -562,72 +499,8 @@ const Home = () => {
           <div className="col-md-4"><Testimonial name="أحمد" quote="أفضل منصة حجز خدمات منزلية." /></div>
         </div>
       </section>
-
-      {/* <div>
-  <h2>Clients</h2>
-  <ul>
-    {clients.map((client) => (
-      <li key={client.id} style={{ marginBottom: "10px" }}>
-        {client.username}{" "}
-        <button
-          className="btn btn-sm btn-outline-primary"
-          onClick={() => navigate(`/homeClient/${client.id}`)}
-        >
-          View
-        </button>
-      </li>
-    ))}
-  </ul>
-
-  <h2>Workers</h2>
-  <ul>
-  {workers.map((worker) => (
-  <li key={worker.id} style={{ marginBottom: "10px" }}>
-    {worker.username}
-    <button
-  className="btn btn-sm btn-outline-primary"
-  onClick={() => navigate(`/worker/${worker.id}`)}
->
-  View
-</button>
-
-  </li>
-))}
-
-</ul>
-
-
-  {selectedClient && (
-    <div className="mt-4 p-3 border rounded shadow-sm bg-white">
-      <h4>Client Details</h4>
-      <p><strong>ID:</strong> {selectedClient.id}</p>
-      <p><strong>Username:</strong> {selectedClient.username}</p>
-      <p><strong>Email:</strong> {selectedClient.email}</p>
-      <p><strong>First Name:</strong> {selectedClient.first_name || "-"}</p>
-      <p><strong>Last Name:</strong> {selectedClient.last_name || "-"}</p>
-    </div>
-  )}
-
-{selectedWorker && (
-  <div className="mt-4 p-3 border rounded shadow-sm bg-white">
-    <h4>Worker Details</h4>
-    <p><strong>ID:</strong> {selectedWorker.id}</p>
-    <p><strong>Username:</strong> {selectedWorker.username}</p>
-    <p><strong>Email:</strong> {selectedWorker.email}</p>
-    <p><strong>First Name:</strong> {selectedWorker.first_name || "-"}</p>
-    <p><strong>Last Name:</strong> {selectedWorker.last_name || "-"}</p>
-    <p><strong>Specialty:</strong> {selectedWorker.specialty || "-"}</p>
-  </div>
-)}
-
-</div> */}
-
-
-      
     </div>
   );
 };
 
 export default Home;
-
-

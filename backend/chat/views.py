@@ -24,7 +24,8 @@ class ConversationDetailView(generics.RetrieveAPIView):
         
         # Check if user can access this order
         if not (self.request.user == order.customer or 
-                self.request.user == order.service.provider or 
+                self.request.user == order.worker or
+                (order.service.provider and self.request.user == order.service.provider) or 
                 self.request.user.is_staff):
             return Response(
                 {'error': 'You do not have permission to access this conversation'}, 
@@ -49,7 +50,8 @@ class MessageListCreateView(generics.ListCreateAPIView):
         
         # Check if user can access this order
         if not (self.request.user == order.customer or 
-                self.request.user == order.service.provider or 
+                self.request.user == order.worker or
+                (order.service.provider and self.request.user == order.service.provider) or 
                 self.request.user.is_staff):
             return Message.objects.none()
         
@@ -69,7 +71,8 @@ class MessageListCreateView(generics.ListCreateAPIView):
         
         # Check if user can access this order
         if not (self.request.user == order.customer or 
-                self.request.user == order.service.provider or 
+                self.request.user == order.worker or
+                (order.service.provider and self.request.user == order.service.provider) or 
                 self.request.user.is_staff):
             return Response(
                 {'error': 'You do not have permission to send messages to this conversation'}, 
@@ -87,10 +90,10 @@ class UserConversationsView(generics.ListAPIView):
 
     def get_queryset(self):
         user = self.request.user
-        # Get all conversations where the user is either customer or service provider
+        # Get all conversations where the user is either customer, worker, or service provider
         # Exclude cancelled orders
         conversations = Conversation.objects.filter(
-            Q(order__customer=user) | Q(order__service__provider=user)
+            Q(order__customer=user) | Q(order__worker=user) | Q(order__service__provider=user)
         ).exclude(
             order__status='cancelled'
         ).filter(

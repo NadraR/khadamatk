@@ -86,13 +86,41 @@ const NotificationDropdown = ({ isLoggedIn }) => {
       );
     }
 
-    // Navigate to notification URL if available
+    // Get current user role to determine redirect
+    const userData = localStorage.getItem('user');
+    let userRole = 'client'; // default
+    if (userData) {
+      try {
+        const user = JSON.parse(userData);
+        userRole = user.role || 'client';
+        console.log('[DEBUG] NotificationDropdown: User role detected:', userRole, 'User data:', user);
+      } catch (e) {
+        console.error('Error parsing user data:', e);
+      }
+    } else {
+      console.log('[DEBUG] NotificationDropdown: No user data found in localStorage');
+    }
+
+    // Navigate based on user role and notification type
     if (notification.target_url) {
+      console.log('[DEBUG] NotificationDropdown: Redirecting to target_url:', notification.target_url);
       navigate(notification.target_url);
       setIsOpen(false);
     } else if (notification.url) {
+      console.log('[DEBUG] NotificationDropdown: Redirecting to url:', notification.url);
       navigate(notification.url);
       setIsOpen(false);
+    } else {
+      // Default redirect based on user role
+      if (userRole === 'worker' || userRole === 'provider') {
+        console.log('[DEBUG] NotificationDropdown: Redirecting worker to /orders');
+        navigate('/orders');
+        setIsOpen(false);
+      } else {
+        console.log('[DEBUG] NotificationDropdown: Redirecting client to /track-order');
+        navigate('/track-order');
+        setIsOpen(false);
+      }
     }
   };
 
