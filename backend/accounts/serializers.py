@@ -6,6 +6,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth import authenticate
 from django import forms
 from django.contrib.auth import get_user_model
+from .models import WorkerVerification
 
 
 
@@ -32,10 +33,11 @@ class CustomUserCreateSerializer(BaseUserCreateSerializer):
         choices=User.ROLE_CHOICES,
         help_text="Select 'worker' for service providers or 'client' for service seekers"
     )
+    national_id = serializers.CharField(write_only=True, required=False)
 
     class Meta(BaseUserCreateSerializer.Meta):
         model = User
-        fields = tuple(BaseUserCreateSerializer.Meta.fields) + ('role', 'phone')
+        fields = tuple(BaseUserCreateSerializer.Meta.fields) + ('role', 'phone', 'national_id')
         extra_kwargs = {
             'phone': {'required': True},
             'password': {'write_only': True}
@@ -153,3 +155,18 @@ class LoginSerializer(serializers.Serializer):
 
         attrs['user'] = user
         return attrs
+
+
+class WorkerVerificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = WorkerVerification
+        fields = [
+            "id", "worker", "national_id", "id_card_front", "id_card_back",
+            "status", "submitted_at", "reviewed_at"
+        ]
+        read_only_fields = ["status", "submitted_at", "reviewed_at", "worker"]
+
+    def create(self, validated_data):
+        user = self.context["request"].user
+        worker_profile = user.worker_profile
+        return WorkerVerification.objects.create(worker=worker_profile, **validated_data)

@@ -48,9 +48,21 @@ class UserRegisterView(generics.CreateAPIView):
         has_location = UserLocation.objects.filter(user=user).exists()
         
         # Check if worker profile is complete (new workers won't have complete profiles)
-        profile_completed = True
+        profile_completed = False
         if user.role == 'worker':
-            profile_completed = False  # New workers need to complete their profile
+            profile_completed = False
+            # إنشاء طلب تحقق تلقائي (مع البيانات الأساسية إذا متوفرة)
+            national_id = request.data.get('national_id')
+            if national_id:
+                try:
+                    WorkerVerification.objects.create(
+                        worker=user.worker_profile,
+                        national_id=national_id,
+                        # سيحتاج لرفع الصور لاحقاً
+                        status='pending'
+                    )  # New workers need to complete their profile
+                except Exception as e:    
+                    print(f"Error creating verification: {e}")
         
         response_data.update({
             'refresh': str(refresh),
@@ -674,3 +686,23 @@ class GoogleLoginView(APIView):
         except Exception as e:
             logger.exception("[GoogleLogin DEBUG] Unexpected error during Google login")
             return Response({"error": f"Authentication failed: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+from .models import WorkerVerification
+from .serializers import WorkerVerificationSerializer
+
+class WorkerVerificationCreateView(generics.CreateAPIView):
+    serializer_class = WorkerVerificationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def perform_create(self, serializer):
+        serializer.save(worker=self.request.user.worker_profile)
+
+
+class WorkerVerificationDetailView(generics.RetrieveAPIView):
+    serializer_class = WorkerVerificationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user.worker_profile.verification

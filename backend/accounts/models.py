@@ -220,3 +220,23 @@ class ClientProfile(BaseProfile):
     def clean(self):
         if self.user.role != 'client':
             raise ValidationError("This profile is for clients only")
+
+
+class WorkerVerification(models.Model):
+    """Model to handle worker identity verification"""
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ]
+    
+    worker = models.OneToOneField("accounts.WorkerProfile", on_delete=models.CASCADE, related_name="verification")
+    national_id = models.CharField(max_length=20, unique=True, null=False, blank=False)    
+    id_card_front = models.ImageField(upload_to="verifications/id_cards/front/")
+    id_card_back = models.ImageField(upload_to="verifications/id_cards/back/")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="pending")
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    
+    def __str__(self):
+        return f"{self.worker.user.username} - {self.status}"
