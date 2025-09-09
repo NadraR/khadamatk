@@ -147,6 +147,10 @@ export default function AdminDashboard() {
       <Card
         sx={{
           height: '100%',
+          p: 2,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
           borderRadius: '12px',
           boxShadow: '0 2px 8px rgba(0,123,255,0.08)',
           border: '1px solid rgba(0,123,255,0.1)',
@@ -176,10 +180,10 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
-        <Box sx={{ width: '100%' }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: '#f9fbff', direction: 'rtl' }}>
+        <Box sx={{ width: '80%', maxWidth: 400 }}>
           <LinearProgress />
-          <Typography variant="h6" sx={{ textAlign: 'center', mt: 2, color: '#666666' }}>
+          <Typography variant="h6" sx={{ mt: 2, textAlign: 'center', color: '#666666', textTransform: 'none' }}>
             جاري تحميل البيانات...
           </Typography>
         </Box>
@@ -189,11 +193,11 @@ export default function AdminDashboard() {
 
   if (error) {
     return (
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', backgroundColor: '#f9fbff', direction: 'rtl' }}>
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
         </Alert>
-        <Button variant="contained" onClick={() => window.location.reload()} sx={{ mt: 2 }}>
+        <Button variant="contained" onClick={() => window.location.reload()} sx={{ textTransform: 'none' }}>
           إعادة المحاولة
         </Button>
       </Box>
@@ -211,19 +215,26 @@ export default function AdminDashboard() {
           overflowX: 'hidden',
           overflowY: 'auto',
           maxWidth: '1200px',
+          width: '100%',
+          px: { xs: 1, sm: 2 },
+          py: { xs: 2, sm: 3, md: 4 },
           mx: 'auto',
-          px: { xs: 1, sm: 2 }
+          boxSizing: 'border-box',
+          scrollBehavior: 'smooth',
+          scrollbarWidth: 'none', // Firefox
+          '&::-webkit-scrollbar': { display: 'none' } // Chrome & Safari
         }}
       >
 
         <Box
           sx={{
-            p: { xs: 1, sm: 1.5, md: 2 },
-            maxWidth: '100%',
-            width: '100%',
             display: 'flex',
             flexDirection: 'column',
-            gap: 2
+            gap: 4,
+            maxWidth: '1200px',
+            width: '100%',
+            mb: 4,
+            boxSizing: 'border-box'
           }}
         >
  {/* Statistics + Action Buttons */}
@@ -234,7 +245,9 @@ export default function AdminDashboard() {
       spacing={2} 
       sx={{ 
         display: 'flex', 
-        alignItems: 'stretch' 
+        alignItems: 'stretch', 
+        justifyContent: 'space-between', 
+        flexWrap: 'wrap'  // يسمح بالانتقال للسطر التالي على الشاشات الصغيرة
       }}
     >
       {/* الزرارين */}

@@ -32,7 +32,7 @@ class AdminNotification(models.Model):
         ('general', 'General'),
     ]
     
-    admin = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'is_staff': True})
+    admin = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'is_staff': True}, default=1)
     title = models.CharField(max_length=255)
     message = models.TextField()
     type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES, default='general')
