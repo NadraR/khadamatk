@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   AppBar,
@@ -30,12 +30,14 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import { useAdminAuth } from '../contexts/AdminAuthContext';
 import AdminSidebar from '../components/admin/AdminSidebar';
 import { notificationsApi } from '../services/adminApiService';
+import { useTranslation } from '../hooks/useTranslation';
 
 const AdminLayout = () => {
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 900);
   const [anchorEl, setAnchorEl] = useState(null);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const { user, logout } = useAdminAuth();
+  const { t, currentLang, toggleLanguage } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const navigate = useNavigate();
@@ -47,6 +49,16 @@ const AdminLayout = () => {
   const handleProfileMenuOpen = (event) => {
     setAnchorEl(event.currentTarget);
   };
+
+  // تطبيق الترجمة عند تحميل الصفحة
+  useEffect(() => {
+    const savedLang = localStorage.getItem('admin-lang') || 'en';
+    if (savedLang !== currentLang) {
+      setCurrentLang(savedLang);
+    }
+    document.documentElement.lang = savedLang;
+    document.documentElement.dir = savedLang === 'ar' ? 'rtl' : 'ltr';
+  }, [currentLang]);
 
   const handleProfileMenuClose = () => {
     setAnchorEl(null);
@@ -122,31 +134,42 @@ const AdminLayout = () => {
             >
               <MenuIcon />
             </IconButton>
-            <Badge badgeContent={unreadNotifications} color="error">
-              <Avatar sx={{ 
-                width: 40, 
-                height: 40, 
-                background: 'linear-gradient(135deg, #0077ff 0%, #4da6ff 100%)', 
-                color: 'white', 
-                fontWeight: 700,
-                boxShadow: '0 4px 15px rgba(0,123,255,0.3)'
-              }}>
-                {user?.username?.charAt(0).toUpperCase() || 'A'}
-              </Avatar>
-            </Badge>
-            <FormControl size="small" sx={{ minWidth: 100 }}>
-              <Select
-                value="en"
-                displayEmpty
-                sx={{ 
-                  '& .MuiOutlinedInput-notchedOutline': { border: 'none' },
-                  '& .MuiSelect-select': { padding: '8px 12px' }
-                }}
-              >
-                <MenuItem value="en">English</MenuItem>
-                <MenuItem value="ar">العربية</MenuItem>
-              </Select>
-            </FormControl>
+            <IconButton
+              onClick={() => navigate('/admin/notifications')}
+              sx={{
+                color: '#666666',
+                '&:hover': {
+                  backgroundColor: 'rgba(0,123,255,0.1)',
+                  color: '#0077ff',
+                },
+                transition: 'all 0.3s ease'
+              }}
+            >
+              <Badge badgeContent={unreadNotifications} color="error">
+                <NotificationsIcon />
+              </Badge>
+            </IconButton>
+            <IconButton
+              onClick={toggleLanguage}
+              sx={{
+                color: '#666666',
+                backgroundColor: 'rgba(0,123,255,0.05)',
+                border: '1px solid rgba(0,123,255,0.1)',
+                borderRadius: '8px',
+                padding: '8px 12px',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                minWidth: '60px',
+                '&:hover': {
+                  backgroundColor: 'rgba(0,123,255,0.1)',
+                  color: '#0077ff',
+                  border: '1px solid rgba(0,123,255,0.2)',
+                },
+                transition: 'all 0.3s ease'
+              }}
+            >
+              {t('language_toggle')}
+            </IconButton>
             <IconButton sx={{ color: '#666' }}>
               <LightModeIcon />
             </IconButton>
@@ -154,7 +177,7 @@ const AdminLayout = () => {
 
           {/* Center - Search */}
           <TextField
-            placeholder="البحث في النظام..."
+            placeholder={t('search_placeholder')}
             size="small"
             sx={{
               width: 300,
@@ -187,7 +210,7 @@ const AdminLayout = () => {
           {/* Right side - User info */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Typography variant="body2" sx={{ color: '#0077ff', fontWeight: 600 }}>
-              {user?.username} مشرف النظام
+              {user?.username} {t('system_administrator')}
             </Typography>
             <IconButton
               size="large"

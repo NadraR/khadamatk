@@ -17,8 +17,10 @@ import {
   Receipt
 } from 'lucide-react';
 import { dashboardApi } from '../../services/adminApiService';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const FinancialStats = () => {
+  const { t } = useTranslation();
   const [financialData, setFinancialData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -64,13 +66,13 @@ const FinancialStats = () => {
   const getStatusLabel = (status) => {
     switch (status) {
       case 'paid':
-        return 'مدفوعة';
+        return t('paid');
       case 'pending':
-        return 'معلقة';
+        return t('pending_status');
       case 'cancelled':
-        return 'ملغية';
+        return t('cancelled');
       case 'refunded':
-        return 'مستردة';
+        return t('refunded');
       default:
         return status;
     }
@@ -105,12 +107,19 @@ const FinancialStats = () => {
   const pendingAmount = financialData?.by_status?.find(item => item.status === 'pending')?.total || 0;
 
   return (
-    <Card sx={{ height: '100%' }}>
+    <Card sx={{ 
+      height: '100%',
+      borderRadius: '12px',
+      boxShadow: '0 2px 8px rgba(0,123,255,0.08)',
+      border: '1px solid rgba(0,123,255,0.1)',
+      background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(249,251,255,0.9) 100%)',
+      backdropFilter: 'blur(10px)'
+    }}>
       <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' ,height: '40vh'}}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 3 }}>
           <DollarSign size={24} color="#10b981" />
           <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            الإحصائيات المالية
+            {t('financial_stats')}
           </Typography>
         </Box>
 
@@ -125,14 +134,14 @@ const FinancialStats = () => {
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
               <Receipt size={20} color="#0369a1" />
               <Typography variant="subtitle2" sx={{ color: '#0369a1', fontWeight: 600 }}>
-                إجمالي الفواتير
+                {t('total_invoices_amount')}
               </Typography>
             </Box>
             <Typography variant="h4" sx={{ color: '#0369a1', fontWeight: 700 }}>
               {totalAmount.toLocaleString()} ر.س
             </Typography>
             <Typography variant="body2" sx={{ color: '#64748b', mt: 0.5 }}>
-              {totalCount} فاتورة
+              {totalCount} {t('invoice')}
             </Typography>
           </Box>
         </Box>
@@ -140,7 +149,7 @@ const FinancialStats = () => {
         {/* تفصيل الحالات */}
         <Box sx={{ flex: 1, overflow: 'auto' }}>
           <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-            تفصيل حسب الحالة
+            {t('details_by_status')}
           </Typography>
           
           {financialData?.by_status?.map((item, index) => (
@@ -165,7 +174,7 @@ const FinancialStats = () => {
                     }}
                   />
                   <Typography variant="body2" sx={{ color: '#64748b' }}>
-                    {item.count} فاتورة
+                    {item.count} {t('invoice')}
                   </Typography>
                   
                 </Box>
@@ -192,7 +201,7 @@ const FinancialStats = () => {
   }}
 >
   {/* العمود الأول */}
-  <Typography sx={{ fontWeight: 600 }}>مدفوعة</Typography>
+  <Typography sx={{ fontWeight: 600 }}>{t('paid')}</Typography>
 
   {/* العمود الثاني */}
   <Typography sx={{ fontWeight: 600 }}>{paidAmount} ر.س</Typography>
@@ -209,13 +218,66 @@ const FinancialStats = () => {
   }}
 >
   {/* العمود الأول */}
-  <Typography sx={{ fontWeight: 600 }}>معلقة</Typography>
+  <Typography sx={{ fontWeight: 600 }}>{t('pending_status')}</Typography>
 
   {/* العمود الثاني */}
   <Typography sx={{ fontWeight: 600 }}>{pendingAmount} ر.س</Typography>
 </Box>
 
-
+        {/* جزء الأرباح */}
+        <Box sx={{ mt: 3 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+            {t('profit_breakdown')}
+          </Typography>
+          
+          {financialData?.invoices?.map((invoice, index) => (
+            <Box key={index} sx={{ mb: 2, p: 2, border: '1px solid #e0e0e0', borderRadius: '8px' }}>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {t('invoice')} #{invoice.id}
+                </Typography>
+                <Typography variant="body2" sx={{ color: '#666' }}>
+                  {invoice.customer_name || t('undefined_user')}
+                </Typography>
+              </Box>
+              
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                <Typography variant="body2">
+                  {t('total_amount')}:
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  {invoice.amount?.toLocaleString()} ر.س
+                </Typography>
+              </Box>
+              
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                <Typography variant="body2" sx={{ color: '#1976d2' }}>
+                  {t('system_profit')} (5%):
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#1976d2' }}>
+                  {((invoice.amount || 0) * 0.05).toLocaleString()} ر.س
+                </Typography>
+              </Box>
+              
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography variant="body2" sx={{ color: '#2e7d32' }}>
+                  {t('customer_profit')} (95%):
+                </Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600, color: '#2e7d32' }}>
+                  {((invoice.amount || 0) * 0.95).toLocaleString()} ر.س
+                </Typography>
+              </Box>
+            </Box>
+          ))}
+          
+          {(!financialData?.invoices || financialData.invoices.length === 0) && (
+            <Box sx={{ textAlign: 'center', py: 2 }}>
+              <Typography variant="body2" sx={{ color: '#666' }}>
+                {t('no_invoices_available')}
+              </Typography>
+            </Box>
+          )}
+        </Box>
 
       </CardContent>
     </Card>

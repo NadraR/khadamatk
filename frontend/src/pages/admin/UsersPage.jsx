@@ -150,7 +150,7 @@ export default function UsersPage() {
 
     const config = typeConfig[type] || typeConfig.client;
     return (
-      <Chip
+        <Chip 
         label={config.label}
         sx={{
           backgroundColor: config.color,
@@ -243,15 +243,15 @@ export default function UsersPage() {
 
   // Error state
   if (error) {
-    return (
+  return (
       <Box sx={{ p: 3, direction: 'rtl' }}>
         <Alert severity="error" sx={{ mb: 2 }}>
           {error}
         </Alert>
         <Button 
-          variant="contained" 
+          variant="contained"
           onClick={fetchUsers}
-          sx={{ 
+          sx={{
             backgroundColor: '#0077ff',
             '&:hover': { backgroundColor: '#0056b3' }
           }}
@@ -290,7 +290,7 @@ export default function UsersPage() {
             >
               خدماتك
             </Typography>
-          </Box>
+      </Box>
 
           {/* Center */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, justifyContent: 'center' }}>
@@ -609,7 +609,7 @@ export default function UsersPage() {
                           <ViewIcon sx={{ fontSize: 18 }} />
                         </IconButton>
                         <IconButton 
-                          size="small"
+                  size="small"
                           onClick={() => {
                             // تعديل المستخدم
                             setSnackbar({ open: true, message: `تعديل ${user.name}`, severity: 'info' });
@@ -622,7 +622,7 @@ export default function UsersPage() {
                           <EditIcon sx={{ fontSize: 18 }} />
                         </IconButton>
                         <IconButton 
-                          size="small"
+                  size="small"
                           onClick={() => {
                             // حذف المستخدم
                             if (window.confirm(`هل أنت متأكد من حذف ${user.name}؟`)) {

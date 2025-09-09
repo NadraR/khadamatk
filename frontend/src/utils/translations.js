@@ -1,75 +1,285 @@
-// translations.js
-// Translation utility for the application
-
-const translations = {
+export const translations = {
   ar: {
-    locationPicker: {
-      // Location picker specific translations
-      geolocationNotSupported: 'المتصفح لا يدعم الحصول على الموقع الحالي',
-      currentLocation: 'موقعك الحالي',
-      locationSuccess: 'تم تحديد موقعك الحالي بنجاح',
-      invalidCoordinates: 'إحداثيات غير صالحة',
-      locationError: 'فشل في الحصول على الموقع الحالي',
-      locationPermissionDenied: 'تم رفض طلب الحصول على الموقع',
-      locationUnavailable: 'معلومات الموقع غير متاحة',
-      locationTimeout: 'انتهت مهلة طلب الموقع',
-      unexpectedError: 'حدث خطأ غير متوقع',
-      locationSelected: 'تم تحديد الموقع بنجاح',
-      mapError: 'خطأ في تحميل الخريطة',
-      mapErrorDescription: 'حدث خطأ أثناء تحميل خريطة جوجل. يرجى التحقق من اتصال الإنترنت والمحاولة مرة أخرى.',
-      loadingMap: 'جاري تحميل الخريطة...',
-      searchPlaceholder: 'ابحث عن مكان...',
-      gettingLocation: 'جاري تحديد الموقع...',
-      latitude: 'خط العرض',
-      longitude: 'خط الطول'
-    }
+    // Header
+    'search_placeholder': 'البحث في النظام...',
+    'system_administrator': 'مشرف النظام',
+    'language_toggle': 'عربي',
+    
+    // Sidebar
+    'dashboard': 'الرئيسية',
+    'users': 'المستخدمين',
+    'services': 'الخدمات',
+    'categories': 'التصنيفات',
+    'orders': 'الحجوزات',
+    'invoices': 'الفواتير',
+    'ratings': 'التقييمات',
+    'reviews': 'التقارير',
+    'statistics': 'الإحصائيات',
+    'notifications': 'الإشعارات',
+    'settings': 'الإعدادات',
+    'profile': 'الملف الشخصي',
+    'logout': 'تسجيل الخروج',
+    
+    // Dashboard
+    'average_rating': 'متوسط التقييم',
+    'total_invoices': 'إجمالي الفواتير',
+    'total_bookings': 'إجمالي الحجوزات',
+    'customers': 'العملاء',
+    'services_count': 'الخدمات',
+    'orders_count': 'الطلبات',
+    'system_status': 'حالة النظام',
+    'active_services': 'الخدمات النشطة',
+    'pending_bookings': 'الحجوزات المعلقة',
+    'growth_rate': 'معدل النمو',
+    'financial_stats': 'الإحصائيات المالية',
+    'recent_bookings': 'الحجوزات الأخيرة',
+    'no_recent_orders': 'لا توجد طلبات حديثة',
+    'settings_button': 'الإعدادات',
+    'export_report': 'تصدير التقرير',
+    'loading_data': 'جاري تحميل البيانات...',
+    'retry': 'إعادة المحاولة',
+    'pending': 'قيد الانتظار',
+    'confirmed': 'مؤكد',
+    'completed': 'مكتمل',
+    'cancelled': 'ملغي',
+    'custom_service': 'خدمة مخصصة',
+    'chart_type': 'نوع الرسم',
+    'line': 'خطي',
+    'bar': 'عمودي',
+    'details_by_status': 'تفصيل حسب الحالة',
+    'paid': 'مدفوعة',
+    'total_services': 'إجمالي الخدمات',
+    'total_orders': 'إجمالي الطلبات',
+    'average_growth': 'متوسط النمو',
+    'total_invoices_amount': 'إجمالي الفواتير',
+    'total': 'المجموع',
+    'services': 'الخدمات',
+    'orders': 'الطلبات',
+    'undefined_user': 'مستخدم غير محدد',
+    'growth_rate_percent': 'معدل النمو %',
+    'pending_status': 'معلقة',
+    'refunded': 'مستردة',
+    'invoice': 'فاتورة',
+    'invoices': 'فواتير',
+    'invoice_details': 'تفاصيل الفاتورة',
+    'invoice_summary': 'ملخص الفاتورة',
+    'profit_breakdown': 'تفصيل الأرباح',
+    'total_amount': 'إجمالي المبلغ',
+    'system_profit': 'أرباح النظام',
+    'customer_profit': 'أرباح العميل',
+    'no_invoices_available': 'لا توجد فواتير متاحة',
+    
+    // Users Page
+    'users_management': 'إدارة المستخدمين',
+    'add_user': 'إضافة مستخدم',
+    'search_users': 'البحث في المستخدمين...',
+    'name': 'الاسم',
+    'email': 'البريد الإلكتروني',
+    'phone': 'الهاتف',
+    'status': 'الحالة',
+    'verified': 'موثق',
+    'unverified': 'غير موثق',
+    'actions': 'الإجراءات',
+    'edit': 'تعديل',
+    'delete': 'حذف',
+    'verify': 'توثيق',
+    'unverify': 'إلغاء التوثيق',
+    'no_users_found': 'لا توجد مستخدمين',
+    'loading_users': 'جاري تحميل المستخدمين...',
+    'user_verified_successfully': 'تم توثيق المستخدم بنجاح',
+    'user_unverified_successfully': 'تم إلغاء توثيق المستخدم بنجاح',
+    'user_deleted_successfully': 'تم حذف المستخدم بنجاح',
+    'error_occurred': 'حدث خطأ',
+    
+    // Settings Page
+    'system_settings': 'إعدادات النظام',
+    'security_settings': 'إعدادات الأمان',
+    'notification_settings': 'إعدادات الإشعارات',
+    'appearance_settings': 'إعدادات المظهر',
+    'theme': 'الوضع',
+    'light': 'فاتح',
+    'dark': 'داكن',
+    'auto': 'تلقائي',
+    'language': 'اللغة',
+    'arabic': 'العربية',
+    'english': 'الإنجليزية',
+    'primary_color': 'اللون الأساسي',
+    'secondary_color': 'اللون الثانوي',
+    'save_settings': 'حفظ الإعدادات',
+    'reset_settings': 'إعادة تعيين الإعدادات',
+    'export_settings': 'تصدير الإعدادات',
+    'import_settings': 'استيراد الإعدادات',
+    'two_factor_auth': 'المصادقة الثنائية',
+    'email_notifications': 'إشعارات البريد الإلكتروني',
+    'push_notifications': 'الإشعارات الفورية',
+    'settings_saved_successfully': 'تم حفظ الإعدادات بنجاح',
+    'settings_reset_successfully': 'تم إعادة تعيين الإعدادات بنجاح',
+    'settings_exported_successfully': 'تم تصدير الإعدادات بنجاح',
+    'settings_imported_successfully': 'تم استيراد الإعدادات بنجاح',
+    
+    // Common
+    'save': 'حفظ',
+    'cancel': 'إلغاء',
+    'confirm': 'تأكيد',
+    'yes': 'نعم',
+    'no': 'لا',
+    'close': 'إغلاق',
+    'back': 'رجوع',
+    'next': 'التالي',
+    'previous': 'السابق',
+    'loading': 'جاري التحميل...',
+    'error': 'خطأ',
+    'success': 'نجح',
+    'warning': 'تحذير',
+    'info': 'معلومات'
   },
+  
   en: {
-    locationPicker: {
-      // Location picker specific translations
-      geolocationNotSupported: 'Browser does not support getting current location',
-      currentLocation: 'Your current location',
-      locationSuccess: 'Current location determined successfully',
-      invalidCoordinates: 'Invalid coordinates',
-      locationError: 'Failed to get current location',
-      locationPermissionDenied: 'Location request was denied',
-      locationUnavailable: 'Location information is unavailable',
-      locationTimeout: 'Location request timed out',
-      unexpectedError: 'An unexpected error occurred',
-      locationSelected: 'Location selected successfully',
-      mapError: 'Error loading map',
-      mapErrorDescription: 'An error occurred while loading Google Maps. Please check your internet connection and try again.',
-      loadingMap: 'Loading map...',
-      searchPlaceholder: 'Search for a place...',
-      gettingLocation: 'Getting location...',
-      latitude: 'Latitude',
-      longitude: 'Longitude'
-    }
+    // Header
+    'search_placeholder': 'Search in system...',
+    'system_administrator': 'System Administrator',
+    'language_toggle': 'EN',
+    
+    // Sidebar
+    'dashboard': 'Dashboard',
+    'users': 'Users',
+    'services': 'Services',
+    'categories': 'Categories',
+    'orders': 'Orders',
+    'invoices': 'Invoices',
+    'ratings': 'Ratings',
+    'reviews': 'Reviews',
+    'statistics': 'Statistics',
+    'notifications': 'Notifications',
+    'settings': 'Settings',
+    'profile': 'Profile',
+    'logout': 'Logout',
+    
+    // Dashboard
+    'average_rating': 'Average Rating',
+    'total_invoices': 'Total Invoices',
+    'total_bookings': 'Total Bookings',
+    'customers': 'Customers',
+    'services_count': 'Services',
+    'orders_count': 'Orders',
+    'system_status': 'System Status',
+    'active_services': 'Active Services',
+    'pending_bookings': 'Pending Bookings',
+    'growth_rate': 'Growth Rate',
+    'financial_stats': 'Financial Statistics',
+    'recent_bookings': 'Recent Bookings',
+    'no_recent_orders': 'No recent orders',
+    'settings_button': 'Settings',
+    'export_report': 'Export Report',
+    'loading_data': 'Loading data...',
+    'retry': 'Retry',
+    'pending': 'Pending',
+    'confirmed': 'Confirmed',
+    'completed': 'Completed',
+    'cancelled': 'Cancelled',
+    'custom_service': 'Custom Service',
+    'chart_type': 'Chart Type',
+    'line': 'Line',
+    'bar': 'Bar',
+    'details_by_status': 'Details by Status',
+    'paid': 'Paid',
+    'total_services': 'Total Services',
+    'total_orders': 'Total Orders',
+    'average_growth': 'Average Growth',
+    'total_invoices_amount': 'Total Invoices',
+    'total': 'Total',
+    'services': 'Services',
+    'orders': 'Orders',
+    'undefined_user': 'Undefined User',
+    'growth_rate_percent': 'Growth Rate %',
+    'pending_status': 'Pending',
+    'refunded': 'Refunded',
+    'invoice': 'Invoice',
+    'invoices': 'Invoices',
+    'invoice_details': 'Invoice Details',
+    'invoice_summary': 'Invoice Summary',
+    'profit_breakdown': 'Profit Breakdown',
+    'total_amount': 'Total Amount',
+    'system_profit': 'System Profit',
+    'customer_profit': 'Customer Profit',
+    'no_invoices_available': 'No invoices available',
+    
+    // Users Page
+    'users_management': 'Users Management',
+    'add_user': 'Add User',
+    'search_users': 'Search users...',
+    'name': 'Name',
+    'email': 'Email',
+    'phone': 'Phone',
+    'status': 'Status',
+    'verified': 'Verified',
+    'unverified': 'Unverified',
+    'actions': 'Actions',
+    'edit': 'Edit',
+    'delete': 'Delete',
+    'verify': 'Verify',
+    'unverify': 'Unverify',
+    'no_users_found': 'No users found',
+    'loading_users': 'Loading users...',
+    'user_verified_successfully': 'User verified successfully',
+    'user_unverified_successfully': 'User unverified successfully',
+    'user_deleted_successfully': 'User deleted successfully',
+    'error_occurred': 'An error occurred',
+    
+    // Settings Page
+    'system_settings': 'System Settings',
+    'security_settings': 'Security Settings',
+    'notification_settings': 'Notification Settings',
+    'appearance_settings': 'Appearance Settings',
+    'theme': 'Theme',
+    'light': 'Light',
+    'dark': 'Dark',
+    'auto': 'Auto',
+    'language': 'Language',
+    'arabic': 'Arabic',
+    'english': 'English',
+    'primary_color': 'Primary Color',
+    'secondary_color': 'Secondary Color',
+    'save_settings': 'Save Settings',
+    'reset_settings': 'Reset Settings',
+    'export_settings': 'Export Settings',
+    'import_settings': 'Import Settings',
+    'two_factor_auth': 'Two-Factor Authentication',
+    'email_notifications': 'Email Notifications',
+    'push_notifications': 'Push Notifications',
+    'settings_saved_successfully': 'Settings saved successfully',
+    'settings_reset_successfully': 'Settings reset successfully',
+    'settings_exported_successfully': 'Settings exported successfully',
+    'settings_imported_successfully': 'Settings imported successfully',
+    
+    // Common
+    'save': 'Save',
+    'cancel': 'Cancel',
+    'confirm': 'Confirm',
+    'yes': 'Yes',
+    'no': 'No',
+    'close': 'Close',
+    'back': 'Back',
+    'next': 'Next',
+    'previous': 'Previous',
+    'loading': 'Loading...',
+    'error': 'Error',
+    'success': 'Success',
+    'warning': 'Warning',
+    'info': 'Info'
   }
 };
 
-/**
- * Get translations for a specific language and section
- * @param {string} language - Language code (e.g., 'ar', 'en')
- * @param {string} section - Translation section (e.g., 'locationPicker')
- * @returns {object} Translation object for the specified section
- */
-export function getTranslations(language = 'ar', section = 'locationPicker') {
-  const lang = translations[language] || translations.ar;
-  return lang[section] || {};
-}
+export const getTranslation = (key, lang = 'ar') => {
+  return translations[lang]?.[key] || key;
+};
 
-/**
- * Get a specific translation key
- * @param {string} language - Language code
- * @param {string} section - Translation section
- * @param {string} key - Translation key
- * @param {string} fallback - Fallback value if translation not found
- * @returns {string} Translated string
- */
-export function getTranslation(language = 'ar', section = 'locationPicker', key, fallback = '') {
-  const sectionTranslations = getTranslations(language, section);
-  return sectionTranslations[key] || fallback;
-}
+export const getCurrentLanguage = () => {
+  return localStorage.getItem('admin-lang') || 'ar';
+};
 
-export default translations;
+export const setLanguage = (lang) => {
+  localStorage.setItem('admin-lang', lang);
+  document.documentElement.lang = lang;
+  document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+};

@@ -696,7 +696,7 @@ export const notificationsApi = {
   getNotifications: async (params = {}) => {
     try {
       const response = await adminApi.get('notifications/', { params });
-      return response.data;
+    return response.data;
     } catch (error) {
       console.error('Error fetching notifications:', error);
       throw error;
@@ -718,7 +718,7 @@ export const notificationsApi = {
   getUnreadNotifications: async () => {
     try {
       const response = await adminApi.get('notifications/unread/');
-      return response.data;
+    return response.data;
     } catch (error) {
       console.error('Error fetching unread notifications:', error);
       throw error;
@@ -729,7 +729,7 @@ export const notificationsApi = {
   markAsRead: async (notificationId) => {
     try {
       const response = await adminApi.post(`notifications/${notificationId}/mark_as_read/`);
-      return response.data;
+    return response.data;
     } catch (error) {
       console.error('Error marking notification as read:', error);
       throw error;
@@ -740,7 +740,7 @@ export const notificationsApi = {
   updateNotification: async (id, data) => {
     try {
       const response = await adminApi.patch(`notifications/${id}/`, data);
-      return response.data;
+    return response.data;
     } catch (error) {
       console.error('Error updating notification:', error);
       throw error;
@@ -751,7 +751,7 @@ export const notificationsApi = {
   markAllAsRead: async () => {
     try {
       const response = await adminApi.post('notifications/mark_all_as_read/');
-      return response.data;
+    return response.data;
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
       throw error;
@@ -762,11 +762,11 @@ export const notificationsApi = {
   deleteNotification: async (notificationId) => {
     try {
       const response = await adminApi.delete(`notifications/${notificationId}/`);
-      return response.data;
+    return response.data;
     } catch (error) {
       console.error('Error deleting notification:', error);
       throw error;
-    }
+  }
   },
 };
 

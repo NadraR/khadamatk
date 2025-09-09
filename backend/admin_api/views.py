@@ -324,11 +324,38 @@ class FinancialReportView(APIView):
     permission_classes = [IsStaffOrSuperuser]
 
     def get(self, request):
+        # بيانات الحالات
         by_status = (Invoice.objects
                      .values("status")
                      .annotate(total=Sum("amount"), count=Count("id"))
                      .order_by())
-        return Response({"by_status": list(by_status)})
+        
+        # بيانات الفواتير مع أسماء العملاء
+        invoices = (Invoice.objects
+                   .select_related('booking__customer')
+                   .values('id', 'amount', 'status', 'booking__customer__username', 'booking__customer__first_name', 'booking__customer__last_name')
+                   .order_by('-id')[:10])  # آخر 10 فواتير
+        
+        # تنسيق بيانات الفواتير
+        formatted_invoices = []
+        for invoice in invoices:
+            customer_name = None
+            if invoice['booking__customer__first_name'] and invoice['booking__customer__last_name']:
+                customer_name = f"{invoice['booking__customer__first_name']} {invoice['booking__customer__last_name']}"
+            elif invoice['booking__customer__username']:
+                customer_name = invoice['booking__customer__username']
+            
+            formatted_invoices.append({
+                'id': invoice['id'],
+                'amount': invoice['amount'],
+                'status': invoice['status'],
+                'customer_name': customer_name
+            })
+        
+        return Response({
+            "by_status": list(by_status),
+            "invoices": formatted_invoices
+        })
 
 class AdminMeView(APIView):
     permission_classes = [IsStaffOrSuperuser]

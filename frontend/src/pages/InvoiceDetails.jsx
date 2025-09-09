@@ -16,9 +16,11 @@ import {
 } from 'react-icons/fa';
 import invoiceService from '../services/InvoiceService';
 import Navbar from '../components/Navbar';
+import { useTranslation } from '../hooks/useTranslation';
 import './InvoiceDetails.css';
 
 const InvoiceDetails = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { id } = useParams();
   const [invoice, setInvoice] = useState(null);
@@ -183,7 +185,7 @@ const InvoiceDetails = () => {
               </button>
               <h2 className="fw-bold text-primary mb-2">
                 <FaFileInvoiceDollar className="me-2" />
-                تفاصيل الفاتورة #{invoice.id}
+                {t('invoice_details')} #{invoice.id}
               </h2>
               <p className="text-muted mb-0">
                 {invoice.order_title}
@@ -217,7 +219,7 @@ const InvoiceDetails = () => {
               <div className="invoice-card-header">
                 <h5>
                   <FaReceipt className="me-2" />
-                  تفاصيل الفاتورة
+                  {t('invoice_details')}
                 </h5>
                 {getStatusBadge(invoice.status)}
               </div>
@@ -385,7 +387,7 @@ const InvoiceDetails = () => {
 
             {/* Invoice Summary */}
             <div className="invoice-summary">
-              <h6>ملخص الفاتورة</h6>
+              <h6>{t('invoice_summary')}</h6>
               <div className="summary-row">
                 <span>المبلغ الأساسي:</span>
                 <span>{invoice.amount} ج.م</span>

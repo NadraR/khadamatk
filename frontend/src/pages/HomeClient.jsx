@@ -565,7 +565,7 @@
 //             {invoices.slice(0, 3).map(invoice => (
 //               <div key={invoice.id} className="recent-invoice-item">
 //                 <div className="invoice-info">
-//                   <h6>فاتورة #{invoice.id}</h6>
+//                   <h6>{t('invoice')} #{invoice.id}</h6>
 //                   <small className="text-muted">
 //                     {invoice.amount} ج.م
 //                   </small>
@@ -1264,6 +1264,7 @@ import {
 import apiService from '../services/ApiService';
 // import invoiceService from '../services/InvoiceService';
 import Navbar from '../components/Navbar';
+import { useTranslation } from '../hooks/useTranslation';
 import './HomeClient.css';
 
 // Import images (you can add actual images later)
@@ -1274,6 +1275,7 @@ const serviceImage = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg"
 const achievementImage = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><rect width="400" height="300" fill="%23fff3cd"/><polygon points="200,50 220,120 290,120 235,165 255,235 200,190 145,235 165,165 110,120 180,120" fill="%23f59e0b"/><text x="200" y="280" text-anchor="middle" fill="%23856404" font-size="16" font-weight="bold">إنجازاتك</text></svg>';
 
 const HomeClient = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
@@ -1833,7 +1835,7 @@ const HomeClient = () => {
             {invoices.slice(0, 3).map(invoice => (
               <div key={invoice.id} className="recent-invoice-item">
                 <div className="invoice-info">
-                  <h6>فاتورة #{invoice.id}</h6>
+                  <h6>{t('invoice')} #{invoice.id}</h6>
                   <small className="text-muted">
                     {invoice.amount} ج.م
                   </small>

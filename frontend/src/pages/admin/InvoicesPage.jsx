@@ -16,9 +16,11 @@ import {
 } from '@mui/icons-material';
 import { DataGrid } from '@mui/x-data-grid';
 import { invoicesApi } from '../../services/adminApiService';
+import { useTranslation } from '../../hooks/useTranslation';
 import '../../styles/adminCommon.css';
 
 const InvoicesPage = () => {
+  const { t } = useTranslation();
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -141,7 +143,7 @@ const InvoicesPage = () => {
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
                 <ReceiptIcon sx={{ color: '#d32f2f', fontSize: 36 }} />
                 <Box>
-                  <Typography variant="h6" sx={{ fontWeight: 700 }}>فاتورة #{invoice.id}</Typography>
+                  <Typography variant="h6" sx={{ fontWeight: 700 }}>{t('invoice')} #{invoice.id}</Typography>
                   <Typography variant="body2" color="textSecondary">حجز: {invoice.booking_id} - {invoice.amount} ج.م</Typography>
                 </Box>
               </Box>

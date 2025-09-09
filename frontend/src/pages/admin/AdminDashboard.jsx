@@ -27,35 +27,13 @@ import { motion } from 'framer-motion';
 import { dashboardApi } from '../../services/adminApiService';
 import GrowthChart from '../../components/admin/GrowthChart';
 import FinancialStats from '../../components/admin/FinancialStats';
+import { useTranslation } from '../../hooks/useTranslation';
 import './AdminDashboard.css';
 
-// Mock data
-const mockBookings = [
-  {
-    id: '1',
-    clientName: 'أحمد محمد',
-    service: 'إصلاح سباكة',
-    status: 'completed',
-    price: 150
-  },
-  {
-    id: '2',
-    clientName: 'سارة أحمد',
-    service: 'تركيب كهرباء',
-    status: 'pending',
-    price: 200
-  },
-  {
-    id: '3',
-    clientName: 'فاطمة علي',
-    service: 'إصلاح أثاث',
-    status: 'confirmed',
-    price: 120
-  }
-];
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
   const [recentOrders, setRecentOrders] = useState([]);
@@ -99,9 +77,9 @@ export default function AdminDashboard() {
 
   const getStatusChip = (status) => {
     const statusConfig = {
-      pending: { color: 'black', backgroundColor: '#FFF3E0', label: 'قيد الانتظار' },
-      confirmed: { color: 'black', backgroundColor: '#E3F2FD', label: 'مؤكد' },
-      completed: { color: 'black', backgroundColor: '#E8F5E8', label: 'مكتمل' }
+      pending: { color: 'black', backgroundColor: '#FFF3E0', label: t('pending') },
+      confirmed: { color: 'black', backgroundColor: '#E3F2FD', label: t('confirmed') },
+      completed: { color: 'black', backgroundColor: '#E8F5E8', label: t('completed') }
     };
 
     const config = statusConfig[status] || statusConfig.pending;
@@ -180,7 +158,7 @@ export default function AdminDashboard() {
         <Box sx={{ width: '100%' }}>
           <LinearProgress />
           <Typography variant="h6" sx={{ textAlign: 'center', mt: 2, color: '#666666' }}>
-            جاري تحميل البيانات...
+            {t('loading_data')}
           </Typography>
         </Box>
       </Box>
@@ -194,7 +172,7 @@ export default function AdminDashboard() {
           {error}
         </Alert>
         <Button variant="contained" onClick={() => window.location.reload()} sx={{ mt: 2 }}>
-          إعادة المحاولة
+          {t('retry')}
         </Button>
       </Box>
     );
@@ -260,7 +238,7 @@ export default function AdminDashboard() {
               }
             }}
           >
-            الإعدادات
+            {t('settings_button')}
           </Button>
           <Button
             variant="outlined"
@@ -282,7 +260,7 @@ export default function AdminDashboard() {
               }
             }}
           >
-            تصدير التقرير
+            {t('export_report')}
           </Button>
         </Box>
       </Grid>
@@ -290,7 +268,7 @@ export default function AdminDashboard() {
       {/* كروت الـ Stats */}
       <Grid item xs={12} sm={6} md={2}>
         <StatCard
-          title="متوسط التقييم"
+          title={t('average_rating')}
           value={stats?.avg_rating?.toFixed(1) || '0.0'}
           icon={<StarIcon />}
           iconColor="#f97316"
@@ -298,7 +276,7 @@ export default function AdminDashboard() {
       </Grid>
       <Grid item xs={12} sm={6} md={2}>
         <StatCard
-          title="إجمالي الفواتير"
+          title={t('total_invoices')}
           value={stats?.invoices_count?.toLocaleString() || '0'}
           icon={<DollarIcon />}
           iconColor="#ef4444"
@@ -306,7 +284,7 @@ export default function AdminDashboard() {
       </Grid>
       <Grid item xs={12} sm={6} md={2}>
         <StatCard
-          title="إجمالي الحجوزات"
+          title={t('total_bookings')}
           value={stats?.bookings_count?.toLocaleString() || '0'}
           icon={<CalendarIcon />}
           iconColor="#f59e0b"
@@ -314,7 +292,7 @@ export default function AdminDashboard() {
       </Grid>
       <Grid item xs={12} sm={6} md={2}>
         <StatCard
-          title="العملاء"
+          title={t('customers')}
           value={stats?.users_count?.toLocaleString() || '0'}
           icon={<HomeIcon />}
           iconColor="#10b981"
@@ -322,7 +300,7 @@ export default function AdminDashboard() {
       </Grid>
       <Grid item xs={12} sm={6} md={2}>
         <StatCard
-          title="الخدمات"
+          title={t('services_count')}
           value={stats?.services_count?.toLocaleString() || '0'}
           icon={<BuildIcon />}
           iconColor="#3b82f6"
@@ -330,7 +308,7 @@ export default function AdminDashboard() {
       </Grid>
       <Grid item xs={12} sm={6} md={2}>
         <StatCard
-          title="الطلبات"
+          title={t('orders_count')}
           value={stats?.orders_count?.toLocaleString() || '0'}
           icon={<UsersIcon />}
           iconColor="#0077ff"
@@ -363,24 +341,32 @@ export default function AdminDashboard() {
   <Grid item xs={12} sm={4} md={4} sx={{ flexShrink: 1 }}>
     {/* حالة النظام */}
     {/* حالة النظام */}
-<Card sx={{ p: 1.5, mb: 2 }}>
+<Card sx={{ 
+  p: 1.5, 
+  mb: 2,
+  borderRadius: '12px',
+  boxShadow: '0 2px 8px rgba(0,123,255,0.08)',
+  border: '1px solid rgba(0,123,255,0.1)',
+  background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(249,251,255,0.9) 100%)',
+  backdropFilter: 'blur(10px)'
+}}>
   <Typography variant="h6" sx={{ mb: 1.5, fontWeight: 600, color: '#666666' }}>
-    حالة النظام
+    {t('system_status')}
   </Typography>
   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, alignItems: 'flex-start' }}>
     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%', p: 1.5, border: '1px solid #ddd', borderRadius: '8px' }}>
-      <Typography sx={{ fontWeight: 600, color: '#666666' }}>الخدمات النشطة</Typography>
+      <Typography sx={{ fontWeight: 600, color: '#666666' }}>{t('active_services')}</Typography>
       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
         <Typography sx={{ fontWeight: 600, color: '#666666' }}>{stats?.services_count || 0}</Typography>
-        <Typography sx={{ fontSize: '0.85rem', color: 'gray' }}>ر.س</Typography>
+        {/* <Typography sx={{ fontSize: '0.85rem', color: 'gray' }}>ر.س</Typography> */}
       </Box>
     </Box>
 
     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%', p: 1.5, border: '1px solid #ddd', borderRadius: '8px' }}>
-      <Typography sx={{ fontWeight: 600, color: '#666666' }}>الحجوزات المعلقة</Typography>
+      <Typography sx={{ fontWeight: 600, color: '#666666' }}>{t('pending_bookings')}</Typography>
       <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
         <Typography sx={{ fontWeight: 600, color: '#666666' }}>{stats?.bookings_status?.pending || 0}</Typography>
-        <Typography sx={{ fontSize: '0.85rem', color: 'gray' }}>ر.س</Typography>
+        {/* <Typography sx={{ fontSize: '0.85rem', color: 'gray' }}>ر.س</Typography> */}
       </Box>
     </Box>
   </Box>
@@ -408,9 +394,17 @@ export default function AdminDashboard() {
 
 
           {/* Recent Bookings */}
-<Card sx={{ width: '100%', p: 1.5 }}>
+<Card sx={{ 
+  width: '100%', 
+  p: 1.5,
+  borderRadius: '12px',
+  boxShadow: '0 2px 8px rgba(0,123,255,0.08)',
+  border: '1px solid rgba(0,123,255,0.1)',
+  background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(249,251,255,0.9) 100%)',
+  backdropFilter: 'blur(10px)'
+}}>
   <Typography variant="h6" sx={{ mb: 1.5, fontWeight: 600, color: '#666666' }}>
-    الحجوزات الأخيرة
+    {t('recent_bookings')}
   </Typography>
   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
     {recentOrders.length > 0 ? (
@@ -429,8 +423,8 @@ export default function AdminDashboard() {
         >
           {/* الخدمة + اسم العميل */}
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-            <Typography sx={{ fontWeight: 600, color: '#666666' }}>{order.service || 'خدمة غير محددة'}</Typography>
-            <Typography sx={{ fontSize: '0.9rem', color: '#666666' }}>{order.user || 'مستخدم غير محدد'}</Typography>
+            {/* <Typography sx={{ fontWeight: 600, color: '#666666' }}>{order.service || t('custom_service')}</Typography> */}
+            <Typography sx={{ fontSize: '0.9rem', color: '#666666' }}>{order.user || t('undefined_user')}</Typography>
           </Box>
           {/* الحالة */}
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -440,7 +434,7 @@ export default function AdminDashboard() {
       ))
     ) : (
       <Box sx={{ textAlign: 'center', py: 3 }}>
-        <Typography sx={{ color: '#666666' }}>لا توجد طلبات حديثة</Typography>
+        <Typography sx={{ color: '#666666' }}>{t('no_recent_orders')}</Typography>
       </Box>
     )}
   </Box>

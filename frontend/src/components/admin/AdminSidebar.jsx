@@ -35,6 +35,7 @@ import {
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
 import { notificationsApi } from '../../services/adminApiService';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const drawerWidth = 180;
 
@@ -42,23 +43,24 @@ const AdminSidebar = ({ open, onClose }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAdminAuth();
+  const { t } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [unreadNotifications, setUnreadNotifications] = React.useState(0);
 
   // Professional menu items with better organization
   const menuItems = [
-    { text: 'لوحة التحكم', icon: <DashboardIcon />, path: '/admin', color: '#0077ff', show: true, section: 'main' },
-    { text: 'المستخدمون', icon: <PeopleIcon />, path: '/admin/users', color: '#10b981', show: true, section: 'main' },
-    { text: 'الخدمات', icon: <BusinessIcon />, path: '/admin/services', color: '#3b82f6', show: true, section: 'main' },
-    { text: 'الحجوزات', icon: <AssignmentIcon />, path: '/admin/orders', color: '#f59e0b', show: true, section: 'main' },
-    { text: 'الفواتير', icon: <ReceiptIcon />, path: '/admin/invoices', color: '#ef4444', show: true, section: 'finance' },
-    { text: 'التقييمات', icon: <StarIcon />, path: '/admin/ratings', color: '#f97316', show: true, section: 'finance' },
-    { text: 'التقارير', icon: <AssessmentIcon />, path: '/admin/reviews', color: '#8b5cf6', show: true, section: 'finance' },
-    { text: 'الإحصائيات', icon: <TrendingUpIcon />, path: '/admin/stats', color: '#06b6d4', show: true, section: 'analytics' },
-    { text: 'الإشعارات', icon: <NotificationsIcon />, path: '/admin/notifications', color: '#0077ff', show: true, section: 'settings', badge: unreadNotifications },
-    { text: 'الإعدادات', icon: <SettingsIcon />, path: '/admin/settings', color: '#6b7280', show: true, section: 'settings' },
-    { text: 'الملف الشخصي', icon: <AccountCircleIcon />, path: '/admin/profile', color: '#8b5cf6', show: true, section: 'settings' },
+    { text: t('dashboard'), icon: <DashboardIcon />, path: '/admin', color: '#0077ff', show: true, section: 'main' },
+    { text: t('users'), icon: <PeopleIcon />, path: '/admin/users', color: '#10b981', show: true, section: 'main' },
+    { text: t('services'), icon: <BusinessIcon />, path: '/admin/services', color: '#3b82f6', show: true, section: 'main' },
+    { text: t('orders'), icon: <AssignmentIcon />, path: '/admin/orders', color: '#f59e0b', show: true, section: 'main' },
+    { text: t('invoices'), icon: <ReceiptIcon />, path: '/admin/invoices', color: '#ef4444', show: true, section: 'finance' },
+    { text: t('ratings'), icon: <StarIcon />, path: '/admin/ratings', color: '#f97316', show: true, section: 'finance' },
+    { text: t('reviews'), icon: <AssessmentIcon />, path: '/admin/reviews', color: '#8b5cf6', show: true, section: 'finance' },
+    { text: t('statistics'), icon: <TrendingUpIcon />, path: '/admin/stats', color: '#06b6d4', show: true, section: 'analytics' },
+    // { text: t('notifications'), icon: <NotificationsIcon />, path: '/admin/notifications', color: '#0077ff', show: true, section: 'settings', badge: unreadNotifications },
+    { text: t('settings'), icon: <SettingsIcon />, path: '/admin/settings', color: '#6b7280', show: true, section: 'settings' },
+    { text: t('profile'), icon: <AccountCircleIcon />, path: '/admin/profile', color: '#8b5cf6', show: true, section: 'settings' },
   ];
 
   const handleLogout = () => {
