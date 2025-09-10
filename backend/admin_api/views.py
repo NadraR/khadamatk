@@ -198,7 +198,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
 # ---------------- Orders ----------------
 class OrderViewSet(viewsets.ModelViewSet):
-    queryset = Order.objects.all().order_by("-date_created")
+    queryset = Order.objects.all().order_by("-created_at")
     serializer_class = AdminOrderSerializer
     permission_classes = [IsStaffOrSuperuser]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
@@ -324,37 +324,67 @@ class FinancialReportView(APIView):
     permission_classes = [IsStaffOrSuperuser]
 
     def get(self, request):
+        from decimal import Decimal
+        
         # بيانات الحالات
         by_status = (Invoice.objects
                      .values("status")
                      .annotate(total=Sum("amount"), count=Count("id"))
                      .order_by())
         
-        # بيانات الفواتير مع أسماء العملاء
+        # بيانات الفواتير مع أسماء العملاء والعاملين
         invoices = (Invoice.objects
-                   .select_related('booking__customer')
-                   .values('id', 'amount', 'status', 'booking__customer__username', 'booking__customer__first_name', 'booking__customer__last_name')
+                   .select_related('order__customer', 'order__worker')
+                   .values('id', 'amount', 'status', 
+                          'order__customer__username', 'order__customer__first_name', 'order__customer__last_name',
+                          'order__worker__username', 'order__worker__first_name', 'order__worker__last_name')
                    .order_by('-id')[:10])  # آخر 10 فواتير
+        
+        # حساب الأرباح الإجمالية
+        total_revenue = Invoice.objects.aggregate(total=Sum('amount'))['total'] or Decimal('0')
+        website_profit_rate = Decimal('0.05')  # 5%
+        website_profit = total_revenue * website_profit_rate
+        worker_profit = total_revenue - website_profit
         
         # تنسيق بيانات الفواتير
         formatted_invoices = []
         for invoice in invoices:
             customer_name = None
-            if invoice['booking__customer__first_name'] and invoice['booking__customer__last_name']:
-                customer_name = f"{invoice['booking__customer__first_name']} {invoice['booking__customer__last_name']}"
-            elif invoice['booking__customer__username']:
-                customer_name = invoice['booking__customer__username']
+            if invoice['order__customer__first_name'] and invoice['order__customer__last_name']:
+                customer_name = f"{invoice['order__customer__first_name']} {invoice['order__customer__last_name']}"
+            elif invoice['order__customer__username']:
+                customer_name = invoice['order__customer__username']
+            
+            worker_name = None
+            if invoice['order__worker__first_name'] and invoice['order__worker__last_name']:
+                worker_name = f"{invoice['order__worker__first_name']} {invoice['order__worker__last_name']}"
+            elif invoice['order__worker__username']:
+                worker_name = invoice['order__worker__username']
+            
+            # حساب أرباح هذه الفاتورة
+            invoice_amount = invoice['amount']
+            invoice_website_profit = invoice_amount * website_profit_rate
+            invoice_worker_profit = invoice_amount - invoice_website_profit
             
             formatted_invoices.append({
                 'id': invoice['id'],
-                'amount': invoice['amount'],
+                'amount': float(invoice['amount']),
                 'status': invoice['status'],
-                'customer_name': customer_name
+                'customer_name': customer_name,
+                'worker_name': worker_name,
+                'website_profit': float(invoice_website_profit),
+                'worker_profit': float(invoice_worker_profit)
             })
         
         return Response({
             "by_status": list(by_status),
-            "invoices": formatted_invoices
+            "invoices": formatted_invoices,
+            "profit_summary": {
+                "total_revenue": float(total_revenue),
+                "website_profit": float(website_profit),
+                "worker_profit": float(worker_profit),
+                "website_profit_rate": float(website_profit_rate * 100)  # كنسبة مئوية
+            }
         })
 
 class AdminMeView(APIView):
@@ -399,8 +429,8 @@ class OrdersTrendView(APIView):
         start_date = today - timedelta(days=180)  # آخر 6 شهور مثلاً
 
         orders = (
-            Order.objects.filter(date_created__gte=start_date)
-            .annotate(month=TruncMonth("date_created"))
+            Order.objects.filter(created_at__gte=start_date)
+            .annotate(month=TruncMonth("created_at"))
             .values("month")
             .annotate(total=Count("id"))
             .order_by("month")
@@ -433,7 +463,7 @@ class RecentOrdersView(APIView):
     permission_classes = [IsStaffOrSuperuser]
 
     def get(self, request):
-        orders = Order.objects.select_related("customer", "service").order_by("-date_created")[:5]
+        orders = Order.objects.select_related("customer", "service").order_by("-created_at")[:5]
         data = [
             {
                 "id": o.id,

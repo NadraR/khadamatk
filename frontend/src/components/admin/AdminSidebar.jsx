@@ -28,12 +28,14 @@ import {
   Notifications as NotificationsIcon,
   Logout as LogoutIcon,
   Close as CloseIcon,
-  TrendingUp as TrendingUpIcon,
   Assessment as AssessmentIcon,
-  AccountCircle as AccountCircleIcon
+  TrendingUp as TrendingUpIcon,
+  AccountCircle as AccountCircleIcon,
+  History as HistoryIcon
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAdminAuth } from '../../contexts/AdminAuthContext';
+import { useCustomTheme } from '../../contexts/ThemeContext';
 import { notificationsApi } from '../../services/adminApiService';
 import { useTranslation } from '../../hooks/useTranslation';
 
@@ -44,6 +46,7 @@ const AdminSidebar = ({ open, onClose }) => {
   const location = useLocation();
   const { user, logout } = useAdminAuth();
   const { t } = useTranslation();
+  const { isDarkMode } = useCustomTheme();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [unreadNotifications, setUnreadNotifications] = React.useState(0);
@@ -54,11 +57,13 @@ const AdminSidebar = ({ open, onClose }) => {
     { text: t('users'), icon: <PeopleIcon />, path: '/admin/users', color: '#10b981', show: true, section: 'main' },
     { text: t('services'), icon: <BusinessIcon />, path: '/admin/services', color: '#3b82f6', show: true, section: 'main' },
     { text: t('orders'), icon: <AssignmentIcon />, path: '/admin/orders', color: '#f59e0b', show: true, section: 'main' },
+    { text: t('categories'), icon: <CategoryIcon />, path: '/admin/categories', color: '#8b5cf6', show: true, section: 'main' },
     { text: t('invoices'), icon: <ReceiptIcon />, path: '/admin/invoices', color: '#ef4444', show: true, section: 'finance' },
     { text: t('ratings'), icon: <StarIcon />, path: '/admin/ratings', color: '#f97316', show: true, section: 'finance' },
     { text: t('reviews'), icon: <AssessmentIcon />, path: '/admin/reviews', color: '#8b5cf6', show: true, section: 'finance' },
     { text: t('statistics'), icon: <TrendingUpIcon />, path: '/admin/stats', color: '#06b6d4', show: true, section: 'analytics' },
-    // { text: t('notifications'), icon: <NotificationsIcon />, path: '/admin/notifications', color: '#0077ff', show: true, section: 'settings', badge: unreadNotifications },
+    { text: t('notifications'), icon: <NotificationsIcon />, path: '/admin/notifications', color: '#0077ff', show: true, section: 'settings', badge: unreadNotifications },
+    { text: t('logs'), icon: <HistoryIcon />, path: '/admin/logs', color: '#64748b', show: true, section: 'settings' },
     { text: t('settings'), icon: <SettingsIcon />, path: '/admin/settings', color: '#6b7280', show: true, section: 'settings' },
     { text: t('profile'), icon: <AccountCircleIcon />, path: '/admin/profile', color: '#8b5cf6', show: true, section: 'settings' },
   ];
@@ -92,28 +97,35 @@ const AdminSidebar = ({ open, onClose }) => {
       height: '100%',
       display: 'flex',
       flexDirection: 'column',
-      background: 'linear-gradient(180deg, #f9fbff 0%, #ffffff 100%)',
+      background: isDarkMode 
+        ? 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)'
+        : 'linear-gradient(180deg, #f9fbff 0%, #ffffff 100%)',
       direction: 'rtl',
-      borderTopLeftRadius: 0,
-      borderTopRightRadius: 20,
+      // borderTopLeftRخadius: 20,
       overflow: 'hidden',
       p: 0,
       maxHeight: '100%',
-      boxShadow: '0 8px 32px rgba(0,123,255,0.15)',
-      border: '1px solid rgba(0,123,255,0.1)',
+      boxShadow: isDarkMode 
+        ? '0 8px 32px rgba(0,0,0,0.3)'
+        : '0 8px 32px rgba(0,123,255,0.15)',
+      border: isDarkMode 
+        ? '1px solid #334155'
+        : '1px solid rgba(0,123,255,0.1)',
     }}>
       {/* Professional Header */}
       <Box sx={{ 
         p: 2, 
         textAlign: 'center', 
         borderBottom: 1, 
-        borderColor: 'rgba(0,123,255,0.1)', 
-        background: 'linear-gradient(135deg, #0077ff 0%, #4da6ff 100%)',
+        borderColor: isDarkMode ? '#334155' : 'rgba(0,123,255,0.1)', 
+        background: isDarkMode 
+          ? 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)'
+          : 'linear-gradient(135deg,rgb(255, 255, 255) 0%,rgb(255, 255, 255) 100%)',
         borderTopLeftRadius: 0, 
         borderTopRightRadius: 20, 
         position: 'relative',
-        color: 'white',
-        boxShadow: '0 4px 15px rgba(0,123,255,0.3)'
+        color: isDarkMode ? '#f1f5f9' : 'white',
+        // boxShadow: '0 4px 15px rgba(0,123,255,0.3)'
       }}>
         {/* Close button for mobile */}
         {isMobile && (
@@ -130,7 +142,7 @@ const AdminSidebar = ({ open, onClose }) => {
             <CloseIcon />
           </IconButton>
         )}
-        <Avatar sx={{ 
+        {/* <Avatar sx={{ 
           width: 60, 
           height: 60, 
           mx: 'auto', 
@@ -143,20 +155,32 @@ const AdminSidebar = ({ open, onClose }) => {
           border: '2px solid rgba(255,255,255,0.3)'
         }}>
           {user?.username?.charAt(0).toUpperCase() || 'A'}
-        </Avatar>
-        <Typography variant="h6" sx={{ fontWeight: 'bold', letterSpacing: 0.5, color: 'white', mb: 0.5 }}>
+        </Avatar> */}
+        {/* <Typography variant="h6" sx={{ fontWeight: 'bold', letterSpacing: 0.5, color: 'white', mb: 0.5 }}>
           {user?.username || 'مشرف النظام'}
-        </Typography>
-        <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.75rem' }}>
-          مدير النظام
-        </Typography>
+        </Typography> */}
+        {/* <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.75rem' }}>
+          {t('system_administrator')}
+        </Typography> */}
       </Box>
 
       {/* Professional Menu Items */}
       <List sx={{ flexGrow: 1, pt: 1, direction: 'rtl', overflow: 'auto', maxHeight: 'calc(100vh - 200px)' }}>
                     {/* لوحة التحكم */}
-                    <Typography variant="subtitle2" sx={{ px: 2, py: 1, color: '#0077ff', fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: 1, mt: 1, background: 'rgba(0,123,255,0.05)', borderRadius: 1, mx: 1 }}>
-                      لوحة التحكم
+                    <Typography variant="subtitle2" sx={{ 
+                      px: 2, 
+                      py: 1, 
+                      color: isDarkMode ? '#60a5fa' : '#0077ff', 
+                      fontWeight: 700, 
+                      fontSize: '0.7rem', 
+                      textTransform: 'uppercase', 
+                      letterSpacing: 1, 
+                      mt: 1, 
+                      background: isDarkMode ? 'rgba(96,165,250,0.1)' : 'rgba(0,123,255,0.05)', 
+                      borderRadius: 1, 
+                      mx: 1 
+                    }}>
+                      {t('control_panel')}
                     </Typography>
         {menuItems.filter(item => item.show && item.section === 'main').map((item) => (
           <ListItem key={item.text} disablePadding sx={{ mb: 0.5, px: 1 }}>
@@ -167,7 +191,7 @@ const AdminSidebar = ({ open, onClose }) => {
                 borderRadius: 2,
                 minHeight: 40,
                 background: location.pathname === item.path ? `linear-gradient(135deg, ${item.color}15 0%, ${item.color}08 100%)` : 'transparent',
-                color: location.pathname === item.path ? item.color : '#475569',
+                color: location.pathname === item.path ? item.color : (isDarkMode ? '#94a3b8' : '#475569'),
                 border: location.pathname === item.path ? `1px solid ${item.color}20` : '1px solid transparent',
                 '&:hover': {
                   background: `linear-gradient(135deg, ${item.color}08 0%, ${item.color}04 100%)`,
@@ -199,8 +223,20 @@ const AdminSidebar = ({ open, onClose }) => {
         ))}
 
                     {/* المالية والتحليل */}
-                    <Typography variant="subtitle2" sx={{ px: 2, py: 1, color: '#ef4444', fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: 1, mt: 2, background: 'rgba(239,68,68,0.05)', borderRadius: 1, mx: 1 }}>
-                      المالية والتحليل
+                    <Typography variant="subtitle2" sx={{ 
+                      px: 2, 
+                      py: 1, 
+                      color: isDarkMode ? '#f87171' : '#ef4444', 
+                      fontWeight: 700, 
+                      fontSize: '0.7rem', 
+                      textTransform: 'uppercase', 
+                      letterSpacing: 1, 
+                      mt: 2, 
+                      background: isDarkMode ? 'rgba(248,113,113,0.1)' : 'rgba(239,68,68,0.05)', 
+                      borderRadius: 1, 
+                      mx: 1 
+                    }}>
+                      {t('financial')} {t('analysis')}
                     </Typography>
         {menuItems.filter(item => item.show && item.section === 'finance').map((item) => (
           <ListItem key={item.text} disablePadding sx={{ mb: 0.5, px: 1 }}>
@@ -214,7 +250,7 @@ const AdminSidebar = ({ open, onClose }) => {
                 borderRadius: 2,
                 minHeight: 40,
                 background: location.pathname === item.path ? `linear-gradient(135deg, ${item.color}15 0%, ${item.color}08 100%)` : 'transparent',
-                color: location.pathname === item.path ? item.color : '#475569',
+                color: location.pathname === item.path ? item.color : (isDarkMode ? '#94a3b8' : '#475569'),
                 border: location.pathname === item.path ? `1px solid ${item.color}20` : '1px solid transparent',
                 '&:hover': {
                   background: `linear-gradient(135deg, ${item.color}08 0%, ${item.color}04 100%)`,
@@ -246,8 +282,20 @@ const AdminSidebar = ({ open, onClose }) => {
         ))}
 
                     {/* التحليلات */}
-                    <Typography variant="subtitle2" sx={{ px: 2, py: 1, color: '#06b6d4', fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: 1, mt: 2, background: 'rgba(6,182,212,0.05)', borderRadius: 1, mx: 1 }}>
-                      التحليلات
+                    <Typography variant="subtitle2" sx={{ 
+                      px: 2, 
+                      py: 1, 
+                      color: isDarkMode ? '#22d3ee' : '#06b6d4', 
+                      fontWeight: 700, 
+                      fontSize: '0.7rem', 
+                      textTransform: 'uppercase', 
+                      letterSpacing: 1, 
+                      mt: 2, 
+                      background: isDarkMode ? 'rgba(34,211,238,0.1)' : 'rgba(6,182,212,0.05)', 
+                      borderRadius: 1, 
+                      mx: 1 
+                    }}>
+                      {t('analytics')}
                     </Typography>
         {menuItems.filter(item => item.show && item.section === 'analytics').map((item) => (
           <ListItem key={item.text} disablePadding sx={{ mb: 0.5, px: 1 }}>
@@ -261,7 +309,7 @@ const AdminSidebar = ({ open, onClose }) => {
                 borderRadius: 2,
                 minHeight: 40,
                 background: location.pathname === item.path ? `linear-gradient(135deg, ${item.color}15 0%, ${item.color}08 100%)` : 'transparent',
-                color: location.pathname === item.path ? item.color : '#475569',
+                color: location.pathname === item.path ? item.color : (isDarkMode ? '#94a3b8' : '#475569'),
                 border: location.pathname === item.path ? `1px solid ${item.color}20` : '1px solid transparent',
                 '&:hover': {
                   background: `linear-gradient(135deg, ${item.color}08 0%, ${item.color}04 100%)`,
@@ -293,12 +341,24 @@ const AdminSidebar = ({ open, onClose }) => {
         ))}
 
                     {/* الإعدادات */}
-                    <Typography variant="subtitle2" sx={{ px: 2, py: 1, color: '#6b7280', fontWeight: 700, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: 1, mt: 2, background: 'rgba(107,114,128,0.05)', borderRadius: 1, mx: 1 }}>
-                      الإعدادات
-                    </Typography>
-        {menuItems.filter(item => item.show && item.section === 'settings').map((item) => (
-          <ListItem key={item.text} disablePadding sx={{ mb: 0.5, px: 1 }}>
-            <ListItemButton
+                    {/* <Typography variant="subtitle2" sx={{ 
+                      px: 2, 
+                      py: 1, 
+                      color: isDarkMode ? '#9ca3af' : '#6b7280', 
+                      fontWeight: 700, 
+                      fontSize: '0.7rem', 
+                      textTransform: 'uppercase', 
+                      letterSpacing: 1, 
+                      mt: 2, 
+                      background: isDarkMode ? 'rgba(156,163,175,0.1)' : 'rgba(107,114,128,0.05)', 
+                      borderRadius: 1, 
+                      mx: 1 
+                    }}>
+                      {t('settings')}
+                    </Typography> */}
+        {/* {menuItems.filter(item => item.show && item.section === 'settings').map((item) => (
+          <ListItem key={item.text} disablePadding sx={{ mb: 0.5, px: 1 }}> */}
+            {/* <ListItemButton
               selected={location.pathname === item.path}
               onClick={() => {
                 navigate(item.path);
@@ -308,7 +368,7 @@ const AdminSidebar = ({ open, onClose }) => {
                 borderRadius: 2,
                 minHeight: 40,
                 background: location.pathname === item.path ? `linear-gradient(135deg, ${item.color}15 0%, ${item.color}08 100%)` : 'transparent',
-                color: location.pathname === item.path ? item.color : '#475569',
+                color: location.pathname === item.path ? item.color : (isDarkMode ? '#94a3b8' : '#475569'),
                 border: location.pathname === item.path ? `1px solid ${item.color}20` : '1px solid transparent',
                 '&:hover': {
                   background: `linear-gradient(135deg, ${item.color}08 0%, ${item.color}04 100%)`,
@@ -341,17 +401,29 @@ const AdminSidebar = ({ open, onClose }) => {
                   React.cloneElement(item.icon, { sx: { fontSize: 20 } })
                 )}
               </ListItemIcon>
-            </ListItemButton>
-          </ListItem>
-        ))}
+            </ListItemButton> */}
+          {/* </ListItem>
+        ))} */}
       </List>
 
-      <Divider sx={{ my: 1, borderColor: 'rgba(0,123,255,0.1)' }} />
+      <Divider sx={{ my: 1, borderColor: isDarkMode ? '#334155' : 'rgba(0,123,255,0.1)' }} />
       
       {/* Professional Footer */}
-      <Box sx={{ p: 2, textAlign: 'center', background: 'linear-gradient(135deg, rgba(0,123,255,0.05) 0%, rgba(77,166,255,0.05) 100%)', borderTop: '1px solid rgba(0,123,255,0.1)' }}>
-        <Typography variant="body2" sx={{ color: '#0077ff', fontWeight: 600, mb: 1, fontSize: '0.75rem' }}>
-          © خدماتك 2024
+      <Box sx={{ 
+        p: 2, 
+        textAlign: 'center', 
+        background: isDarkMode 
+          ? 'linear-gradient(135deg, rgba(0,123,255,0.1) 0%, rgba(77,166,255,0.1) 100%)'
+          : 'linear-gradient(135deg, rgba(0,123,255,0.05) 0%, rgba(77,166,255,0.05) 100%)', 
+        borderTop: isDarkMode ? '1px solid #334155' : '1px solid rgba(0,123,255,0.1)' 
+      }}>
+        <Typography variant="body2" sx={{ 
+          color: isDarkMode ? '#60a5fa' : '#0077ff', 
+          fontWeight: 600, 
+          mb: 1, 
+          fontSize: '0.75rem' 
+        }}>
+          © {t('khadamatk')} 2024
         </Typography>
         <IconButton 
           onClick={handleLogout}
@@ -394,9 +466,9 @@ const AdminSidebar = ({ open, onClose }) => {
           boxSizing: 'border-box',
           position: 'fixed',
           right: 0,
-          top: isMobile ? 0 : '64px',
-          height: isMobile ? '100vh' : 'calc(100vh - 64px)',
-          maxHeight: isMobile ? '100vh' : 'calc(100vh - 64px)',
+          top: isMobile ? 0 : '56px',
+          height: isMobile ? '100vh' : 'calc(100vh - 56px)',
+          maxHeight: isMobile ? '100vh' : 'calc(100vh - 56px)',
           background: 'transparent',
           boxShadow: 'none',
           borderTopLeftRadius: 0,

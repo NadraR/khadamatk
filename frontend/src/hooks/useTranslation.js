@@ -4,8 +4,8 @@ import { getTranslation, getCurrentLanguage, setLanguage } from '../utils/transl
 export const useTranslation = () => {
   const [currentLang, setCurrentLang] = useState(getCurrentLanguage);
 
-  const t = (key) => {
-    return getTranslation(key, currentLang);
+  const t = (key, variables = {}) => {
+    return getTranslation(key, currentLang, variables);
   };
 
   const changeLanguage = (lang) => {

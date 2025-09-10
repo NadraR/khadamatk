@@ -50,9 +50,14 @@ export const adminAuth = {
       const { access, refresh, user } = response.data;
       
       // حفظ tokens في localStorage
+      console.log('adminAuth.login: Saving tokens and user data');
       localStorage.setItem('admin_access_token', access);
       localStorage.setItem('admin_refresh_token', refresh);
       localStorage.setItem('admin_user', JSON.stringify(user));
+      
+      console.log('adminAuth.login: Tokens saved successfully');
+      console.log('adminAuth.login: Access token length:', access?.length);
+      console.log('adminAuth.login: User data:', user);
       
       return { success: true, data: response.data };
     } catch (error) {
@@ -90,19 +95,6 @@ export const adminAuth = {
   // التحقق من صحة token
   isAuthenticated: () => {
     return !!localStorage.getItem('admin_access_token');
-  },
-
-  // الحصول على معلومات المستخدم من الباك إند
-  getMe: async () => {
-    try {
-      const response = await adminApi.get('me/');
-      return { success: true, data: response.data };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.response?.data?.detail || 'خطأ في الحصول على معلومات المستخدم',
-      };
-    }
   },
 };
 
@@ -205,12 +197,14 @@ export const usersApi = {
   // إنشاء مستخدم جديد
   createUser: async (userData) => {
     try {
+      console.log('Creating user with data:', userData);
       const response = await adminApi.post('users/', userData);
       return { success: true, data: response.data };
     } catch (error) {
+      console.error('Error creating user:', error.response?.data);
       return {
         success: false,
-        error: error.response?.data?.detail || 'خطأ في إنشاء المستخدم',
+        error: error.response?.data?.detail || error.response?.data || 'خطأ في إنشاء المستخدم',
       };
     }
   },
