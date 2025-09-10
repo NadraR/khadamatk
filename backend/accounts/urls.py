@@ -10,7 +10,8 @@ from .views import (
     get_user_by_id,
     delete_client_profile,
     UserListView,
-    GoogleLoginView  
+    GoogleLoginView,
+    ProviderPublicProfileView
     )
 
 urlpatterns = [
@@ -25,6 +26,7 @@ urlpatterns = [
     path('client/<int:user_id>/', get_user_by_id, name='client-profile-by-id'),
     path('client/<int:user_id>/delete/', delete_client_profile, name='client-profile-delete'),
     path('users/', UserListView.as_view(), name='users-list'),
+    path('provider/<int:pk>/', ProviderPublicProfileView.as_view(), name='provider-public-profile'),
     #Google OAuth2 login
     path('google-login/', GoogleLoginView.as_view(), name='google-login'),
 ]

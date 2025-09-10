@@ -77,3 +77,64 @@ def review_detail(request, review_id):
         review.is_deleted = True
         review.save()
         return Response(status=status.HTTP_204_NO_CONTENT)
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def my_reviews(request):
+    """Get all reviews by the current user"""
+    reviews = Review.objects.filter(
+        customer=request.user, 
+        is_deleted=False
+    ).select_related('service').order_by('-created_at')
+    
+    reviews_data = []
+    for review in reviews:
+        reviews_data.append({
+            'id': review.id,
+            'service_name': review.service.title,
+            'service_id': review.service.id,
+            'rating': review.rating,
+            'comment': review.comment,
+            'created_at': review.created_at,
+            'updated_at': review.updated_at,
+        })
+    
+    return Response(reviews_data)
+
+
+@api_view(['GET'])
+@permission_classes([permissions.IsAuthenticated])
+def provider_reviews(request, provider_id):
+    """Get all reviews for a specific provider/worker"""
+    from accounts.models import WorkerProfile
+    
+    try:
+        worker_profile = WorkerProfile.objects.get(user_id=provider_id)
+    except WorkerProfile.DoesNotExist:
+        return Response({"error": "Provider not found"}, status=status.HTTP_404_NOT_FOUND)
+    
+    # Get all services by this provider
+    provider_services = Service.objects.filter(provider_id=provider_id, is_active=True)
+    service_ids = provider_services.values_list('id', flat=True)
+    
+    # Get all reviews for these services
+    reviews = Review.objects.filter(
+        service_id__in=service_ids,
+        is_deleted=False
+    ).select_related('service', 'customer').order_by('-created_at')
+    
+    reviews_data = []
+    for review in reviews:
+        reviews_data.append({
+            'id': review.id,
+            'service_name': review.service.title,
+            'service_id': review.service.id,
+            'customer_name': review.customer.username or review.customer.email,
+            'rating': review.rating,
+            'comment': review.comment,
+            'created_at': review.created_at,
+            'updated_at': review.updated_at,
+        })
+    
+    return Response(reviews_data)
+
+

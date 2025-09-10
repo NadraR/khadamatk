@@ -9,6 +9,7 @@ import { useTranslation } from "react-i18next";
 import Navbar from "../components/Navbar";
 import SearchBar from "../components/SearchBar";
 import ImageTicker from "../components/ImageTicker";
+import { authService } from "../services/authService";
 import assemblyImg from "../images/assembly.jpg";
 import movingImg from "../images/moving.jpeg";
 import cleaningImg from "../images/cleaning.jpg";
@@ -16,11 +17,66 @@ import repairsImg from "../images/repairs.jpg";
 import paintingImg from "../images/Painting.jpg";
 import searchImage from "../images/search.jpg";
 
+const services = [
+  { key: "assembly", title: "Assembly", icon: <BsTools />, img: assemblyImg, desc: "Assemble or disassemble furniture items with care." },
+  { key: "moving", title: "Moving", icon: <BsTruck />, img: movingImg, desc: "Help with packing, moving heavy items, and safe transport." },
+  { key: "cleaning", title: "Cleaning", icon: <BsBrush />, img: cleaningImg, desc: "Deep home cleaning, regular housekeeping, and office cleanup." },
+  { key: "repairs", title: "Home Repairs", icon: <BsHammer />, img: repairsImg, desc: "Fix leaks, furniture, small electrical jobs, and more." },
+  { key: "painting", title: "Painting", icon: <BsPaintBucket />, img: paintingImg, desc: "Interior & exterior painting with premium quality." }
+];
+
+const projects = [
+  { title: "تركيب دولاب", img: assemblyImg, price: "150 ج.م" },  
+  { title: "تنظيف شقة", img: cleaningImg, price: "250 ج.م" },
+  { title: "دهان غرفة", img: paintingImg, price: "400 ج.م" },
+  { title: "نقل أثاث", img: movingImg, price: "600 ج.م" },
+];
+
+const Testimonial = ({ name, quote }) => (
+  <div className="testimonial h-100 text-center">
+    <div className="mb-2">
+      {[...Array(5)].map((_, i) => <BsStarFill key={i} className="text-warning" />)}
+    </div>
+    <p className="text-muted">"{quote}"</p>
+    <div className="mt-2 fw-bold">{name}</div>
+  </div>
+);
+
 const Home = () => {
   const injected = useRef(false);
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [activeService, setActiveService] = useState(() => services[0]);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Check if user is logged in
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        const isAuthenticated = await authService.isAuthenticated();
+        setIsLoggedIn(isAuthenticated);
+      } catch (error) {
+        console.error('Error checking auth status:', error);
+        setIsLoggedIn(false);
+      }
+    };
+    
+    checkAuthStatus();
+
+    // Listen for auth changes
+    const handleAuthChange = () => {
+      checkAuthStatus();
+    };
+
+    // Add event listeners for auth changes
+    window.addEventListener('userLogin', handleAuthChange);
+    window.addEventListener('userLogout', handleAuthChange);
+
+    return () => {
+      window.removeEventListener('userLogin', handleAuthChange);
+      window.removeEventListener('userLogout', handleAuthChange);
+    };
+  }, []);
 
   useEffect(() => {
     if (injected.current) return;
@@ -72,6 +128,18 @@ const Home = () => {
     .btn-cta:hover { opacity:.9; transform:scale(1.05); }
 
     footer { background:#fff; padding:2rem 0; margin-top:3rem; border-top:1px solid #e5e7eb; }
+    
+    /* Pulse Animation for Join Button */
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 4px 15px rgba(125, 211, 252, 0.4);
+      }
+      50% {
+        transform: scale(1.02);
+        box-shadow: 0 6px 20px rgba(125, 211, 252, 0.6);
+      }
+    }
     `;
     const style = document.createElement("style");
     style.innerHTML = css;
@@ -82,6 +150,58 @@ const Home = () => {
   return (
     <div>
       <Navbar />
+      
+      {/* Join as Service Provider Banner - Only show if user is not logged in */}
+      {!isLoggedIn && (
+        <div className="container-fluid py-3" style={{ 
+          background: 'linear-gradient(135deg,rgb(199, 212, 228),rgb(125, 185, 245))', 
+          borderBottom: '3px solid #fff',
+          boxShadow: '0 4px 15px rgba(7, 52, 102, 0.3)'
+        }}>
+          <div className="container">
+            <div className="row align-items-center justify-content-center">
+              <div className="col-md-8 text-center">
+                <div className="d-flex align-items-center justify-content-center gap-3">
+                  <div className="text-white">
+                    <i className="bi bi-star-fill me-2" style={{ fontSize: '1.5rem' }}></i>
+                    <span className="fw-bold" style={{ fontSize: '1.2rem' }}>
+                      {t("joinBannerText")}
+                    </span>
+                  </div>
+                  <button
+                    className="btn btn-lg fw-bold px-4 py-2 ms-3"
+                    onClick={() => navigate('/auth')}
+                    style={{
+                      borderRadius: '50px',
+                      backgroundColor: '#7dd3fc',
+                      color: '#0f172a',
+                      boxShadow: '0 4px 15px rgba(125, 211, 252, 0.4)',
+                      transition: 'all 0.3s ease',
+                      border: '3px solid #fff',
+                      animation: 'pulse 2s infinite'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.target.style.transform = 'scale(1.05) translateY(-2px)';
+                      e.target.style.backgroundColor = '#38bdf8';
+                      e.target.style.boxShadow = '0 8px 25px rgba(125, 211, 252, 0.6)';
+                      e.target.style.animation = 'none';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.target.style.transform = 'scale(1) translateY(0)';
+                      e.target.style.backgroundColor = '#7dd3fc';
+                      e.target.style.boxShadow = '0 4px 15px rgba(125, 211, 252, 0.4)';
+                      e.target.style.animation = 'pulse 2s infinite';
+                    }}
+                  >
+                    <i className="bi bi-plus-circle-fill me-2"></i>
+                    {t("joinNowButton")}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Search Bar Section */}
       <section className="container my-4">
@@ -382,29 +502,5 @@ const Home = () => {
     </div>
   );
 };
-
-const services = [
-   { key: "assembly", title: "Assembly", icon: <BsTools />, img: assemblyImg, desc: "Assemble or disassemble furniture items with care." },
-  { key: "moving", title: "Moving", icon: <BsTruck />, img: movingImg, desc: "Help with packing, moving heavy items, and safe transport." },
-  { key: "cleaning", title: "Cleaning", icon: <BsBrush />, img: cleaningImg, desc: "Deep home cleaning, regular housekeeping, and office cleanup." },
-  { key: "repairs", title: "Home Repairs", icon: <BsHammer />, img:repairsImg, desc: "Fix leaks, furniture, small electrical jobs, and more." },
-  { key: "painting", title: "Painting", icon: <BsPaintBucket />, img: paintingImg, desc: "Interior & exterior painting with premium quality." }
-];
-
-const projects = [
-  { title: "تركيب دولاب", img: assemblyImg, price: "150 ج.م" },  
-  { title: "تنظيف شقة", img:cleaningImg, price: "250 ج.م" },
-  { title: "دهان غرفة", img:paintingImg, price: "400 ج.م" },
-  { title: "نقل أثاث", img: movingImg, price: "600 ج.م" },];
-
-const Testimonial = ({ name, quote }) => (
-  <div className="testimonial h-100 text-center">
-    <div className="mb-2">
-      {[...Array(5)].map((_, i) => <BsStarFill key={i} className="text-warning" />)}
-    </div>
-    <p className="text-muted">“{quote}”</p>
-    <div className="mt-2 fw-bold">{name}</div>
-  </div>
-);
 
 export default Home;

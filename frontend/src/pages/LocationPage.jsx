@@ -1,16 +1,25 @@
 // src/pages/LocationPage.jsx
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { 
   Box, Typography, CircularProgress, Chip, Button, List, ListItem, Paper,
   FormControl, InputLabel, Select, MenuItem, Container, IconButton, Card, CardContent
 } from "@mui/material";
-import { LocationOn as LocationIcon, Directions as DirectionsIcon, Refresh as RefreshIcon, Search as SearchIcon } from "@mui/icons-material";
+import { 
+  LocationOn as LocationIcon, 
+  Refresh as RefreshIcon, 
+  Search as SearchIcon,
+  Person as PersonIcon,
+  EventAvailable as EventIcon
+} from "@mui/icons-material";
 import { locationService } from '../services/LocationService';
+import RatingService from '../services/RatingService';
+import RatingStars from '../components/RatingStars';
 import LocationPicker from '../components/LocationPicker';
 import Navbar from '../components/Navbar';
 import "bootstrap/dist/css/bootstrap.min.css";
 
 export default function LocationPage() {
+  
   // الموقع المختار
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [citySearch, setCitySearch] = useState("");
@@ -37,6 +46,138 @@ export default function LocationPage() {
     minRating: 0,
     maxPrice: 1000
   });
+  
+  // Rating data
+  const [providersRatings, setProvidersRatings] = useState({});
+  const [sortByRating, setSortByRating] = useState(false);
+
+  // Helper function to build location address
+  const buildLocationAddress = (location) => {
+    if (!location) return '';
+    
+    const parts = [];
+    if (location.address) parts.push(location.address);
+    if (location.city && location.city !== location.address) parts.push(location.city);
+    if (location.neighborhood && location.neighborhood !== location.city) parts.push(location.neighborhood);
+    
+    return parts.join(', ') || `${location.lat?.toFixed(6)}, ${location.lng?.toFixed(6)}`;
+  };
+
+  // Load ratings for providers
+  const loadProviderRatings = useCallback(async (providers) => {
+    // Check if user is authenticated before trying to load ratings
+    const accessToken = localStorage.getItem('access');
+    if (!accessToken) {
+      console.log('User not authenticated, skipping ratings load');
+      return;
+    }
+
+    const ratingsMap = {};
+    for (const provider of providers) {
+      try {
+        // Get user/provider ID for ratings
+        const providerId = provider.user?.id || provider.worker?.id || provider.provider?.id || provider.provider_id || provider.id;
+        if (providerId && !providersRatings[providerId]) {
+          const result = await RatingService.getProviderRating(providerId);
+          if (result.success) {
+            ratingsMap[providerId] = result.data;
+          }
+        }
+      } catch (error) {
+        // Don't log 401 errors as they're expected for unauthenticated users
+        if (error.response?.status !== 401) {
+        console.error('Error loading provider rating:', error);
+        }
+      }
+    }
+    
+    if (Object.keys(ratingsMap).length > 0) {
+      setProvidersRatings(prev => ({ ...prev, ...ratingsMap }));
+    }
+  }, [providersRatings]);
+
+  // Filter and sort results by rating
+  const filteredAndSortedResults = useMemo(() => {
+    let filtered = results.filter(service => {
+      // Get user/provider ID for ratings
+      const providerId = service.user?.id || service.worker?.id || service.provider?.id || service.provider_id || service.id;
+      const rating = providersRatings[providerId];
+      const avgRating = rating?.average_rating || 0;
+      
+      // Apply rating filter
+      if (filters.minRating > 0 && avgRating < filters.minRating) {
+        return false;
+      }
+      
+      return true;
+    });
+
+    // Sort by rating if enabled
+    if (sortByRating) {
+      filtered = filtered.sort((a, b) => {
+        const providerIdA = a.user?.id || a.worker?.id || a.provider?.id || a.provider_id || a.id;
+        const providerIdB = b.user?.id || b.worker?.id || b.provider?.id || b.provider_id || b.id;
+        const ratingA = providersRatings[providerIdA]?.average_rating || 0;
+        const ratingB = providersRatings[providerIdB]?.average_rating || 0;
+        return ratingB - ratingA; // Sort descending (highest first)
+      });
+    }
+
+    return filtered;
+  }, [results, providersRatings, filters.minRating, sortByRating]);
+
+  // الدوال الجديدة للزرين
+  const handleShowProviderProfile = (service) => {
+    // الانتقال إلى صفحة الملف الشخصي لمزود الخدمة
+    const providerId = service.user?.id || service.worker?.id || service.provider?.id || service.provider_id || service.id;
+    if (providerId) {
+      window.open(`/provider/${providerId}`, '_blank');
+    } else {
+      console.error('لا يوجد معرف للمزود', service);
+      setError('لا يمكن عرض الملف الشخصي - المعرف غير متوفر');
+    }
+  };
+
+  const handleBookService = async (service) => {
+    const serviceId = service.id;
+    if (serviceId) {
+      // ✅ Store service data
+      localStorage.setItem('selectedService', JSON.stringify(service));
+
+      // ✅ Store location data (if available)
+      if (selectedLocation) {
+        localStorage.setItem('selectedLocation', JSON.stringify(selectedLocation));
+      }
+
+      // (اختياري) حفظ الموقع في السيرفر إذا المستخدم مسجل
+      if (selectedLocation) {
+        const accessToken = localStorage.getItem('access');
+        if (accessToken && accessToken.trim() !== '' && accessToken !== 'null' && accessToken !== 'undefined') {
+          try {
+            const { locationService } = await import('../services/LocationService');
+            await locationService.saveLocation({
+              lat: selectedLocation.lat,
+              lng: selectedLocation.lng,
+              address: buildLocationAddress(selectedLocation) || citySearch,
+              city: selectedLocation.city || '',
+              neighborhood: selectedLocation.neighborhood || '',
+              location_type: 'service_booking',
+              name: 'موقع حجز الخدمة'
+            });
+          } catch (error) {
+            console.error('[DEBUG] LocationPage: Error saving location:', error);
+          }
+        } else {
+          console.log('[DEBUG] LocationPage: User not authenticated, skipping location save');
+        }
+      }
+
+      // ✅ Navigate to order page
+      window.location.href = '/order';
+    } else {
+      setError('لا يمكن حجز الخدمة - المعرف غير متوفر');
+    }
+  };
 
   // جلب أنواع الخدمات
   useEffect(() => {
@@ -202,17 +343,54 @@ export default function LocationPage() {
         
         console.log('Searching with service type ID:', serviceTypeId);
         
-        const result = await locationService.searchNearbyLocations(
+        const result = await locationService.searchNearbyServices(
           location.lat,
           location.lng,
           10,
-          serviceTypeId
+          serviceTypeId,
+          ''
         );
 
         if (result.success) {
-          setResults(result.data || []);
+          const services = result.data || [];
+          
+          // Transform services data to match expected provider format
+          const providers = services.map(service => ({
+            id: service.id,
+            title: service.title,
+            description: service.description,
+            provider_username: service.provider_username,
+            provider_id: service.provider,
+            category: service.category,
+            price: service.price,
+            currency: service.currency,
+            rating_avg: service.rating_avg,
+            rating_count: service.rating_count,
+            city: service.city,
+            distance_km: service.distance_km,
+            provider_location: service.provider_location,
+            // Add user-like fields for compatibility
+            user: {
+              username: service.provider_username,
+              first_name: service.provider_username, // fallback
+              last_name: '',
+              rating: service.rating_avg || 0,
+              price: service.price || 0
+            },
+            // Keep original service data
+            original_service: service
+          }));
+          
+          setResults(providers);
           setError(null);
-          console.log('Search successful, found', result.data?.length || 0, 'results');
+          console.log('Search successful, found', providers.length, 'results');
+          // console.log('Sample provider data:', providers[0]); // Debug provider structure
+          // console.log('All providers data:', providers); // Debug all providers
+          
+          // Load ratings for providers
+          if (providers.length > 0) {
+            loadProviderRatings(providers);
+          }
           
           if (result.data?.length === 0) {
             setError('لم يتم العثور على مزودي خدمات في هذه المنطقة. جرب البحث في منطقة أخرى أو غير نوع الخدمة.');
@@ -231,7 +409,7 @@ export default function LocationPage() {
         setIsSearching(false);
       }
     }, 300);
-  }, [selectedService, customService, isSearching]);
+  }, [selectedService, customService, isSearching, loadProviderRatings]);
 
   // جلب آخر موقع محفوظ
   useEffect(() => {
@@ -272,7 +450,7 @@ export default function LocationPage() {
         fetchNearbyServices(selectedLocation, searchTerm);
       }
     }
-  }, [selectedLocation, selectedService, serviceData, isSearching, isInitialized]);
+  }, [selectedLocation, selectedService, serviceData, isSearching, isInitialized, fetchNearbyServices]);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -291,12 +469,6 @@ export default function LocationPage() {
     } else {
       console.log('Refresh skipped - no location or already searching');
     }
-  };
-
-  const getDirectionsUrl = (service) => {
-    const lat = service.lat || service.location_lat || service.location?.lat;
-    const lng = service.lng || service.location_lng || service.location?.lng;
-    return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
   };
 
   // البحث عن المدن
@@ -334,18 +506,6 @@ export default function LocationPage() {
     setSearchSuggestions([]);
   };
 
-  // تطبيق الفلاتر
-  const applyFilters = (services) => {
-    return services.filter(service => {
-      const distance = service.distance_km || 0;
-      const rating = service.rating || 0;
-      const price = service.price || 0;
-      
-      return distance <= filters.maxDistance && 
-             rating >= filters.minRating && 
-             price <= filters.maxPrice;
-    });
-  };
 
   // Show loading state during initialization
   if (!isInitialized) {
@@ -466,7 +626,7 @@ export default function LocationPage() {
                         <i className="bi bi-check text-white"></i>
                       </div>
                       <div>
-                        <div className="fw-bold text-success">تم تحديد الموقع بنجاح!</div>
+                        <div className="fw-bold text-success">أو قم بتحديد الموقع على الخريطة</div>
                         <div className="text-muted small">{citySearch}</div>
                       </div>
                     </div>
@@ -544,7 +704,7 @@ export default function LocationPage() {
             {/* Filters Card */}
             <Card className="mb-4" style={{ borderRadius: '16px', boxShadow: '0 6px 18px rgba(0,0,0,0.05)' }}>
               <CardContent className="p-4">
-                <h5 className="fw-bold mb-3">الفلاتر</h5>
+                <h5 className="fw-bold mb-3">تصفية البحث</h5>
                 
                 <div className="mb-3">
                   <label className="form-label fw-bold">المسافة القصوى (كم)</label>
@@ -578,6 +738,21 @@ export default function LocationPage() {
                     <small className="text-muted">0 ⭐</small>
                     <small className="fw-bold text-primary">{filters.minRating} ⭐</small>
                     <small className="text-muted">5 ⭐</small>
+                  </div>
+                </div>
+
+                <div className="mb-3">
+                  <div className="form-check">
+                    <input
+                      className="form-check-input"
+                      type="checkbox"
+                      id="sortByRating"
+                      checked={sortByRating}
+                      onChange={(e) => setSortByRating(e.target.checked)}
+                    />
+                    <label className="form-check-label fw-bold" htmlFor="sortByRating">
+                      ترتيب حسب التقييم (الأعلى أولاً)
+                    </label>
                   </div>
                 </div>
               </CardContent>
@@ -621,7 +796,7 @@ export default function LocationPage() {
               <div>
                 <h4 className="fw-bold mb-1">أقرب مزودي الخدمة</h4>
                 <p className="text-muted mb-0">
-                  {results.length > 0 ? `تم العثور على ${results.length} مزود خدمة` : 'لم يتم العثور على نتائج'}
+                  {filteredAndSortedResults.length > 0 ? `تم العثور على ${filteredAndSortedResults.length} مزود خدمة` : 'لم يتم العثور على نتائج'}
                 </p>
               </div>
               <IconButton onClick={handleRefresh} disabled={loading || !selectedService}>
@@ -635,19 +810,118 @@ export default function LocationPage() {
                 <CircularProgress size={40} />
                 <div className="mt-3">جارٍ تحميل الخدمات...</div>
               </div>
-            ) : results.length > 0 ? (
+            ) : filteredAndSortedResults.length > 0 ? (
               <div className="row g-3">
-                {applyFilters(results).map(service => (
+                {filteredAndSortedResults.map(service => (
                   <div key={service.id} className="col-12">
                     <Card style={{ borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
                       <CardContent className="p-4">
                         <div className="row align-items-center">
                           <div className="col-md-8">
                             <h6 className="fw-bold mb-2 text-primary">
-                              {service.provider?.first_name && service.provider?.last_name 
-                                ? `${service.provider.first_name} ${service.provider.last_name}`
-                                : service.provider?.username || service.title || 'مزود خدمة'}
+                              {(() => {
+                                // Debug: Log the service data to see what's available
+                                // console.log('Service data for name display:', service);
+                                // console.log('User object:', service.user);
+                                
+                                // Try different ways to get user/provider name
+                                // Based on console logs, some users have empty first_name/last_name
+                                if (service.user?.first_name && service.user?.last_name) {
+                                  return `${service.user.first_name} ${service.user.last_name}`;
+                                }
+                                if (service.user?.first_name) {
+                                  return service.user.first_name;
+                                }
+                                if (service.user?.last_name) {
+                                  return service.user.last_name;
+                                }
+                                if (service.user?.username) {
+                                  return service.user.username;
+                                }
+                                if (service.user?.name) {
+                                  return service.user.name;
+                                }
+                                if (service.worker?.first_name && service.worker?.last_name) {
+                                  return `${service.worker.first_name} ${service.worker.last_name}`;
+                                }
+                                if (service.worker?.name) {
+                                  return service.worker.name;
+                                }
+                                if (service.worker?.username) {
+                                  return service.worker.username;
+                                }
+                                if (service.first_name && service.last_name) {
+                                  return `${service.first_name} ${service.last_name}`;
+                                }
+                                if (service.name) {
+                                  return service.name;
+                                }
+                                if (service.username) {
+                                  return service.username;
+                                }
+                                if (service.worker_name) {
+                                  return service.worker_name;
+                                }
+                                if (service.worker_username) {
+                                  return service.worker_username;
+                                }
+                                if (service.provider?.first_name && service.provider?.last_name) {
+                                  return `${service.provider.first_name} ${service.provider.last_name}`;
+                                }
+                                if (service.provider?.name) {
+                                  return service.provider.name;
+                                }
+                                if (service.provider?.username) {
+                                  return service.provider.username;
+                                }
+                                if (service.provider_username) {
+                                  return service.provider_username;
+                                }
+                                if (service.title) {
+                                  return service.title;
+                                }
+                                return service.title || 'خدمة';
+                              })()}
                             </h6>
+                            {service.provider_username && (
+                              <p className="text-muted mb-1">
+                                مقدم الخدمة: {service.provider_username}
+                              </p>
+                            )}
+                            {service.description && (
+                              <p className="text-muted mb-1" style={{ fontSize: '0.9rem' }}>
+                                {service.description}
+                              </p>
+                            )}
+                            {service.price && (
+                              <p className="text-success mb-2 fw-bold">
+                                السعر: {service.price} {service.currency || 'ج.م'}
+                              </p>
+                            )}
+                            
+                            {/* Rating Display */}
+                            {(() => {
+                              // Get user/provider ID for ratings
+                              const providerId = service.user?.id || service.worker?.id || service.provider?.id || service.provider_id || service.id;
+                              const rating = providersRatings[providerId];
+                              
+                              // Use rating from API if available, otherwise use rating from service data
+                              const displayRating = rating?.average_rating || service.user?.rating || service.rating;
+                              const totalRatings = rating?.total_ratings || 0;
+                              
+                              return displayRating > 0 && (
+                                <div className="d-flex align-items-center mb-2">
+                                  <RatingStars 
+                                    rating={displayRating} 
+                                    size="small" 
+                                    readOnly={true}
+                                  />
+                                  <span className="ms-2 text-muted small">
+                                    ({displayRating.toFixed(1)} {totalRatings > 0 ? `- ${totalRatings} تقييم` : ''})
+                                  </span>
+                                </div>
+                              );
+                            })()}
                             
                             {service.title && (
                               <p className="text-muted mb-1 small">
@@ -672,6 +946,14 @@ export default function LocationPage() {
                                   color="primary"
                                 />
                               )}
+                              {service.user?.price > 0 && (
+                                <Chip 
+                                  label={`${service.user.price} جنيه/ساعة`} 
+                                  size="small" 
+                                  variant="outlined" 
+                                  color="success"
+                                />
+                              )}
                               {service.rating && (
                                 <Chip 
                                   label={`${service.rating} ⭐`} 
@@ -691,18 +973,37 @@ export default function LocationPage() {
                           </div>
                           
                           <div className="col-md-4 text-end">
-                            <Button
-                              variant="outlined"
-                              startIcon={<DirectionsIcon />}
-                              href={getDirectionsUrl(service)}
-                              target="_blank"
-                              rel="noopener"
-                              style={{ borderRadius: '8px' }}
-                            >
-                              عرض الاتجاهات
-                            </Button>
+                            <div className="d-flex flex-column gap-2">
+                              <Button
+                                variant="contained"
+                                size="small"
+                                startIcon={<PersonIcon />}
+                                onClick={() => handleShowProviderProfile(service)}
+                                style={{ 
+                                  borderRadius: '8px',
+                                  backgroundColor: '#0077ff',
+                                  minWidth: '140px'
+                                }}
+                              >
+                                عرض الملف الشخصي
+                              </Button>
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                startIcon={<EventIcon />}
+                                onClick={() => handleBookService(service)}
+                                style={{ 
+                                  borderRadius: '8px',
+                                  borderColor: '#28a745',
+                                  color: '#28a745',
+                                  minWidth: '140px'
+                                }}
+                              >
+                                حجز الخدمة
+                              </Button>
+                            </div>
                           </div>
-                </div>
+                        </div>
                       </CardContent>
                     </Card>
                   </div>
@@ -731,7 +1032,37 @@ export default function LocationPage() {
                     <small className="text-muted">انقر على الخريطة لتحديد موقعك</small>
                   </div>
                   <LocationPicker 
-                    onLocationSelect={(loc) => setSelectedLocation(loc)}
+                    onLocationSelect={async (loc) => {
+                      setSelectedLocation(loc);
+                      
+                      // Save location data if user is authenticated
+                      if (loc && loc.lat && loc.lng) {
+                        const accessToken = localStorage.getItem('access');
+                        if (accessToken && accessToken.trim() !== '' && accessToken !== 'null' && accessToken !== 'undefined') {
+                          try {
+                            const { locationService } = await import('../services/LocationService');
+                            const locationData = {
+                              lat: loc.lat,
+                              lng: loc.lng,
+                              address: buildLocationAddress(loc) || citySearch,
+                              city: loc.city || '',
+                              neighborhood: loc.neighborhood || '',
+                              location_type: 'map_selection',
+                              name: 'موقع محدد على الخريطة'
+                            };
+                            
+                            const result = await locationService.saveLocation(locationData);
+                            if (result.success) {
+                              console.log('[DEBUG] LocationPage: Map location saved successfully');
+                            }
+                          } catch (error) {
+                            console.error('[DEBUG] LocationPage: Error saving map location:', error);
+                          }
+                        } else {
+                          console.log('[DEBUG] LocationPage: User not authenticated, skipping map location save');
+                        }
+                      }
+                    }}
                     height={400}
                   />
                 </CardContent>

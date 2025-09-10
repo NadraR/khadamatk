@@ -11,8 +11,14 @@ urlpatterns = [
     path("create/", views.create_review, name="create_review"),
     path("create/<int:order_id>/", views.create_review, name="create_review_order"),
 
+    # GET /api/reviews/my-reviews/ → جميع مراجعات العميل الحالي
+    path("my-reviews/", views.my_reviews, name="my_reviews"),
+
     # GET /api/reviews/5/ → عرض ريفيو واحد
     # PUT /api/reviews/5/ → تعديل ريفيو
     # DELETE /api/reviews/5/ → حذف ريفيو
     path("<int:review_id>/", views.review_detail, name="review_detail"),
+    
+    # GET /api/reviews/provider/12/ → جميع مراجعات مزود خدمة معين
+    path("provider/<int:provider_id>/", views.provider_reviews, name="provider_reviews"),
 ]

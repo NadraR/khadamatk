@@ -59,12 +59,12 @@ const AdminDashboard = () => {
           ratingsRes,
           invoicesRes,
         ] = await Promise.all([
-          apiService.get(`/admin/users/`),
-          apiService.get(`/admin/services/`),
-          apiService.get(`/admin/orders/`),
-          apiService.get(`/admin/reviews/`),
-          apiService.get(`/admin/ratings/`),
-          apiService.get(`/admin/invoices/`),
+          apiService.get(`/api/admin/users/`),
+          apiService.get(`/api/admin/services/`),
+          apiService.get(`/api/admin/orders/`),
+          apiService.get(`/api/admin/reviews/`),
+          apiService.get(`/api/admin/ratings/`),
+          apiService.get(`/api/admin/invoices/`),
         ]);
 
         setUsers(usersRes.data || []);

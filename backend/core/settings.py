@@ -19,10 +19,19 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY =  os.environ.get("DJANGO_SECRET_KEY", "unsafe-secret-key")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config("DEBUG", cast=bool, default=False)
+DEBUG = config("DEBUG", cast=bool, default=True)
 ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=Csv(), default=["127.0.0.1", "localhost"])
 CSRF_TRUSTED_ORIGINS = config("CSRF_TRUSTED_ORIGINS", cast=Csv(), default=[])
-CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", cast=Csv(), default=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:3000", "http://127.0.0.1:3000"])
+CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", cast=Csv(), default=[
+    "http://localhost:5173", 
+    "http://127.0.0.1:5173", 
+    "http://localhost:5174", 
+    "http://127.0.0.1:5174", 
+    "http://localhost:3000", 
+    "http://127.0.0.1:3000",
+    "https://your-frontend-domain.vercel.app",  # Add your frontend domain here
+    "https://your-frontend-domain.netlify.app"  # Or any other hosting service
+])
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
@@ -55,13 +64,14 @@ INSTALLED_APPS = [
     
     # Local apps
     'accounts',
-    'invoices',
-    'orders',
-    'ratings', 
+    'invoices.apps.InvoicesConfig',
+    'orders.apps.OrdersConfig',
+    'ratings.apps.RatingsConfig', 
     'reviews',
-    'services',
+    'services.apps.ServicesConfig',
     'admin_api',
     'location',
+    'notifications.apps.NotificationsConfig',
     'channels',
     'chat',
     ]
@@ -85,6 +95,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'core.urls'
 CORS_ALLOW_ALL_ORIGINS = True # Allow all origins for development purposes
+CORS_ALLOW_CREDENTIALS = True
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -201,6 +212,7 @@ AUTH_USER_MODEL = 'accounts.User'
 
 
 CORS_ALLOW_CREDENTIALS = True
+CORS_PREFLIGHT_MAX_AGE = 86400  # 24 hours
 
 # Additional CORS settings for better compatibility
 CORS_ALLOW_METHODS = [
@@ -222,7 +234,13 @@ CORS_ALLOW_HEADERS = [
     "user-agent",
     "x-csrftoken",
     "x-requested-with",
+    "access-control-allow-origin",
+    "access-control-allow-credentials",
+    "cache-control",
 ]
+
+# Additional CORS settings for development
+CORS_ALLOW_PRIVATE_NETWORK = True
 
 PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.Argon2PasswordHasher',
@@ -255,6 +273,13 @@ DJOSER = {
     "LOGIN_FIELD": "username",   # أو "email" لو عايزة تسجيل/تسجيل دخول بالإيميل
 }
 
+# MAPS
+GDAL_LIBRARY_PATH = os.environ.get("GDAL_LIBRARY_PATH")
+GEOS_LIBRARY_PATH = os.environ.get("GEOS_LIBRARY_PATH")
+SOCIALACCOUNT_ADAPTER = 'accounts.adapters.CustomSocialAccountAdapter'
+GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 # MAPS
 GDAL_LIBRARY_PATH = os.environ.get("GDAL_LIBRARY_PATH")
 GEOS_LIBRARY_PATH = os.environ.get("GEOS_LIBRARY_PATH")

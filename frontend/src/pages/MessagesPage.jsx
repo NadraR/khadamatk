@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { FaPaperPlane, FaSpinner } from "react-icons/fa";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { FaPaperPlane, FaSpinner, FaArrowLeft } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import { toast } from "react-toastify";
-import ChatService from "../services/ChatService";
+import chatService from "../services/chatService";
 import "./MessagesPage.css";
 
 const MessagesPage = () => {
   const { i18n } = useTranslation();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [conversations, setConversations] = useState([]);
   const [activeConversation, setActiveConversation] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -21,41 +25,202 @@ const MessagesPage = () => {
     try {
       setLoading(true);
       setError(null);
-      const orders = await ChatService.getUserOrders();
       
-      // Transform orders into conversation format
-      const conversationsData = orders.map(order => ({
-        id: order.id,
-        orderId: order.id,
-        name: order.worker ? `${order.worker.first_name || order.worker.username} (Worker)` : 
-              order.client ? `${order.client.first_name || order.client.username} (Client)` : 
-              'Unknown User',
-        lastMessage: order.status || 'No messages yet',
-        unread: 0, // TODO: Implement unread count
-        status: order.status,
-        service: order.service?.name || 'Unknown Service'
-      }));
+      // Get current user info
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      console.log('[DEBUG] MessagesPage: Loading conversations for user:', currentUser);
       
-      setConversations(conversationsData);
+      // Get target order ID early
+      const targetOrderId = location.state?.orderId || searchParams.get('orderId');
+      console.log('[DEBUG] Target order ID:', targetOrderId);
       
-      if (conversationsData.length === 0) {
+      // Use the proper API endpoint for conversations
+      const result = await chatService.getUserConversations();
+      
+      if (!result.success) {
+        console.warn('No conversations found, trying orders fallback');
+        console.log('[DEBUG] Conversations error:', result.error);
+        
+        // Fallback to orders if conversations API fails
+        const ordersResult = await chatService.getUserOrders();
+        console.log('[DEBUG] Orders fallback result:', ordersResult);
+        
+        if (!ordersResult.success) {
+          console.error('[DEBUG] Orders fallback failed:', ordersResult.error);
+          setError(`فشل في تحميل المحادثات: ${ordersResult.error}`);
+          setLoading(false);
+          return;
+        }
+        
+        // Handle different response formats from the API
+        let orders = ordersResult.data || [];
+        
+        // If the response has a results property (paginated), use that
+        if (ordersResult.data && ordersResult.data.results) {
+          orders = ordersResult.data.results;
+        } else if (ordersResult.data && !Array.isArray(ordersResult.data)) {
+          // If data is an object but not an array, try to extract array from common properties
+          orders = ordersResult.data.data || ordersResult.data.orders || [];
+        }
+        
+        // Ensure orders is an array
+        if (!Array.isArray(orders)) {
+          console.warn('Orders data is not an array:', orders);
+          orders = [];
+        }
+        
+        // Filter orders based on user role
+        let filteredOrders = orders;
+        if (currentUser.role === 'worker') {
+          // For workers, show orders where they are the worker or service provider
+          filteredOrders = orders.filter(order => 
+            order.worker_id === currentUser.id || 
+            order.service?.provider?.id === currentUser.id ||
+            order.service?.user_id === currentUser.id ||
+            order.worker === currentUser.id
+          );
+        } else {
+          // For clients, show orders where they are the customer
+          filteredOrders = orders.filter(order => 
+            order.customer === currentUser.id || 
+            order.customer_id === currentUser.id
+          );
+        }
+        
+        // Filter out cancelled orders and transform into conversation format
+        const conversationsData = filteredOrders
+          .filter(order => order.status !== 'cancelled') // Don't show cancelled orders
+          .filter(order => ['accepted', 'completed', 'in_progress', 'pending'].includes(order.status)) // Show all active orders
+          .map(order => {
+            // Determine the other party's name based on current user role
+            let otherPartyName = 'Unknown User';
+            
+            if (currentUser.role === 'worker') {
+              // Worker sees client name
+              otherPartyName = order.customer_first_name && order.customer_last_name 
+                ? `${order.customer_first_name} ${order.customer_last_name}`
+                : order.customer_name || order.customer_username || 'عميل غير محدد';
+            } else {
+              // Client sees worker name
+              otherPartyName = order.worker_name || order.worker_username || 'عامل غير محدد';
+            }
+            
+            return {
+              id: order.id,
+              orderId: order.id,
+              name: otherPartyName,
+              lastMessage: order.status || 'No messages yet',
+              unread: 0, // TODO: Implement unread count
+              status: order.status,
+              service: order.service_name || order.service?.title || 'Unknown Service'
+            };
+          });
+        
+        setConversations(conversationsData);
+        
+        // Auto-select conversation if orderId is provided in location state or URL params
+        if (targetOrderId) {
+          let targetConversation = conversationsData.find(conv => conv.orderId === parseInt(targetOrderId));
+          
+          // If conversation doesn't exist yet, create a placeholder
+          if (!targetConversation && (location.state?.clientName || location.state?.workerName)) {
+            const otherPartyName = location.state?.clientName || location.state?.workerName || 'Unknown User';
+            targetConversation = {
+              id: targetOrderId,
+              orderId: targetOrderId,
+              name: otherPartyName,
+              lastMessage: 'بدء محادثة جديدة',
+              unread: 0,
+              status: 'accepted',
+              service: location.state?.serviceName || 'خدمة غير محددة'
+            };
+            setConversations(prev => [targetConversation, ...prev]);
+          }
+          
+          if (targetConversation) {
+            setActiveConversation(targetConversation);
+          }
+        }
+      } else {
+        // Use conversations API response and normalize field names
+        const conversationsData = (result.data || []).map(conv => ({
+          ...conv,
+          orderId: conv.order_id || conv.orderId, // Normalize order_id to orderId
+          name: conv.other_participant?.name || conv.other_participant?.username || 'Unknown User',
+          lastMessage: conv.last_message?.message || 'No messages yet',
+          unread: conv.message_count || 0
+        }));
+        
+        console.log('[DEBUG] MessagesPage: Loaded conversations:', conversationsData);
+        console.log('[DEBUG] MessagesPage: First conversation details:', conversationsData[0]);
+        console.log('[DEBUG] MessagesPage: Looking for target order ID:', targetOrderId);
+        setConversations(conversationsData);
+        
+        // Debug: Check if target order exists in conversations
+        if (targetOrderId) {
+          const targetExists = conversationsData.find(conv => conv.orderId === parseInt(targetOrderId));
+          console.log('[DEBUG] MessagesPage: Target order exists in conversations:', !!targetExists, targetExists);
+        }
+        
+        // Auto-select conversation if orderId is provided in location state or URL params
+        if (targetOrderId) {
+          let targetConversation = conversationsData.find(conv => conv.orderId === parseInt(targetOrderId));
+          
+          // If conversation doesn't exist yet, create a placeholder
+          if (!targetConversation && (location.state?.clientName || location.state?.workerName)) {
+            const otherPartyName = location.state?.clientName || location.state?.workerName || 'Unknown User';
+            targetConversation = {
+              id: targetOrderId,
+              orderId: targetOrderId,
+              name: otherPartyName,
+              lastMessage: 'بدء محادثة جديدة',
+              unread: 0,
+              status: 'accepted',
+              service: location.state?.serviceName || 'خدمة غير محددة'
+            };
+            setConversations(prev => [targetConversation, ...prev]);
+          }
+          
+          if (targetConversation) {
+            setActiveConversation(targetConversation);
+          }
+        }
+      }
+      
+      // Check if no conversations found
+      const totalConversations = conversations.length;
+      if (totalConversations === 0 && !targetOrderId) {
         toast.info(i18n.language === 'ar' ? 'لا توجد محادثات متاحة' : 'No conversations available');
       }
     } catch (error) {
-      console.error('Error loading conversations:', error);
-      const errorMessage = i18n.language === 'ar' ? 'فشل في تحميل المحادثات' : 'Failed to load conversations';
+      console.error('[DEBUG] Error loading conversations:', error);
+      console.error('[DEBUG] Error details:', error.message, error.stack);
+      
+      // Handle different types of errors
+      const errorMessage = i18n.language === 'ar' ? 
+        `فشل في تحميل المحادثات: ${error.message || 'خطأ غير معروف'}` : 
+        `Failed to load conversations: ${error.message || 'Unknown error'}`;
+      
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
-  }, [i18n.language]);
+  }, [i18n.language, location.state, searchParams]);
 
   const loadMessages = useCallback(async (orderId) => {
     try {
+      console.log('[DEBUG] MessagesPage: Loading messages for orderId:', orderId);
       setError(null);
-      const conversation = await ChatService.getConversation(orderId);
-      const messagesData = conversation.messages || [];
+      const result = await chatService.getMessages(orderId);
+      
+      if (!result.success) {
+        console.warn('No messages found for order:', orderId);
+        setMessages([]);
+        return;
+      }
+      
+      const messagesData = result.data || [];
       
       // Transform messages to frontend format
       const transformedMessages = messagesData.map(msg => ({
@@ -73,14 +238,13 @@ const MessagesPage = () => {
       setMessages(transformedMessages);
     } catch (error) {
       console.error('Error loading messages:', error);
-      const errorMessage = i18n.language === 'ar' ? 'فشل في تحميل الرسائل' : 'Failed to load messages';
-      setError(errorMessage);
-      toast.error(errorMessage);
+      // Don't show error toast for empty conversations
+      setMessages([]);
     }
   }, [i18n.language]);
 
   const connectWebSocket = useCallback((orderId) => {
-    wsRef.current = ChatService.connectWebSocket(
+    wsRef.current = chatService.connectWebSocket(
       orderId,
       (data) => {
         // Handle incoming message
@@ -162,12 +326,25 @@ const MessagesPage = () => {
     setSending(true);
 
     try {
+      console.log('[DEBUG] MessagesPage: Sending message to order:', activeConversation?.orderId);
+      console.log('[DEBUG] MessagesPage: Active conversation:', activeConversation);
+      
+      if (!activeConversation?.orderId) {
+        console.error('[DEBUG] MessagesPage: No orderId found in activeConversation');
+        toast.error('خطأ: لا يمكن إرسال الرسالة - معرف الطلب مفقود');
+        return;
+      }
+      
       // Try WebSocket first
-      const wsSent = ChatService.sendWebSocketMessage(activeConversation.orderId, messageText);
+      const wsSent = chatService.sendWebSocketMessage(activeConversation.orderId, messageText);
       
       if (!wsSent) {
         // Fallback to API
-        await ChatService.sendMessage(activeConversation.orderId, messageText);
+        const messageData = {
+          message: messageText,
+          sender: getCurrentUsername()
+        };
+        await chatService.sendMessage(activeConversation.orderId, messageData);
         
         // Add message to local state
         const newMsg = {
@@ -205,6 +382,16 @@ const MessagesPage = () => {
     }
   };
 
+  const handleBackToDashboard = () => {
+    // Check user role and navigate accordingly
+    const userData = JSON.parse(localStorage.getItem('user') || '{}');
+    if (userData.role === 'worker') {
+      navigate('/homeProvider');
+    } else {
+      navigate('/homeClient');
+    }
+  };
+
   if (loading) {
     return (
       <div className="messages-page">
@@ -220,7 +407,13 @@ const MessagesPage = () => {
     <div className="messages-page">
       {/* Sidebar Conversations */}
       <div className="conversations-list">
-        <h3>{i18n.language === 'ar' ? 'الرسائل' : 'Messages'}</h3>
+        <div className="conversations-header">
+          <button className="back-button" onClick={handleBackToDashboard}>
+            <FaArrowLeft />
+            {i18n.language === 'ar' ? 'رجوع' : 'Back'}
+          </button>
+          <h3>{i18n.language === 'ar' ? 'الرسائل' : 'Messages'}</h3>
+        </div>
         {error && (
           <div className="error-message">
             {error}
@@ -238,7 +431,10 @@ const MessagesPage = () => {
             <div
               key={conv.id}
               className={`conversation ${activeConversation?.id === conv.id ? "active" : ""}`}
-              onClick={() => setActiveConversation(conv)}
+              onClick={() => {
+                console.log('[DEBUG] MessagesPage: Selecting conversation:', conv);
+                setActiveConversation(conv);
+              }}
             >
               <div className="conv-name">{conv.name}</div>
               <div className="conv-service">{conv.service}</div>

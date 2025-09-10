@@ -7,7 +7,7 @@ class LocationService {
 
   async saveLocation(locationData) {
     try {
-      const response = await apiService.post(this.baseEndpoint, locationData);
+      const response = await apiService.post(`${this.baseEndpoint}save-location/`, locationData);
       return {
         success: true,
         data: response,
@@ -69,14 +69,29 @@ class LocationService {
 
   async searchNearbyLocations(lat, lng, radius = 10, serviceType = null) {
     try {
-      // Use the service nearby API for better filtering
-      let url = `/api/services/nearby/?lat=${lat}&lng=${lng}&radius_km=${radius}`;
-      
+      // Check if user is authenticated
+      const accessToken = localStorage.getItem('access');
+      if (!accessToken || accessToken.trim() === '' || accessToken === 'null' || accessToken === 'undefined') {
+        // User not authenticated, use public nearby endpoint
+        console.log('[LocationService] User not authenticated, using public nearby API');
+        let url = `${this.baseEndpoint}nearby/?lat=${lat}&lng=${lng}&radius=${radius}&max_results=20`;
+        if (serviceType) {
+          url += `&service_type=${serviceType}`;
+        }
+        const response = await apiService.get(url);
+        return {
+          success: true,
+          data: response,
+          message: 'تم البحث بنجاح'
+        };
+      }
+
+      // User is authenticated, use nearby endpoint (it's public but works for authenticated users too)
+      console.log('[LocationService] User authenticated, using nearby API');
+      let url = `${this.baseEndpoint}nearby/?lat=${lat}&lng=${lng}&radius=${radius}&max_results=20`;
       if (serviceType) {
         url += `&service_type=${serviceType}`;
       }
-      
-      console.log('Calling API:', url);
       const response = await apiService.get(url);
       return {
         success: true,
@@ -84,11 +99,11 @@ class LocationService {
         message: 'تم البحث بنجاح'
       };
     } catch (error) {
-      console.error('Service API Error:', error);
+      console.error('[LocationService] Enhanced search API Error:', error);
       
-      // Fallback to location API if service API fails
+      // Fallback to public nearby API
       try {
-        console.log('Falling back to location API...');
+        console.log('[LocationService] Falling back to public nearby API...');
         const fallbackUrl = `${this.baseEndpoint}nearby/?lat=${lat}&lng=${lng}&radius=${radius}&max_results=20`;
         const fallbackResponse = await apiService.get(fallbackUrl);
         
@@ -98,7 +113,7 @@ class LocationService {
           message: 'تم البحث بنجاح (استخدام API بديل)'
         };
       } catch (fallbackError) {
-        console.error('Fallback API Error:', fallbackError);
+        console.error('[LocationService] Fallback API Error:', fallbackError);
         return {
           success: false,
           error: error.message || 'فشل في البحث عن خدمات قريبة',
@@ -154,6 +169,39 @@ class LocationService {
       return {
         success: false,
         error: error.message || 'فشل في جلب الإحصائيات',
+        status: error.status
+      };
+    }
+  }
+
+  async searchNearbyServices(lat, lng, radius = 10, serviceType = null, query = '') {
+    try {
+      console.log('[LocationService] Searching nearby services with serviceType:', serviceType);
+      
+      // Use services/nearby endpoint which supports service_type filtering
+      let url = `/api/services/nearby/?lat=${lat}&lng=${lng}&radius_km=${radius}&max_results=50`;
+      
+      if (serviceType) {
+        url += `&service_type=${serviceType}`;
+      }
+      
+      if (query && query.trim()) {
+        url += `&q=${encodeURIComponent(query.trim())}`;
+      }
+      
+      console.log('[LocationService] Services API URL:', url);
+      
+      const response = await apiService.get(url);
+      return {
+        success: true,
+        data: response,
+        message: 'تم البحث في الخدمات بنجاح'
+      };
+    } catch (error) {
+      console.error('[LocationService] Services search error:', error);
+      return {
+        success: false,
+        error: error.message || 'فشل في البحث عن الخدمات القريبة',
         status: error.status
       };
     }

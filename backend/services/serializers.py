@@ -62,11 +62,28 @@ class FavoriteSerializer(serializers.ModelSerializer):
         read_only_fields = ["created_at"]
 
 class ServiceSearchSerializer(ServiceSerializer):
-    distance_km = serializers.FloatField(read_only=True)
+    distance_km = serializers.SerializerMethodField()
     in_favorites = serializers.SerializerMethodField()
     
     class Meta(ServiceSerializer.Meta):
         fields = ServiceSerializer.Meta.fields + ["distance_km", "in_favorites"]
+
+    def get_distance_km(self, obj):
+        """تحويل Distance object إلى float"""
+        if hasattr(obj, 'distance_km') and obj.distance_km is not None:
+            # إذا كان Distance object، استخرج القيمة بالكيلومتر
+            if hasattr(obj.distance_km, 'km'):
+                return round(float(obj.distance_km.km), 2)
+            # إذا كان float عادي
+            elif isinstance(obj.distance_km, (int, float)):
+                return round(float(obj.distance_km), 2)
+            # إذا كان string
+            elif isinstance(obj.distance_km, str):
+                try:
+                    return round(float(obj.distance_km), 2)
+                except ValueError:
+                    return None
+        return None
 
     def get_in_favorites(self, obj):
         user = self.context.get("request").user if self.context.get("request") else None

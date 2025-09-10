@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { authService } from "../services/authService";
+import { Eye, EyeOff } from "lucide-react";
 
 const LoginForm = ({ onSuccess, onError, darkMode, language = "ar" }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -17,7 +19,9 @@ const LoginForm = ({ onSuccess, onError, darkMode, language = "ar" }) => {
       passwordRequired: "كلمة المرور مطلوبة",
       loginButton: "تسجيل الدخول",
       processing: "جاري المعالجة...",
-      loginError: "حدث خطأ أثناء تسجيل الدخول"
+      loginError: "حدث خطأ أثناء تسجيل الدخول",
+      showPassword: "إظهار كلمة المرور",
+      hidePassword: "إخفاء كلمة المرور"
     },
     en: {
       email: "Email",
@@ -27,7 +31,9 @@ const LoginForm = ({ onSuccess, onError, darkMode, language = "ar" }) => {
       passwordRequired: "Password is required",
       loginButton: "Login",
       processing: "Processing...",
-      loginError: "An error occurred during login"
+      loginError: "An error occurred during login",
+      showPassword: "Show password",
+      hidePassword: "Hide password"
     }
   };
 
@@ -50,6 +56,14 @@ const LoginForm = ({ onSuccess, onError, darkMode, language = "ar" }) => {
     setErrors({});
     try {
       const result = await authService.login(email, password);
+      
+      // Handle redirect path for workers
+      if (result.redirectPath) {
+        console.log('[DEBUG] LoginForm: Redirecting to:', result.redirectPath);
+        window.location.href = result.redirectPath;
+        return;
+      }
+      
       if (onSuccess) onSuccess(result.data);
     } catch (err) {
       const errorMsg = err.message || t.loginError;
@@ -79,14 +93,26 @@ const LoginForm = ({ onSuccess, onError, darkMode, language = "ar" }) => {
       
       <div className="form-group">
         <label className="form-label">{t.password}</label>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          disabled={isLoading}
-          className={`form-input ${errors.password ? "error" : ""}`}
-          placeholder={language === "ar" ? "أدخل كلمة المرور" : "Enter your password"}
-        />
+        <div className="password-input-container">
+          <input
+            type={showPassword ? "text" : "password"}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            disabled={isLoading}
+            className={`form-input ${errors.password ? "error" : ""}`}
+            placeholder={language === "ar" ? "أدخل كلمة المرور" : "Enter your password"}
+          />
+          <button
+            type="button"
+            className="password-toggle-btn"
+            onClick={() => setShowPassword(!showPassword)}
+            disabled={isLoading}
+            title={showPassword ? t.hidePassword : t.showPassword}
+            aria-label={showPassword ? t.hidePassword : t.showPassword}
+          >
+            {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+          </button>
+        </div>
         {errors.password && <span className="error-text">{errors.password}</span>}
       </div>
       
