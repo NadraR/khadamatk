@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e  
-: "${PORT:=8000}"
+
+# ضبط البورت
+PORT=${PORT:-8000}
 
 echo "Checking/creating superuser..."
 python manage.py shell -c "
