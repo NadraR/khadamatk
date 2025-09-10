@@ -8,8 +8,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgdal-dev \
     libgeos-dev \
     build-essential \
+    gcc \
+    g++ \
+    python3-dev \
     curl \
     && rm -rf /var/lib/apt/lists/*
+
+# البيئة
+ENV CPLUS_INCLUDE_PATH=/usr/include/gdal
+ENV C_INCLUDE_PATH=/usr/include/gdal
+ENV GDAL_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/libgdal.so
+ENV GEOS_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/libgeos_c.so.1
 
 WORKDIR /app
 
@@ -18,9 +27,7 @@ RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-ENV GDAL_LIBRARY_PATH=/usr/lib/libgdal.so.30 \
-    GEOS_LIBRARY_PATH=/usr/lib/libgeos_c.so.1
-
 COPY deploy.sh /deploy.sh
 RUN chmod +x /deploy.sh
+
 CMD ["/deploy.sh"]
