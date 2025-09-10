@@ -1,23 +1,10 @@
 #!/bin/bash
+set -e  
 
-# Railway deployment script for Django backend
+# ضبط البورت
+PORT=${PORT:-8000}
 
-echo "🚀 Starting Railway deployment..."
-
-# Install dependencies
-echo "📦 Installing dependencies..."
-pip install -r requirements.txt
-
-# Run database migrations
-echo "🗄️ Running database migrations..."
-python manage.py migrate --noinput
-
-# Collect static files
-echo "📁 Collecting static files..."
-python manage.py collectstatic --noinput
-
-# Create superuser if it doesn't exist
-echo "👤 Creating superuser..."
+echo "Checking/creating superuser..."
 python manage.py shell -c "
 from django.contrib.auth import get_user_model
 User = get_user_model()
@@ -28,10 +15,9 @@ else:
     print('Superuser already exists')
 "
 
-echo "✅ Deployment preparation complete!"
-echo "🌐 Starting Gunicorn server..."
+echo "Deployment preparation complete."
+echo "Starting Gunicorn server on port $PORT..."
 
-# Start the application
 exec gunicorn core.wsgi:application \
     --bind 0.0.0.0:$PORT \
     --workers 3 \
@@ -42,4 +28,3 @@ exec gunicorn core.wsgi:application \
     --log-level info \
     --access-logfile - \
     --error-logfile -
-

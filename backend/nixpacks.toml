@@ -1,0 +1,17 @@
+[phases.setup]
+nixPkgs = ["gdal", "geos", "proj"]
+
+[phases.install]
+cmds = [
+  "pip install --upgrade pip",
+  "pip install -r requirements.txt"
+]
+
+[phases.build]
+cmds = [
+  "python manage.py migrate --noinput",
+  "python manage.py collectstatic --noinput"
+]
+
+[start]
+cmd = "gunicorn core.wsgi:application --bind 0.0.0.0:$PORT --workers 3 --timeout 120 --keep-alive 2 --max-requests 1000 --max-requests-jitter 100 --log-level info"
