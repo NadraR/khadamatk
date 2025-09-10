@@ -1,5 +1,6 @@
 #!/bin/bash
-set -e  # يوقف السكربت لو حصل أي خطأ
+set -e  
+: "${PORT:=8000}"
 
 echo "Checking/creating superuser..."
 python manage.py shell -c "
@@ -13,7 +14,7 @@ else:
 "
 
 echo "Deployment preparation complete."
-echo "Starting Gunicorn server..."
+echo "Starting Gunicorn server on port $PORT..."
 
 exec gunicorn core.wsgi:application \
     --bind 0.0.0.0:$PORT \
