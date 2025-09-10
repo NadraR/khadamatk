@@ -10,20 +10,23 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "unsafe-secret-key")
 DEBUG = False  # Always False in production
 
-# Allowed hosts
 ALLOWED_HOSTS = [
-    "khadamatk-production.up.railway.app",  # Railway backend
-    "your-frontend-domain.vercel.app",       # Frontend
+    "khadamatk-production.up.railway.app",
+    "khadamatk.vercel.app",
+    "127.0.0.1",
+    "localhost",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "https://khadamatk-production.up.railway.app",
-    "https://your-frontend-domain.vercel.app",
+    "https://khadamatk.vercel.app",
+    "http://localhost:5173",
 ]
 
 # CORS
 CORS_ALLOWED_ORIGINS = [
-    "https://your-frontend-domain.vercel.app",
+    "https://khadamatk.vercel.app",
+    "http://localhost:5173",
 ]
 CORS_ALLOW_CREDENTIALS = True
 
