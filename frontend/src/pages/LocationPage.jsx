@@ -345,15 +345,44 @@ export default function LocationPage() {
         
         console.log('Searching with service type ID:', serviceTypeId);
         
-        const result = await locationService.searchNearbyLocations(
+        const result = await locationService.searchNearbyServices(
           location.lat,
           location.lng,
           10,
-          serviceTypeId
+          serviceTypeId,
+          ''
         );
 
         if (result.success) {
-          const providers = result.data || [];
+          const services = result.data || [];
+          
+          // Transform services data to match expected provider format
+          const providers = services.map(service => ({
+            id: service.id,
+            title: service.title,
+            description: service.description,
+            provider_username: service.provider_username,
+            provider_id: service.provider,
+            category: service.category,
+            price: service.price,
+            currency: service.currency,
+            rating_avg: service.rating_avg,
+            rating_count: service.rating_count,
+            city: service.city,
+            distance_km: service.distance_km,
+            provider_location: service.provider_location,
+            // Add user-like fields for compatibility
+            user: {
+              username: service.provider_username,
+              first_name: service.provider_username, // fallback
+              last_name: '',
+              rating: service.rating_avg || 0,
+              price: service.price || 0
+            },
+            // Keep original service data
+            original_service: service
+          }));
+          
           setResults(providers);
           setError(null);
           console.log('Search successful, found', providers.length, 'results');
@@ -853,9 +882,24 @@ export default function LocationPage() {
                                 if (service.title) {
                                   return service.title;
                                 }
-                                return 'مزود خدمة';
+                                return service.title || 'خدمة';
                               })()}
                             </h6>
+                            {service.provider_username && (
+                              <p className="text-muted mb-1">
+                                مقدم الخدمة: {service.provider_username}
+                              </p>
+                            )}
+                            {service.description && (
+                              <p className="text-muted mb-1" style={{ fontSize: '0.9rem' }}>
+                                {service.description}
+                              </p>
+                            )}
+                            {service.price && (
+                              <p className="text-success mb-2 fw-bold">
+                                السعر: {service.price} {service.currency || 'ج.م'}
+                              </p>
+                            )}
                             
                             {/* Rating Display */}
                             {(() => {

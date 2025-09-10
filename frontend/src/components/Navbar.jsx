@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { FaScrewdriver, FaBell, FaSun, FaMoon, FaGlobe, FaHeart, FaComments, FaStar, FaBars, FaSignInAlt, FaSignOutAlt, FaEnvelope, FaEnvelopeOpen } from 'react-icons/fa';
 import './Navbar.css';
@@ -180,19 +180,37 @@ const Navbar = () => {
 
 
   // Enhanced message handling functions
-  const handleMessagesClick = () => {
+  const handleMessagesClick = async () => {
     if (!isLoggedIn) {
       handleLoginClick();
       return;
     }
     
-    // Reset message count and unread status when clicked
+    // Immediately reset UI state for better UX
     setMessageCount(0);
     setUnreadMessages(false);
     setShowMessageDropdown(false);
     
     // Store the last message check time
     localStorage.setItem('lastMessageCheck', Date.now().toString());
+    
+    // Mark all messages as read in background
+    try {
+      const result = await chatService.markAllMessagesAsRead();
+      if (result.success) {
+        console.log('[DEBUG] Navbar: All messages marked as read successfully');
+        // Dispatch event to notify other components
+        window.dispatchEvent(new CustomEvent('messagesMarkedAsRead'));
+      } else {
+        console.warn('[DEBUG] Navbar: Failed to mark messages as read:', result.error);
+        // If marking as read fails, refresh count to get accurate state
+        setTimeout(fetchMessageCount, 500);
+      }
+    } catch (error) {
+      console.error('[DEBUG] Navbar: Error marking messages as read:', error);
+      // If error occurs, refresh count to get accurate state
+      setTimeout(fetchMessageCount, 500);
+    }
     
     window.location.href = "/messages";
   };
@@ -206,9 +224,17 @@ const Navbar = () => {
     setShowMessageDropdown(!showMessageDropdown);
   };
 
-  // Fetch real message count from backend
-  const fetchMessageCount = async () => {
+  // Fetch real message count from backend with debouncing
+  const fetchMessageCount = useCallback(async (force = false) => {
     if (!isLoggedIn) return;
+    
+    // Debouncing: don't fetch if we just fetched recently (unless forced)
+    const lastFetch = localStorage.getItem('lastMessageFetch');
+    const now = Date.now();
+    if (!force && lastFetch && (now - parseInt(lastFetch)) < 5000) {
+      console.log('[DEBUG] Navbar: Skipping message count fetch (too recent)');
+      return;
+    }
     
     try {
       setMessageLoading(true);
@@ -216,26 +242,52 @@ const Navbar = () => {
       
       if (result.success) {
         const { unread_count, has_unread } = result.data;
-        setMessageCount(unread_count);
-        setUnreadMessages(has_unread);
-        console.log(`[DEBUG] Navbar: Fetched ${unread_count} unread messages`);
+        
+        // Only update state if values actually changed
+        setMessageCount(prevCount => {
+          if (prevCount !== unread_count) {
+            console.log(`[DEBUG] Navbar: Message count changed from ${prevCount} to ${unread_count}`);
+            return unread_count;
+          }
+          return prevCount;
+        });
+        
+        setUnreadMessages(prevHasUnread => {
+          if (prevHasUnread !== has_unread) {
+            console.log(`[DEBUG] Navbar: Unread status changed from ${prevHasUnread} to ${has_unread}`);
+            return has_unread;
+          }
+          return prevHasUnread;
+        });
+        
+        // Store last fetch time
+        localStorage.setItem('lastMessageFetch', now.toString());
       } else {
         console.warn('Failed to fetch message count:', result.error);
-        // Fallback to 0 if API fails
-        setMessageCount(0);
-        setUnreadMessages(false);
+        // Only reset if we don't have any current count
+        if (messageCount > 0) {
+          console.log('[DEBUG] Navbar: API failed but keeping current count');
+        } else {
+          setMessageCount(0);
+          setUnreadMessages(false);
+        }
       }
     } catch (error) {
       console.error('Error fetching message count:', error);
-      setMessageCount(0);
-      setUnreadMessages(false);
+      // Only reset if we don't have any current count
+      if (messageCount > 0) {
+        console.log('[DEBUG] Navbar: Network error but keeping current count');
+      } else {
+        setMessageCount(0);
+        setUnreadMessages(false);
+      }
     } finally {
       setMessageLoading(false);
     }
-  };
+  }, [isLoggedIn, messageCount]);
 
   // Fetch recent messages for dropdown
-  const fetchRecentMessages = async () => {
+  const fetchRecentMessages = useCallback(async () => {
     if (!isLoggedIn) return;
     
     try {
@@ -260,7 +312,7 @@ const Navbar = () => {
       console.error('Error fetching recent messages:', error);
       setRecentMessages([]);
     }
-  };
+  }, [isLoggedIn, i18n.language]);
 
   // Check for new messages periodically
   useEffect(() => {
@@ -268,20 +320,61 @@ const Navbar = () => {
       fetchMessageCount();
       fetchRecentMessages();
       
-      // Check for new messages every 30 seconds
+      // Check for new messages every 45 seconds (reduced frequency)
       const messageInterval = setInterval(() => {
-        fetchMessageCount();
+        fetchMessageCount(); // Use normal fetch (with debouncing)
         fetchRecentMessages();
-      }, 30000);
+      }, 45000);
       
-      return () => clearInterval(messageInterval);
+      // Listen for message events to update count
+      const handleMessageSent = () => {
+        console.log('[DEBUG] Navbar: Message sent event received, refreshing count');
+        // Force refresh since there's definitely a new message
+        setTimeout(() => {
+          fetchMessageCount(true);
+          fetchRecentMessages();
+        }, 1000);
+      };
+      
+      const handleMessageRead = () => {
+        console.log('[DEBUG] Navbar: Message read event received, refreshing count');
+        // Force refresh since read status changed
+        setTimeout(() => {
+          fetchMessageCount(true);
+          fetchRecentMessages();
+        }, 500);
+      };
+      
+      const handleAllMessagesRead = () => {
+        console.log('[DEBUG] Navbar: All messages marked as read event received');
+        // Immediately reset count since we know all are read
+        setMessageCount(0);
+        setUnreadMessages(false);
+        // Still fetch to confirm server state
+        setTimeout(() => {
+          fetchMessageCount(true);
+          fetchRecentMessages();
+        }, 1000);
+      };
+      
+      // Add event listeners
+      window.addEventListener('messageSent', handleMessageSent);
+      window.addEventListener('messageRead', handleMessageRead);
+      window.addEventListener('messagesMarkedAsRead', handleAllMessagesRead);
+      
+      return () => {
+        clearInterval(messageInterval);
+        window.removeEventListener('messageSent', handleMessageSent);
+        window.removeEventListener('messageRead', handleMessageRead);
+        window.removeEventListener('messagesMarkedAsRead', handleAllMessagesRead);
+      };
     } else {
       // Reset message state when logged out
       setMessageCount(0);
       setUnreadMessages(false);
       setRecentMessages([]);
     }
-  }, [isLoggedIn]);
+  }, [isLoggedIn, fetchMessageCount, fetchRecentMessages]);
 
   // دالة لتنسيق رقم الإشعارات إذا كان كبيراً
   const formatNotificationCount = (count) => {
@@ -303,8 +396,8 @@ const Navbar = () => {
 
   // Handle message item click
   const handleMessageItemClick = (message) => {
-    // Navigate to the specific conversation/order
-    window.location.href = `/order/${message.orderId}`;
+    // Navigate to the messages page with the specific order
+    window.location.href = `/messages?orderId=${message.orderId}`;
     setShowMessageDropdown(false);
   };
 
@@ -399,6 +492,21 @@ const Navbar = () => {
 
   // Make clearUserData available globally for debugging
   window.clearUserData = clearUserData;
+  
+  // Helper function to reset message state (for debugging)
+  const resetMessageState = () => {
+    console.log('[DEBUG] Navbar: Manually resetting message state');
+    setMessageCount(0);
+    setUnreadMessages(false);
+    setRecentMessages([]);
+    setShowMessageDropdown(false);
+    setMessageLoading(false);
+    localStorage.removeItem('lastMessageCheck');
+    localStorage.removeItem('lastMessageFetch');
+  };
+  
+  // Make resetMessageState available globally for debugging
+  window.resetMessageState = resetMessageState;
   
   // Function to manually refresh login state (for debugging)
   const refreshLoginState = () => {
@@ -939,6 +1047,15 @@ const Navbar = () => {
     localStorage.removeItem('user_id');
     localStorage.removeItem('user_role');
     localStorage.removeItem('username');
+    localStorage.removeItem('lastMessageCheck');
+    localStorage.removeItem('lastMessageFetch');
+    
+    // Reset message state
+    setMessageCount(0);
+    setUnreadMessages(false);
+    setRecentMessages([]);
+    setShowMessageDropdown(false);
+    setMessageLoading(false);
     
     // Dispatch logout event
     window.dispatchEvent(new CustomEvent('userLogout'));

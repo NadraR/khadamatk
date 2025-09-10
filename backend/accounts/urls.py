@@ -18,6 +18,7 @@ from .views import (
     update_worker_profile,
     list_workers,
     worker_detail,  
+    ProviderPublicProfileView
     )
 
 urlpatterns = [
@@ -43,6 +44,7 @@ urlpatterns = [
     path("worker/profile/full-update/", worker_full_update, name="worker-full-update"),
 
 
+    path('provider/<int:pk>/', ProviderPublicProfileView.as_view(), name='provider-public-profile'),
     #Google OAuth2 login
     path('google-login/', GoogleLoginView.as_view(), name='google-login'),
 ]

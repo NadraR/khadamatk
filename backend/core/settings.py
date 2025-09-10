@@ -206,6 +206,7 @@ AUTH_USER_MODEL = 'accounts.User'
 
 
 CORS_ALLOW_CREDENTIALS = True
+CORS_PREFLIGHT_MAX_AGE = 86400  # 24 hours
 
 # Additional CORS settings for better compatibility
 CORS_ALLOW_METHODS = [
@@ -227,7 +228,13 @@ CORS_ALLOW_HEADERS = [
     "user-agent",
     "x-csrftoken",
     "x-requested-with",
+    "access-control-allow-origin",
+    "access-control-allow-credentials",
+    "cache-control",
 ]
+
+# Additional CORS settings for development
+CORS_ALLOW_PRIVATE_NETWORK = True
 
 PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.Argon2PasswordHasher',

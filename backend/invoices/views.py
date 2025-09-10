@@ -122,3 +122,108 @@ def worker_earnings_summary(request):
     
     return Response(summary)
 
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def create_invoice_for_completed_orders(request):
+    """Create invoices for completed orders that don't have invoices yet"""
+    from orders.models import Order
+    from django.utils import timezone
+    
+    try:
+        # البحث عن الطلبات المكتملة بدون فواتير للمستخدم الحالي
+        completed_orders = Order.objects.filter(
+            customer=request.user,
+            status='completed'
+        ).exclude(
+            id__in=Invoice.objects.values_list('order_id', flat=True)
+        )
+        
+        created_invoices = []
+        
+        for order in completed_orders:
+            try:
+                # استخدام السعر المعروض من العميل أو السعر الأساسي للخدمة
+                amount = order.offered_price or order.service.price or 100
+                
+                # تحديد تاريخ الاستحقاق (7 أيام من الآن)
+                due_date = timezone.now() + timezone.timedelta(days=7)
+                
+                invoice = Invoice.objects.create(
+                    order=order,
+                    amount=amount,
+                    status=Invoice.STATUS_UNPAID,
+                    due_date=due_date,
+                    notes=f"فاتورة للخدمة: {order.service.title}"
+                )
+                
+                created_invoices.append({
+                    'invoice_id': invoice.id,
+                    'order_id': order.id,
+                    'amount': str(amount),
+                    'service_name': order.service.title
+                })
+                
+            except Exception as e:
+                print(f"Error creating invoice for order {order.id}: {e}")
+        
+        return Response({
+            'message': f'تم إنشاء {len(created_invoices)} فاتورة بنجاح',
+            'created_invoices': created_invoices
+        })
+        
+    except Exception as e:
+        return Response({
+            'error': f'حدث خطأ: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def trigger_invoice_signal(request):
+    """Manually trigger invoice creation signal for testing"""
+    from orders.models import Order
+    from invoices.signals import handle_booking_status_change
+    
+    try:
+        order_id = request.data.get('order_id')
+        if not order_id:
+            return Response({'error': 'order_id is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Get the order
+        try:
+            order = Order.objects.get(id=order_id, customer=request.user)
+        except Order.DoesNotExist:
+            return Response({'error': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
+        
+        # Check if invoice already exists
+        existing_invoice = Invoice.objects.filter(order=order).first()
+        if existing_invoice:
+            return Response({
+                'message': 'Invoice already exists',
+                'invoice_id': existing_invoice.id,
+                'amount': str(existing_invoice.amount)
+            })
+        
+        # Manually trigger the signal
+        handle_booking_status_change(Order, order, created=False)
+        
+        # Check if invoice was created
+        new_invoice = Invoice.objects.filter(order=order).first()
+        if new_invoice:
+            return Response({
+                'message': 'Invoice created successfully via signal',
+                'invoice_id': new_invoice.id,
+                'amount': str(new_invoice.amount),
+                'status': new_invoice.status
+            })
+        else:
+            return Response({
+                'error': 'Signal did not create invoice'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+    except Exception as e:
+        return Response({
+            'error': f'حدث خطأ: {str(e)}'
+        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+

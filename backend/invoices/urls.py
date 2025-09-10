@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import InvoiceViewSet, total_revenue, invoice_stats, overdue_invoices, worker_earnings, worker_earnings_summary
+from .views import InvoiceViewSet, total_revenue, invoice_stats, overdue_invoices, worker_earnings, worker_earnings_summary, create_invoice_for_completed_orders, trigger_invoice_signal
 
 # نحدد الـ as_view لكل نوع
 invoice_list = InvoiceViewSet.as_view({
@@ -24,4 +24,6 @@ urlpatterns = [
     path("total-revenue/", total_revenue, name="total-revenue"),
     path('worker/earnings/', worker_earnings, name='worker-earnings'),
     path('worker/earnings/summary/', worker_earnings_summary, name='worker-earnings-summary'),
+    path('create-missing/', create_invoice_for_completed_orders, name='create-missing-invoices'),
+    path('trigger-signal/', trigger_invoice_signal, name='trigger-invoice-signal'),
 ]

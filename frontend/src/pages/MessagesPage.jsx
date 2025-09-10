@@ -30,16 +30,26 @@ const MessagesPage = () => {
       const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
       console.log('[DEBUG] MessagesPage: Loading conversations for user:', currentUser);
       
+      // Get target order ID early
+      const targetOrderId = location.state?.orderId || searchParams.get('orderId');
+      console.log('[DEBUG] Target order ID:', targetOrderId);
+      
       // Use the proper API endpoint for conversations
       const result = await chatService.getUserConversations();
       
       if (!result.success) {
         console.warn('No conversations found, trying orders fallback');
+        console.log('[DEBUG] Conversations error:', result.error);
+        
         // Fallback to orders if conversations API fails
         const ordersResult = await chatService.getUserOrders();
+        console.log('[DEBUG] Orders fallback result:', ordersResult);
         
         if (!ordersResult.success) {
-          throw new Error(ordersResult.error);
+          console.error('[DEBUG] Orders fallback failed:', ordersResult.error);
+          setError(`فشل في تحميل المحادثات: ${ordersResult.error}`);
+          setLoading(false);
+          return;
         }
         
         // Handle different response formats from the API
@@ -109,7 +119,6 @@ const MessagesPage = () => {
         setConversations(conversationsData);
         
         // Auto-select conversation if orderId is provided in location state or URL params
-        const targetOrderId = location.state?.orderId || searchParams.get('orderId');
         if (targetOrderId) {
           let targetConversation = conversationsData.find(conv => conv.orderId === parseInt(targetOrderId));
           
@@ -133,13 +142,27 @@ const MessagesPage = () => {
           }
         }
       } else {
-        // Use conversations API response
-        const conversationsData = result.data || [];
+        // Use conversations API response and normalize field names
+        const conversationsData = (result.data || []).map(conv => ({
+          ...conv,
+          orderId: conv.order_id || conv.orderId, // Normalize order_id to orderId
+          name: conv.other_participant?.name || conv.other_participant?.username || 'Unknown User',
+          lastMessage: conv.last_message?.message || 'No messages yet',
+          unread: conv.message_count || 0
+        }));
+        
         console.log('[DEBUG] MessagesPage: Loaded conversations:', conversationsData);
+        console.log('[DEBUG] MessagesPage: First conversation details:', conversationsData[0]);
+        console.log('[DEBUG] MessagesPage: Looking for target order ID:', targetOrderId);
         setConversations(conversationsData);
         
+        // Debug: Check if target order exists in conversations
+        if (targetOrderId) {
+          const targetExists = conversationsData.find(conv => conv.orderId === parseInt(targetOrderId));
+          console.log('[DEBUG] MessagesPage: Target order exists in conversations:', !!targetExists, targetExists);
+        }
+        
         // Auto-select conversation if orderId is provided in location state or URL params
-        const targetOrderId = location.state?.orderId || searchParams.get('orderId');
         if (targetOrderId) {
           let targetConversation = conversationsData.find(conv => conv.orderId === parseInt(targetOrderId));
           
@@ -170,8 +193,14 @@ const MessagesPage = () => {
         toast.info(i18n.language === 'ar' ? 'لا توجد محادثات متاحة' : 'No conversations available');
       }
     } catch (error) {
-      console.error('Error loading conversations:', error);
-      const errorMessage = i18n.language === 'ar' ? 'فشل في تحميل المحادثات' : 'Failed to load conversations';
+      console.error('[DEBUG] Error loading conversations:', error);
+      console.error('[DEBUG] Error details:', error.message, error.stack);
+      
+      // Handle different types of errors
+      const errorMessage = i18n.language === 'ar' ? 
+        `فشل في تحميل المحادثات: ${error.message || 'خطأ غير معروف'}` : 
+        `Failed to load conversations: ${error.message || 'Unknown error'}`;
+      
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
@@ -181,6 +210,7 @@ const MessagesPage = () => {
 
   const loadMessages = useCallback(async (orderId) => {
     try {
+      console.log('[DEBUG] MessagesPage: Loading messages for orderId:', orderId);
       setError(null);
       const result = await chatService.getMessages(orderId);
       
@@ -296,12 +326,25 @@ const MessagesPage = () => {
     setSending(true);
 
     try {
+      console.log('[DEBUG] MessagesPage: Sending message to order:', activeConversation?.orderId);
+      console.log('[DEBUG] MessagesPage: Active conversation:', activeConversation);
+      
+      if (!activeConversation?.orderId) {
+        console.error('[DEBUG] MessagesPage: No orderId found in activeConversation');
+        toast.error('خطأ: لا يمكن إرسال الرسالة - معرف الطلب مفقود');
+        return;
+      }
+      
       // Try WebSocket first
       const wsSent = chatService.sendWebSocketMessage(activeConversation.orderId, messageText);
       
       if (!wsSent) {
         // Fallback to API
-        await chatService.sendMessage(activeConversation.orderId, messageText);
+        const messageData = {
+          message: messageText,
+          sender: getCurrentUsername()
+        };
+        await chatService.sendMessage(activeConversation.orderId, messageData);
         
         // Add message to local state
         const newMsg = {
@@ -388,7 +431,10 @@ const MessagesPage = () => {
             <div
               key={conv.id}
               className={`conversation ${activeConversation?.id === conv.id ? "active" : ""}`}
-              onClick={() => setActiveConversation(conv)}
+              onClick={() => {
+                console.log('[DEBUG] MessagesPage: Selecting conversation:', conv);
+                setActiveConversation(conv);
+              }}
             >
               <div className="conv-name">{conv.name}</div>
               <div className="conv-service">{conv.service}</div>

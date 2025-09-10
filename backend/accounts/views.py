@@ -354,6 +354,172 @@ class UserListView(generics.ListAPIView):
     permission_classes = [permissions.AllowAny]
 
 
+class ProviderPublicProfileView(generics.RetrieveAPIView):
+    """Public view for provider profile - accessible to all users"""
+    permission_classes = [permissions.AllowAny]
+    lookup_field = 'pk'
+    
+    def get_object(self):
+        """Get the provider by ID"""
+        from django.shortcuts import get_object_or_404
+        provider_id = self.kwargs.get('pk')
+        provider = get_object_or_404(User, id=provider_id, role='worker')
+        return provider
+    
+    def retrieve(self, request, *args, **kwargs):
+        """Return comprehensive provider profile information"""
+        provider = self.get_object()
+        
+        # Get worker profile
+        worker_profile = None
+        try:
+            worker_profile = provider.worker_profile
+        except WorkerProfile.DoesNotExist:
+            pass
+        
+        # Get provider's location
+        provider_location = None
+        try:
+            from location.models import UserLocation
+            location = UserLocation.objects.filter(user=provider).first()
+            if location:
+                provider_location = {
+                    'lat': location.location.y if location.location else None,
+                    'lng': location.location.x if location.location else None,
+                    'address': location.address,
+                    'city': location.city,
+                    'neighborhood': location.neighborhood
+                }
+        except Exception as e:
+            print(f"[DEBUG] Error getting provider location: {e}")
+        
+        # Get provider's services
+        provider_services = []
+        try:
+            from services.models import Service
+            services = Service.objects.filter(
+                provider=provider, 
+                is_active=True, 
+                is_deleted=False
+            ).select_related('category')
+            
+            for service in services:
+                provider_services.append({
+                    'id': service.id,
+                    'title': service.title,
+                    'description': service.description,
+                    'price': str(service.price) if service.price else '0.00',
+                    'category': {
+                        'id': service.category.id if service.category else None,
+                        'name': service.category.name if service.category else None
+                    } if service.category else None,
+                    'city': service.city,
+                    'created_at': service.created_at.isoformat() if service.created_at else None
+                })
+        except Exception as e:
+            print(f"[DEBUG] Error getting provider services: {e}")
+        
+        # Get provider's ratings and reviews
+        avg_rating = 0.0
+        total_ratings = 0
+        recent_reviews = []
+        
+        try:
+            from reviews.models import Review
+            from django.db.models import Avg, Count
+            
+            # Get average rating
+            rating_stats = Review.objects.filter(
+                service__provider=provider
+            ).aggregate(
+                avg_rating=Avg('rating'),
+                total_count=Count('id')
+            )
+            
+            avg_rating = float(rating_stats['avg_rating'] or 0.0)
+            total_ratings = rating_stats['total_count'] or 0
+            
+            # Get recent reviews (last 5)
+            reviews = Review.objects.filter(
+                service__provider=provider
+            ).select_related('user', 'service').order_by('-created_at')[:5]
+            
+            for review in reviews:
+                recent_reviews.append({
+                    'id': review.id,
+                    'rating': review.rating,
+                    'comment': review.comment,
+                    'created_at': review.created_at.isoformat(),
+                    'client_name': review.user.first_name or review.user.username,
+                    'service_name': review.service.title if review.service else None
+                })
+                
+        except Exception as e:
+            print(f"[DEBUG] Error getting provider ratings: {e}")
+        
+        # Get completed orders count
+        completed_orders_count = 0
+        try:
+            from orders.models import Order
+            completed_orders_count = Order.objects.filter(
+                worker=provider,
+                status='completed'
+            ).count()
+        except Exception as e:
+            print(f"[DEBUG] Error getting completed orders: {e}")
+        
+        # Build response data
+        response_data = {
+            'id': provider.id,
+            'username': provider.username,
+            'first_name': provider.first_name,
+            'last_name': provider.last_name,
+            'email': provider.email,
+            'phone': provider.phone,
+            'role': provider.role,
+            'date_joined': provider.date_joined.isoformat(),
+            
+            # Worker profile information
+            'profile': {
+                'job_title': worker_profile.job_title if worker_profile else None,
+                'hourly_rate': str(worker_profile.hourly_rate) if worker_profile and worker_profile.hourly_rate else None,
+                'experience_years': worker_profile.experience_years if worker_profile else None,
+                'skills': worker_profile.skills if worker_profile else None,
+                'services_provided': worker_profile.services_provided if worker_profile else None,
+                'estimated_price': str(worker_profile.estimated_price) if worker_profile and worker_profile.estimated_price else None,
+                'certifications': worker_profile.certifications if worker_profile else None,
+                'neighborhood': worker_profile.neighborhood if worker_profile else None,
+                'is_complete': worker_profile.is_complete if worker_profile else False,
+                'created_at': worker_profile.created_at.isoformat() if worker_profile else None,
+                'updated_at': worker_profile.updated_at.isoformat() if worker_profile else None
+            },
+            
+            # Location information
+            'location': provider_location,
+            
+            # Services information
+            'services': provider_services,
+            'total_services': len(provider_services),
+            
+            # Rating information
+            'rating': {
+                'average_rating': round(avg_rating, 1),
+                'total_ratings': total_ratings,
+                'recent_reviews': recent_reviews
+            },
+            
+            # Statistics
+            'stats': {
+                'completed_orders': completed_orders_count,
+                'total_services': len(provider_services),
+                'years_experience': worker_profile.experience_years if worker_profile else 0,
+                'member_since': provider.date_joined.year
+            }
+        }
+        
+        return Response(response_data)
+
+
 @api_view(['GET'])
 @permission_classes([permissions.IsAuthenticated])  # أو AllowAny حسب حاجتك
 def get_user_by_id(request, user_id):

@@ -57,6 +57,7 @@ import NotificationsPage from "./pages/NotificationsPage";
 import InvoiceDetails from "./pages/InvoiceDetails";
 import WorkerProfileCompletion from "./pages/WorkerProfileCompletion";
 import FontTest from "./components/FontTest";
+import ProviderProfile from "./pages/ProviderProfile";
 
 function App() {
   console.log('[DEBUG] App component rendering, current path:', window.location.pathname);
@@ -136,6 +137,9 @@ function App() {
         {/* Services */}
         <Route path="/service/:id" element={<Layout><ServiceDetails /></Layout>} />
         <Route path="/services" element={<Layout><Services /></Layout>} />
+        
+        {/* Provider Profile */}
+        <Route path="/provider/:providerId" element={<Layout><ProviderProfile /></Layout>} />
         <Route path="/order" element={<Layout><OrderPage /></Layout>} />
         <Route path="/order-page" element={<Layout><OrderPage /></Layout>} />
         <Route path="/orders" element={<Layout><Orders /></Layout>} />
