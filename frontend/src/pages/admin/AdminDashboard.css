@@ -1,0 +1,471 @@
+/* 
+.stat-card {
+  transition: all 0.3s ease !important;
+  border: none !important;
+  background: white !important;
+  box-shadow: 0 2px 8px rgba(0,123,255,0.1) !important;
+  border-radius: 12px !important;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 16px rgba(0,123,255,0.15) !important;
+  background: white !important;
+  border: none !important;
+}
+
+.MuiCard-root {
+  background: white !important;
+  border: none !important;
+  box-shadow: 0 2px 8px rgba(0,123,255,0.1) !important;
+  border-radius: 12px !important;
+}
+
+.MuiCard-root:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 16px rgba(0,123,255,0.15) !important;
+  background: white !important;
+  border: none !important;
+}
+
+.MuiButton-root {
+  transition: all 0.2s ease !important;
+  border-radius: 8px !important;
+}
+
+.MuiButton-outlined {
+  border: 1px solid rgba(0,123,255,0.2) !important;
+  color: #0077ff !important;
+  background: rgba(0,123,255,0.05) !important;
+}
+
+.MuiButton-outlined:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 2px 8px rgba(0,123,255,0.15) !important;
+  background: rgba(0,123,255,0.1) !important;
+  border: 1px solid rgba(0,123,255,0.3) !important;
+}
+
+.MuiButton-contained {
+  background: linear-gradient(135deg, #0077ff 0%, #4da6ff 100%) !important;
+  box-shadow: 0 2px 8px rgba(0,123,255,0.3) !important;
+}
+
+.MuiButton-contained:hover {
+  background: linear-gradient(135deg, #0056cc 0%, #3d8bff 100%) !important;
+  box-shadow: 0 4px 12px rgba(0,123,255,0.4) !important;
+  transform: translateY(-1px) !important;
+}
+
+.MuiIconButton-root {
+  transition: all 0.2s ease !important;
+  border-radius: 8px !important;
+}
+
+.MuiIconButton-root:hover {
+  background: rgba(0,123,255,0.08) !important;
+  transform: scale(1.02) !important;
+}
+
+.MuiTypography-h4 {
+  letter-spacing: -0.02em !important;
+  color: #666666 !important;
+}
+
+.MuiTypography-h6 {
+  letter-spacing: 0.01em !important;
+  color: #666666 !important;
+}
+
+.MuiTypography-body1 {
+  color: #666666 !important;
+}
+
+.MuiTypography-body2 {
+  color: #666666 !important;
+}
+
+.MuiTypography-root {
+  color: #666666 !important;
+}
+
+.admin-dashboard-container .MuiTypography-root {
+  color: #666666 !important;
+}
+
+.admin-dashboard-container .MuiTypography-h4 {
+  color: #666666 !important;
+}
+
+.admin-dashboard-container .MuiTypography-h6 {
+  color: #666666 !important;
+}
+
+.admin-dashboard-container .MuiTypography-body1 {
+  color: #666666 !important;
+}
+
+.admin-dashboard-container .MuiTypography-body2 {
+  color: #666666 !important;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.MuiButton-root:focus,
+.MuiIconButton-root:focus,
+.MuiTextField-root .MuiOutlinedInput-root:focus {
+  outline: 2px solid #0077ff !important;
+  outline-offset: 2px !important;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+    transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.stat-card-animated {
+  animation: fadeInUp 0.6s ease-out !important;
+}
+
+.status-indicator {
+  width: 12px !important;
+  height: 12px !important;
+  border-radius: 50% !important;
+  display: inline-block !important;
+  margin-left: 8px !important;
+}
+
+.status-online {
+  background-color: #10b981 !important;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4) !important;
+}
+
+.status-offline {
+  background-color: #ef4444 !important;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.4) !important;
+}
+
+.status-warning {
+  background-color: #f59e0b !important;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.4) !important;
+}
+
+.MuiChip-root {
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+  font-size: 0.75rem !important;
+}
+
+.MuiChip-filled {
+  background: rgba(0,123,255,0.1) !important;
+  color: #0077ff !important;
+}
+
+.MuiChip-outlined {
+  border: 1px solid rgba(0,123,255,0.2) !important;
+  color: #0077ff !important;
+  background: rgba(0,123,255,0.05) !important;
+}
+
+@media (max-width: 768px) {
+  .stat-card {
+    margin-bottom: 16px !important;
+  }
+  
+  .MuiCard-root {
+    margin-bottom: 16px !important;
+  }
+  
+  .MuiTypography-h4 {
+    font-size: 1.75rem !important;
+  }
+  
+  .MuiTypography-h6 {
+    font-size: 1.1rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .stat-card {
+    padding: 16px !important;
+  }
+  
+  .MuiCard-root {
+    padding: 16px !important;
+  }
+  
+  .MuiTypography-h4 {
+    font-size: 1.5rem !important;
+  }
+  
+  .MuiTypography-h6 {
+    font-size: 1rem !important;
+  }
+}
+
+.stat-card * {
+  box-sizing: border-box !important;
+}
+
+.stat-card-content > * {
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+.stat-icon {
+  display: block !important;
+  margin: 0 auto 8px auto !important;
+}
+
+.admin-dashboard-container {
+  background: linear-gradient(180deg, #f9fbff 0%, #ffffff 100%) !important;
+  min-height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.admin-dashboard-container > div {
+  width: 100% !important;
+  max-width: 100% !important;
+  margin: 0 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  height: 100% !important;
+  overflow: auto !important;
+  box-sizing: border-box !important;
+}
+
+.MuiGrid-container {
+  width: 100% !important;
+  max-width: 100% !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+}
+
+.MuiGrid-container:first-of-type {
+  max-width: 100% !important;
+  margin: 0 auto !important;
+  flex-shrink: 0 !important;
+}
+
+.MuiGrid-container:nth-of-type(2) {
+  max-width: 100% !important;
+  margin: 0 !important;
+  flex: 1 !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  justify-content: stretch !important;
+  margin-bottom: 16px !important;
+}
+
+.MuiGrid-container:nth-of-type(3) {
+  max-width: 100% !important;
+  margin: 0 !important;
+  flex: 1 !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  justify-content: stretch !important;
+}
+
+.MuiGrid-item:first-of-type {
+  display: flex !important;
+  width: 100% !important;
+}
+
+.MuiGrid-item:first-of-type .MuiCard-root {
+  height: 100% !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 400px !important;
+}
+
+.MuiGrid-item:last-of-type {
+  display: flex !important;
+  width: 100% !important;
+}
+
+.MuiGrid-item:last-of-type .MuiCard-root {
+  height: 100% !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  min-height: 400px !important;
+}
+
+@media (min-width: 1200px) {
+  .MuiGrid-item:first-of-type {
+    flex: 0 0 33.333333% !important;
+    max-width: 33.333333% !important;
+    width: 33.333333% !important;
+  }
+  
+  .MuiGrid-item:last-of-type {
+    flex: 0 0 66.666667% !important;
+    max-width: 66.666667% !important;
+    width: 66.666667% !important;
+  }
+}
+
+@media (min-width: 900px) and (max-width: 1199px) {
+  .MuiGrid-item:first-of-type {
+    flex: 0 0 40% !important;
+    max-width: 40% !important;
+    width: 40% !important;
+  }
+  
+  .MuiGrid-item:last-of-type {
+    flex: 0 0 60% !important;
+    max-width: 60% !important;
+    width: 60% !important;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 899px) {
+  .MuiGrid-item:first-of-type {
+    flex: 0 0 50% !important;
+    max-width: 50% !important;
+    width: 50% !important;
+  }
+  
+  .MuiGrid-item:last-of-type {
+    flex: 0 0 50% !important;
+    max-width: 50% !important;
+    width: 50% !important;
+  }
+}
+
+.MuiGrid-container:nth-of-type(2) .MuiGrid-item {
+  padding-left: 12px !important;
+  padding-right: 12px !important;
+}
+
+.MuiGrid-container:nth-of-type(2) .MuiGrid-item:first-of-type {
+  padding-left: 0 !important;
+}
+
+.MuiGrid-container:nth-of-type(2) .MuiGrid-item:last-of-type {
+  padding-right: 0 !important;
+}
+
+.admin-dashboard-container .MuiBox-root:first-of-type {
+  width: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
+  flex-wrap: wrap !important;
+  flex-shrink: 0 !important;
+}
+
+* {
+  box-sizing: border-box !important;
+}
+
+body, html {
+  overflow-x: hidden !important;
+}
+
+@media (max-width: 1200px) {
+  .MuiGrid-item {
+    padding: 8px !important;
+  }
+  
+  .MuiCard-root {
+    margin: 0 !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-dashboard-container {
+    padding: 0 !important;
+  }
+  
+  .MuiGrid-container {
+    padding: 0 8px !important;
+  }
+  
+  .MuiCard-root {
+    margin: 0 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .MuiGrid-container {
+    padding: 0 4px !important;
+  }
+  
+  .MuiCard-root {
+    margin: 0 !important;
+  }
+} */
+
+
+/* Typography Improvements */
+.MuiTypography-h4 {
+  color: #666666 !important; /* رمادي داكن */
+}
+
+.MuiTypography-h6 {
+  color: #666666 !important; /* رمادي داكن */
+}
+
+.MuiTypography-body1 {
+  color: #666666 !important; /* رمادي داكن */
+}
+
+.MuiTypography-body2 {
+  color: #666666 !important; /* رمادي داكن */
+}
+
+.MuiTypography-root {
+  color: #666666 !important; /* رمادي داكن */
+}
+
+/* Specific overrides for dashboard elements */
+.admin-dashboard-container .MuiTypography-root {
+  color: #666666 !important; /* رمادي داكن */
+}
+
+.admin-dashboard-container .MuiTypography-h4 {
+  color: #666666 !important; /* رمادي داكن */
+}
+
+.admin-dashboard-container .MuiTypography-h6 {
+  color: #666666 !important; /* رمادي داكن */
+}
+
+.admin-dashboard-container .MuiTypography-body1 {
+  color: #666666 !important; /* رمادي داكن */
+}
+
+.admin-dashboard-container .MuiTypography-body2 {
+  color: #666666 !important; /* رمادي داكن */
+}

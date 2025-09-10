@@ -21,21 +21,21 @@ import {
   FaGift,
   FaReceipt,
   FaMapMarkerAlt,
+  FaCog,
   FaMoneyBillWave,
   FaHandshake,
   FaBell
 } from 'react-icons/fa';
 import apiService from '../services/ApiService';
-import ReviewService from '../services/ReviewService';
-import RatingService from '../services/RatingService';
-import RatingStars from '../components/RatingStars';
-import ReviewCard from '../components/ReviewCard';
+import invoiceService from '../services/InvoiceService';
+import { authService } from '../services/authService';
 import Navbar from '../components/Navbar';
 import './HomeClient.css'; // Reusing the same CSS file for consistent styling
 
 // Import images (using SVG data URIs for consistency)
 const providerHeroImage = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600"><rect width="800" height="600" fill="%23f0f8ff"/><circle cx="200" cy="150" r="80" fill="%234da6ff" opacity="0.3"/><circle cx="600" cy="400" r="120" fill="%230077ff" opacity="0.2"/><rect x="100" y="200" width="600" height="200" rx="20" fill="%23ffffff" opacity="0.9"/><text x="400" y="320" text-anchor="middle" fill="%230077ff" font-size="32" font-weight="bold">لوحة تحكم مزود الخدمة</text></svg>';
 
+const serviceImage = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><rect width="400" height="300" fill="%23e8f5e8"/><circle cx="100" cy="100" r="40" fill="%2310b981" opacity="0.6"/><circle cx="300" cy="200" r="60" fill="%234da6ff" opacity="0.4"/><rect x="50" y="120" width="300" height="120" rx="15" fill="%23ffffff"/><text x="200" y="190" text-anchor="middle" fill="%2310b981" font-size="18" font-weight="bold">خدماتك</text></svg>';
 
 const achievementImage = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300"><rect width="400" height="300" fill="%23fff3cd"/><polygon points="200,50 220,120 290,120 235,165 255,235 200,190 145,235 165,165 110,120 180,120" fill="%23f59e0b"/><text x="200" y="280" text-anchor="middle" fill="%23856404" font-size="16" font-weight="bold">إنجازاتك</text></svg>';
 
@@ -46,15 +46,11 @@ const HomeProvider = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [orders, setOrders] = useState([]);
   const [services, setServices] = useState([]);
+  const [invoices, setInvoices] = useState([]);
   const [reviews, setReviews] = useState([]);
-  const [earnings, setEarnings] = useState([]);
-  const [earningsSummary, setEarningsSummary] = useState({
-    total_earnings: 0,
-    total_platform_fees: 0,
-    total_gross_amount: 0,
-    total_invoices: 0
-  });
   const [loading, setLoading] = useState(true);
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState(null);
   const [stats, setStats] = useState({
     totalOrders: 0,
     completedOrders: 0,
@@ -62,22 +58,53 @@ const HomeProvider = () => {
     totalEarned: 0,
     avgRating: 0,
     totalServices: 0,
-    activeServices: 0,
-    totalReviews: 0
+    activeServices: 0
   });
   
+  const [statistics, setStatistics] = useState({
+    totalInvoices: 0,
+    paidInvoices: 0,
+    unpaidInvoices: 0,
+    totalAmount: 0
+  });
   
+  // Filter state for orders
+  const [orderFilter, setOrderFilter] = useState('all');
+
+  // Function to filter orders based on selected status
+  const getFilteredOrders = () => {
+    if (orderFilter === 'all') {
+      return orders;
+    }
+    return orders.filter(order => order.status === orderFilter);
+  };
+
+  // Handle order filter change
+  const handleOrderFilterChange = (e) => {
+    setOrderFilter(e.target.value);
+  };
+
+  // Get filter status text in Arabic
+  const getFilterStatusText = (status) => {
+    const statusTexts = {
+      'all': 'جميع الحالات',
+      'pending': 'قيد الانتظار',
+      'accepted': 'مقبول',
+      'completed': 'مكتمل',
+      'cancelled': 'ملغي',
+      'in_progress': 'قيد التنفيذ'
+    };
+    return statusTexts[status] || status;
+  };
 
   useEffect(() => {
     checkAuthentication();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (user) {
       loadProviderData();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
   const checkAuthentication = () => {
@@ -107,8 +134,8 @@ const HomeProvider = () => {
         loadWorkerProfile(),
         loadProviderOrders(),
         loadServices(),
-        loadReviews(),
-        loadEarnings()
+        loadInvoices(),
+        loadReviews()
       ]);
     } catch (error) {
       console.error('Error loading provider data:', error);
@@ -153,7 +180,7 @@ const HomeProvider = () => {
       // Extract orders array from response
       const ordersData = response?.results || response?.data || response || [];
       
-      // Filter orders where this worker is the provider
+      // Filter orders where this worker is the provider (this logic might need adjustment based on your Order model)
       const providerOrders = Array.isArray(ordersData) ? ordersData.filter(order => 
         order.worker_id === user.id || 
         order.service?.provider?.id === user.id ||
@@ -206,61 +233,54 @@ const HomeProvider = () => {
     }
   };
 
+  const loadInvoices = async () => {
+    try {
+      const result = await invoiceService.getMyInvoices();
+      if (result.success) {
+        // Filter invoices for this provider
+        const providerInvoices = result.data?.filter(invoice => 
+          invoice.provider_id === user.id || invoice.worker_id === user.id
+        ) || [];
+        
+        setInvoices(providerInvoices);
+        
+        // Update statistics based on invoices
+        const totalInvoices = providerInvoices.length;
+        const paidInvoices = providerInvoices.filter(inv => inv.status === 'paid').length;
+        const unpaidInvoices = providerInvoices.filter(inv => inv.status === 'unpaid').length;
+        const totalAmount = providerInvoices.reduce((sum, inv) => sum + parseFloat(inv.amount || 0), 0);
+        
+        setStatistics({
+          totalInvoices,
+          paidInvoices,
+          unpaidInvoices,
+          totalAmount: totalAmount.toFixed(2)
+        });
+      } else {
+        console.error('Error loading invoices:', result.error);
+        setInvoices([]);
+      }
+    } catch (error) {
+      console.error('Error loading invoices:', error);
+      setInvoices([]);
+    }
+  };
 
   const loadReviews = async () => {
     try {
-      // Load reviews for this provider using the new ReviewService
-      const result = await ReviewService.getProviderReviews(user.id);
-      if (result.success) {
-        setReviews(result.data);
-        
-        // Calculate average rating
-        if (result.data.length > 0) {
-          const avgRating = result.data.reduce((sum, review) => sum + review.rating, 0) / result.data.length;
-          setStats(prev => ({ ...prev, avgRating }));
-        }
-      } else {
-        console.error('Error loading reviews:', result.error);
-        setReviews([]);
-      }
+      // Load reviews for this provider's services
+      const response = await apiService.get('/api/reviews/my-reviews/');
+      const reviewsData = response?.results || response?.data || response || [];
+      setReviews(Array.isArray(reviewsData) ? reviewsData : []);
       
-      // Also get rating statistics
-      const ratingResult = await RatingService.getProviderRating(user.id);
-      if (ratingResult.success) {
-        setStats(prev => ({ 
-          ...prev, 
-          avgRating: ratingResult.data.average_rating,
-          totalReviews: ratingResult.data.total_ratings 
-        }));
+      // Calculate average rating
+      if (Array.isArray(reviewsData) && reviewsData.length > 0) {
+        const avgRating = reviewsData.reduce((sum, review) => sum + review.rating, 0) / reviewsData.length;
+        setStats(prev => ({ ...prev, avgRating }));
       }
     } catch (error) {
       console.error('Error loading reviews:', error);
       setReviews([]);
-    }
-  };
-
-  const loadEarnings = async () => {
-    try {
-      // Load earnings summary
-      const summaryResponse = await apiService.get('/api/invoices/worker/earnings/summary/');
-      if (summaryResponse) {
-        setEarningsSummary(summaryResponse);
-        
-        // Update stats with earnings data
-        setStats(prev => ({
-          ...prev,
-          totalEarned: parseFloat(summaryResponse.total_earnings || 0)
-        }));
-      }
-      
-      // Load detailed earnings
-      const earningsResponse = await apiService.get('/api/invoices/worker/earnings/');
-      if (earningsResponse) {
-        setEarnings(earningsResponse);
-      }
-    } catch (error) {
-      console.error('Error loading earnings:', error);
-      setEarnings([]);
     }
   };
 
@@ -284,7 +304,46 @@ const HomeProvider = () => {
     );
   };
 
+  const getInvoiceStatusBadge = (status) => {
+    const statusConfig = {
+      paid: { class: 'badge-success', text: 'مدفوع' },
+      pending: { class: 'badge-warning', text: 'مؤجل' },
+      overdue: { class: 'badge-danger', text: 'متأخر' }
+    };
+    
+    const config = statusConfig[status] || statusConfig.pending;
+    
+    return (
+      <span className={`badge ${config.class}`}>
+        {config.text}
+      </span>
+    );
+  };
 
+  const handleViewOrder = (order) => {
+    console.log('[DEBUG] handleViewOrder called with order:', order);
+    setSelectedOrder(order);
+    setShowOrderModal(true);
+  };
+
+  const handleOrderMessages = (order) => {
+    // Navigate to messages page with specific order conversation
+    navigate('/messages', { 
+      state: { 
+        orderId: order.id,
+        conversationWith: order.customer || order.client
+      } 
+    });
+  };
+
+  const renderStars = (rating) => {
+    return [...Array(5)].map((_, index) => (
+      <FaStar 
+        key={index} 
+        className={index < rating ? 'text-warning' : 'text-muted'} 
+      />
+    ));
+  };
 
   const renderOverview = () => (
     <div className="overview-section">
@@ -365,7 +424,7 @@ const HomeProvider = () => {
             </div>
             <div className="stat-content">
               <h3>{stats.totalEarned.toFixed(2)} ج.م</h3>
-              <p>صافي الأرباح (بعد خصم 5%)</p>
+              <p>إجمالي الأرباح</p>
             </div>
           </div>
         </div>
@@ -377,6 +436,28 @@ const HomeProvider = () => {
             <div className="stat-content">
               <h3>{stats.totalServices}</h3>
               <p>إجمالي الخدمات</p>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3">
+          <div className="stat-card">
+            <div className="stat-icon">
+              <FaReceipt />
+            </div>
+            <div className="stat-content">
+              <h3>{statistics.totalInvoices || 0}</h3>
+              <p>إجمالي الفواتير</p>
+            </div>
+          </div>
+        </div>
+        <div className="col-md-3">
+          <div className="stat-card">
+            <div className="stat-icon">
+              <FaCheck />
+            </div>
+            <div className="stat-content">
+              <h3>{statistics.paidInvoices || 0}</h3>
+              <p>الفواتير المدفوعة</p>
             </div>
           </div>
         </div>
@@ -501,31 +582,29 @@ const HomeProvider = () => {
           </div>
         </div>
         <div className="col-md-6">
-          <div className="recent-earnings-card">
+          <div className="recent-invoices-card">
             <div className="d-flex align-items-center justify-content-between mb-3">
-              <h5 className="mb-0">الأرباح الأخيرة</h5>
-              <FaMoneyBillWave className="text-success" style={{ fontSize: '1.5rem' }} />
+              <h5 className="mb-0">الفواتير الأخيرة</h5>
+              <FaFileInvoiceDollar className="text-success" style={{ fontSize: '1.5rem' }} />
             </div>
-            {earnings.slice(0, 3).map(earning => (
-              <div key={earning.id} className="recent-earning-item">
-                <div className="earning-info">
-                  <h6>أرباح من فاتورة #{earning.invoice_id}</h6>
+            {invoices.slice(0, 3).map(invoice => (
+              <div key={invoice.id} className="recent-invoice-item">
+                <div className="invoice-info">
+                  <h6>فاتورة #{invoice.id}</h6>
                   <small className="text-muted">
-                    إجمالي: {earning.gross_amount} ج.م - رسوم منصة (5%): {earning.platform_fee} ج.م
+                    {invoice.amount} ج.م
                   </small>
                 </div>
-                <div className="earning-amount">
-                  <span className="text-success fw-bold">
-                    صافي الأرباح: {earning.net_earnings} ج.م
-                  </span>
+                <div className="invoice-status">
+                  {getInvoiceStatusBadge(invoice.status)}
                 </div>
               </div>
             ))}
             <button 
               className="btn btn-sm btn-outline-primary mt-2"
-              onClick={() => setActiveTab('earnings')}
+              onClick={() => setActiveTab('invoices')}
             >
-              عرض جميع الأرباح
+              عرض جميع الفواتير
             </button>
           </div>
         </div>
@@ -573,13 +652,157 @@ const HomeProvider = () => {
                   </div>
                   <div>
                     <h6 className="mb-1">أرباح مستقرة</h6>
-                    <p className="text-muted mb-0">صافي الأرباح {stats.totalEarned.toFixed(2)} ج.م (بعد خصم 5%)</p>
+                    <p className="text-muted mb-0">إجمالي {stats.totalEarned.toFixed(2)} ج.م</p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
+    </div>
+  );
+
+  const renderOrders = () => (
+    <div className="orders-section">
+      {/* Orders Header Section */}
+      <div className="feature-section mb-4">
+        <div className="feature-content">
+          <div className="row align-items-center">
+            <div className="col-md-8">
+              <h3 className="fw-bold text-primary mb-2">
+                <FaClipboardList className="me-2" />
+                إدارة طلباتي
+              </h3>
+              <p className="text-muted mb-0">تتبع جميع طلبات العملاء وحالتها من مكان واحد</p>
+            </div>
+            <div className="col-md-4 text-end">
+              <button 
+                className="btn btn-success btn-lg"
+                onClick={() => navigate('/notifications')}
+                style={{ borderRadius: '50px', padding: '0.75rem 2rem' }}
+              >
+                <FaBell className="me-2" />
+                الإشعارات
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="section-header">
+        <h5>جميع الطلبات ({getFilteredOrders().length})</h5>
+        <div className="d-flex gap-2">
+          <select 
+            className="form-select form-select-sm" 
+            style={{ width: 'auto' }}
+            value={orderFilter}
+            onChange={handleOrderFilterChange}
+          >
+            <option value="all">جميع الحالات</option>
+            <option value="pending">قيد الانتظار</option>
+            <option value="accepted">مقبول</option>
+            <option value="completed">مكتمل</option>
+            <option value="cancelled">ملغي</option>
+            <option value="in_progress">قيد التنفيذ</option>
+          </select>
+        </div>
+      </div>
+      
+      <div className="orders-list">
+        {getFilteredOrders().map(order => (
+          <div key={order.id} className="order-card">
+            <div className="order-header">
+              <h6>{order.service_name}</h6>
+              {getOrderStatusBadge(order.status)}
+            </div>
+            <div className="order-body">
+              <p className="order-description">{order.description}</p>
+              <div className="order-details">
+                <span><strong>السعر المعروض:</strong> {order.offered_price} ج.م</span>
+                <span><strong>تاريخ الطلب:</strong> {new Date(order.date_created).toLocaleDateString('ar-EG')}</span>
+                {order.scheduled_time && (
+                  <span><strong>موعد الخدمة:</strong> {new Date(order.scheduled_time).toLocaleDateString('ar-EG')}</span>
+                )}
+              </div>
+            </div>
+            <div className="order-actions" style={{ 
+              display: 'flex', 
+              gap: '8px', 
+              justifyContent: 'flex-end',
+              marginTop: '15px',
+              borderTop: '1px solid #e9ecef',
+              paddingTop: '15px'
+            }}>
+              <button 
+                className="btn btn-sm btn-primary"
+                onClick={() => handleViewOrder(order)}
+                style={{
+                  minWidth: '80px',
+                  fontWeight: '600',
+                  borderRadius: '8px',
+                  padding: '8px 16px',
+                  fontSize: '13px'
+                }}
+              >
+                <FaEye className="me-1" />
+                عرض
+              </button>
+              {order.status === 'pending' && (
+                <button 
+                  className="btn btn-sm btn-success"
+                  onClick={() => {
+                    // Handle accepting order
+                    console.log('[DEBUG] Accept order:', order.id);
+                  }}
+                  style={{
+                    minWidth: '80px',
+                    fontWeight: '600',
+                    borderRadius: '8px',
+                    padding: '8px 16px',
+                    fontSize: '13px'
+                  }}
+                >
+                  <FaCheck className="me-1" />
+                  قبول
+                </button>
+              )}
+              {['accepted', 'completed', 'in_progress'].includes(order.status) && (
+                <button 
+                  className="btn btn-sm btn-info"
+                  onClick={() => handleOrderMessages(order)}
+                  style={{
+                    minWidth: '80px',
+                    fontWeight: '600',
+                    borderRadius: '8px',
+                    padding: '8px 16px',
+                    fontSize: '13px'
+                  }}
+                >
+                  <FaComments className="me-1" />
+                  رسائل
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+        
+        {getFilteredOrders().length === 0 && (
+          <div className="empty-state text-center py-5">
+            <div className="empty-icon mb-3">
+              <FaClipboardList size={48} className="text-muted" />
+            </div>
+            <h6 className="text-muted">
+              {orderFilter === 'all' ? 'لا توجد طلبات بعد' : `لا توجد طلبات بحالة "${getFilterStatusText(orderFilter)}"`}
+            </h6>
+            <p className="text-muted small">
+              {orderFilter === 'all' 
+                ? 'انتظر طلبات جديدة من العملاء' 
+                : 'جرب تغيير الفلتر لعرض طلبات أخرى'
+              }
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -664,6 +887,47 @@ const HomeProvider = () => {
     </div>
   );
 
+  const renderInvoices = () => (
+    <div className="invoices-section">
+      <div className="section-header">
+        <h5>فواتيري</h5>
+      </div>
+      
+      <div className="invoices-table">
+        <table className="table">
+          <thead>
+            <tr>
+              <th>رقم الفاتورة</th>
+              <th>الطلب</th>
+              <th>المبلغ</th>
+              <th>الحالة</th>
+              <th>تاريخ الاستحقاق</th>
+              <th>الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody>
+            {invoices.map(invoice => (
+              <tr key={invoice.id}>
+                <td>#{invoice.id}</td>
+                <td>{invoice.order_title}</td>
+                <td>{invoice.amount} ج.م</td>
+                <td>{getInvoiceStatusBadge(invoice.status)}</td>
+                <td>{new Date(invoice.due_date).toLocaleDateString('ar-EG')}</td>
+                <td>
+                  <button 
+                    className="btn btn-sm btn-outline-primary me-2"
+                    onClick={() => navigate(`/invoice/${invoice.id}`)}
+                  >
+                    <FaEye />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 
   const renderReviews = () => (
     <div className="reviews-section">
@@ -671,57 +935,22 @@ const HomeProvider = () => {
         <h5>تقييمات عملائي</h5>
       </div>
       
-      {/* Rating Summary */}
-      {stats.totalReviews > 0 && (
-        <div className="rating-summary mb-4">
-          <div className="row">
-            <div className="col-md-4">
-              <div className="rating-overview text-center p-4 rounded bg-light">
-                <div className="rating-score mb-2">
-                  <span className="h2 text-primary">{stats.avgRating?.toFixed(1) || '0.0'}</span>
-                  <span className="text-muted">/5</span>
-                </div>
-                <RatingStars rating={stats.avgRating || 0} size="large" readOnly={true} />
-                <p className="text-muted mt-2">
-                  {stats.totalReviews} تقييم من العملاء
-                </p>
-              </div>
-            </div>
-            <div className="col-md-8">
-              <div className="rating-stats">
-                <h6 className="mb-3">توزيع التقييمات</h6>
-                {[5, 4, 3, 2, 1].map(star => {
-                  const count = reviews.filter(r => Math.floor(r.rating) === star).length;
-                  const percentage = reviews.length > 0 ? (count / reviews.length) * 100 : 0;
-                  return (
-                    <div key={star} className="rating-bar mb-2">
-                      <div className="d-flex align-items-center">
-                        <span className="rating-label me-2">{star} نجوم</span>
-                        <div className="progress flex-grow-1 me-2" style={{ height: '8px' }}>
-                          <div 
-                            className="progress-bar bg-warning" 
-                            style={{ width: `${percentage}%` }}
-                          ></div>
-                        </div>
-                        <span className="rating-count text-muted small">{count}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="reviews-list">
         {reviews.map(review => (
-          <ReviewCard 
-            key={review.id} 
-            review={review} 
-            showService={true}
-            className="mb-3"
-          />
+          <div key={review.id} className="review-card">
+            <div className="review-header">
+              <h6>{review.service_name}</h6>
+              <div className="review-rating">
+                {renderStars(review.rating)}
+              </div>
+            </div>
+            <div className="review-body">
+              <p>{review.comment}</p>
+              <small className="text-muted">
+                بواسطة: {review.client_name} • {new Date(review.created_at).toLocaleDateString('ar-EG')}
+              </small>
+            </div>
+          </div>
         ))}
         
         {reviews.length === 0 && (
@@ -731,109 +960,6 @@ const HomeProvider = () => {
             </div>
             <h6 className="text-muted">لا توجد تقييمات بعد</h6>
             <p className="text-muted small">ستظهر هنا تقييمات العملاء لخدماتك</p>
-            <button 
-              className="btn btn-primary mt-3"
-              onClick={() => navigate('/services')}
-            >
-              <FaPlus className="me-2" />
-              ابدأ بإضافة خدماتك
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-
-  const renderEarnings = () => (
-    <div className="earnings-section">
-      <div className="section-header">
-        <h5>أرباحي (بعد خصم رسوم المنصة 5%)</h5>
-      </div>
-      
-      {/* Earnings Summary */}
-      <div className="row mb-4">
-        <div className="col-md-3">
-          <div className="stat-card">
-            <div className="stat-icon">
-              <FaMoneyBillWave />
-            </div>
-            <div className="stat-content">
-              <h3>{earningsSummary.total_earnings?.toFixed(2) || '0.00'}</h3>
-              <p>صافي الأرباح (ج.م)</p>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-3">
-          <div className="stat-card">
-            <div className="stat-icon">
-              <FaReceipt />
-            </div>
-            <div className="stat-content">
-              <h3>{earningsSummary.total_platform_fees?.toFixed(2) || '0.00'}</h3>
-              <p>رسوم المنصة (ج.م)</p>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-3">
-          <div className="stat-card">
-            <div className="stat-icon">
-              <FaChartLine />
-            </div>
-            <div className="stat-content">
-              <h3>{earningsSummary.total_gross_amount?.toFixed(2) || '0.00'}</h3>
-              <p>إجمالي المبلغ (ج.م)</p>
-            </div>
-          </div>
-        </div>
-        <div className="col-md-3">
-          <div className="stat-card">
-            <div className="stat-icon">
-              <FaFileInvoiceDollar />
-            </div>
-            <div className="stat-content">
-              <h3>{earningsSummary.total_invoices || 0}</h3>
-              <p>عدد الفواتير</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Earnings Table */}
-      <div className="earnings-table">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>الفاتورة</th>
-              <th>الخدمة</th>
-              <th>العميل</th>
-              <th>المبلغ الإجمالي</th>
-              <th>رسوم المنصة (5%)</th>
-              <th>صافي الأرباح</th>
-              <th>التاريخ</th>
-            </tr>
-          </thead>
-          <tbody>
-            {earnings.map(earning => (
-              <tr key={earning.id}>
-                <td>#{earning.invoice_id}</td>
-                <td>{earning.service_name}</td>
-                <td>{earning.customer_name}</td>
-                <td>{earning.gross_amount} ج.م</td>
-                <td className="text-danger">-{earning.platform_fee} ج.م</td>
-                <td className="text-success fw-bold">{earning.net_earnings} ج.م</td>
-                <td>{new Date(earning.created_at).toLocaleDateString('ar-EG')}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        
-        {earnings.length === 0 && (
-          <div className="empty-state text-center py-5">
-            <div className="empty-icon mb-3">
-              <FaMoneyBillWave size={48} className="text-muted" />
-            </div>
-            <h6 className="text-muted">لا توجد أرباح بعد</h6>
-            <p className="text-muted small">ستظهر هنا أرباحك من الفواتير المدفوعة</p>
           </div>
         )}
       </div>
@@ -881,11 +1007,25 @@ const HomeProvider = () => {
                     نظرة عامة
                   </button>
                   <button 
+                    className={`nav-item ${activeTab === 'orders' ? 'active' : ''}`}
+                    onClick={() => navigate('/notifications')}
+                  >
+                    <FaBell className="nav-icon" />
+                    الإشعارات
+                  </button>
+                  <button 
                     className={`nav-item ${activeTab === 'services' ? 'active' : ''}`}
                     onClick={() => setActiveTab('services')}
                   >
                     <FaTools className="nav-icon" />
                     خدماتي ({services.length})
+                  </button>
+                  <button 
+                    className={`nav-item ${activeTab === 'invoices' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('invoices')}
+                  >
+                    <FaFileInvoiceDollar className="nav-icon" />
+                    الفواتير ({invoices.length})
                   </button>
                   <button 
                     className={`nav-item ${activeTab === 'reviews' ? 'active' : ''}`}
@@ -894,13 +1034,6 @@ const HomeProvider = () => {
                     <FaStar className="nav-icon" />
                     التقييمات ({reviews.length})
                   </button>
-                  <button 
-                    className={`nav-item ${activeTab === 'earnings' ? 'active' : ''}`}
-                    onClick={() => setActiveTab('earnings')}
-                  >
-                    <FaMoneyBillWave className="nav-icon" />
-                    الأرباح الصافية ({earnings.length})
-                  </button>
                 </nav>
               </div>
             </div>
@@ -908,17 +1041,193 @@ const HomeProvider = () => {
             <div className="col-md-9">
               <div className="main-content">
                 {activeTab === 'overview' && renderOverview()}
+                {activeTab === 'orders' && renderOrders()}
                 {activeTab === 'services' && renderServices()}
+                {activeTab === 'invoices' && renderInvoices()}
                 {activeTab === 'reviews' && renderReviews()}
-                {activeTab === 'earnings' && renderEarnings()}
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Order Details Modal */}
+      {showOrderModal && selectedOrder && (
+        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999 }}>
+          <div className="modal-dialog modal-lg">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">
+                  <FaClipboardList className="me-2" />
+                  تفاصيل الطلب #{selectedOrder.id}
+                </h5>
+                <button 
+                  type="button" 
+                  className="btn-close" 
+                  onClick={() => setShowOrderModal(false)}
+                ></button>
+              </div>
+              <div className="modal-body">
+                {/* Order Status Banner */}
+                <div className="order-status-banner mb-4 p-3 rounded" 
+                     style={{
+                       background: selectedOrder.status === 'completed' ? '#d4edda' :
+                                 selectedOrder.status === 'cancelled' ? '#f8d7da' :
+                                 selectedOrder.status === 'accepted' ? '#cce7ff' : '#fff3cd',
+                       border: `1px solid ${
+                         selectedOrder.status === 'completed' ? '#c3e6cb' :
+                         selectedOrder.status === 'cancelled' ? '#f5c6cb' :
+                         selectedOrder.status === 'accepted' ? '#a6d4ff' : '#ffeaa7'
+                       }`
+                     }}>
+                  <div className="d-flex justify-content-between align-items-center">
+                    <div>
+                      <h6 className="mb-1">حالة الطلب: {getOrderStatusBadge(selectedOrder.status)}</h6>
+                      <small className="text-muted">آخر تحديث: {new Date(selectedOrder.date_created).toLocaleString('ar-EG')}</small>
+                    </div>
+                    <div className="text-end">
+                      <div className="h5 mb-0 text-primary">{selectedOrder.offered_price} ج.م</div>
+                      <small className="text-muted">السعر المعروض</small>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Service Information */}
+                <div className="service-info-section mb-4">
+                  <h6 className="section-title mb-3">
+                    <FaClipboardList className="me-2 text-primary" />
+                    معلومات الخدمة
+                  </h6>
+                  <div className="row">
+                    <div className="col-md-6">
+                      <div className="order-detail-item">
+                        <strong>اسم الخدمة:</strong>
+                        <span>{selectedOrder.service_name}</span>
+                      </div>
+                    </div>
+                    <div className="col-md-6">
+                      <div className="order-detail-item">
+                        <strong>العميل:</strong>
+                        <span>{selectedOrder.customer_name || 'غير محدد'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Order Details */}
+                <div className="order-details-section mb-4">
+                  <h6 className="section-title mb-3">
+                    <FaCalendarAlt className="me-2 text-primary" />
+                    تفاصيل الطلب
+                  </h6>
+                  <div className="row">
+                    <div className="col-md-6">
+                      <div className="order-detail-item">
+                        <strong>تاريخ الطلب:</strong>
+                        <span>{new Date(selectedOrder.date_created).toLocaleDateString('ar-EG')}</span>
+                      </div>
+                    </div>
+                    {selectedOrder.scheduled_time && (
+                      <div className="col-md-6">
+                        <div className="order-detail-item">
+                          <strong>موعد الخدمة:</strong>
+                          <span>{new Date(selectedOrder.scheduled_time).toLocaleString('ar-EG')}</span>
+                        </div>
+                      </div>
+                    )}
+                    <div className="col-md-6">
+                      <div className="order-detail-item">
+                        <strong>رقم الطلب:</strong>
+                        <span>#{selectedOrder.id}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div className="description-section mb-4">
+                  <h6 className="section-title mb-3">
+                    <FaEdit className="me-2 text-primary" />
+                    وصف الطلب
+                  </h6>
+                  <div className="order-detail-item">
+                    <p className="mb-0" style={{ lineHeight: '1.6', fontSize: '0.95rem' }}>
+                      {selectedOrder.description || 'لا يوجد وصف متاح'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Location Information */}
+                {selectedOrder.location_lat && selectedOrder.location_lng && (
+                  <div className="location-section mb-4">
+                    <h6 className="section-title mb-3">
+                      <FaMapMarkerAlt className="me-2 text-primary" />
+                      معلومات الموقع
+                    </h6>
+                    <div className="order-detail-item">
+                      <div className="d-flex justify-content-between align-items-center">
+                        <div>
+                          <p className="mb-1">
+                            <strong>خط العرض:</strong> {selectedOrder.location_lat}
+                          </p>
+                          <p className="mb-0">
+                            <strong>خط الطول:</strong> {selectedOrder.location_lng}
+                          </p>
+                        </div>
+                        <button 
+                          className="btn btn-outline-primary btn-sm"
+                          onClick={() => window.open(`https://maps.google.com/?q=${selectedOrder.location_lat},${selectedOrder.location_lng}`, '_blank')}
+                        >
+                          <FaMapMarkerAlt className="me-1" />
+                          عرض على الخريطة
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="modal-footer">
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  onClick={() => setShowOrderModal(false)}
+                >
+                  إغلاق
+                </button>
+                {selectedOrder.status === 'pending' && (
+                  <button 
+                    type="button" 
+                    className="btn btn-success"
+                    onClick={() => {
+                      setShowOrderModal(false);
+                      // Handle accepting order
+                      console.log('[DEBUG] Accept order from modal:', selectedOrder.id);
+                    }}
+                  >
+                    <FaCheck className="me-1" />
+                    قبول الطلب
+                  </button>
+                )}
+                {selectedOrder.status !== 'cancelled' && ['accepted', 'completed', 'in_progress'].includes(selectedOrder.status) && (
+                  <button 
+                    type="button" 
+                    className="btn btn-info"
+                    onClick={() => {
+                      setShowOrderModal(false);
+                      handleOrderMessages(selectedOrder);
+                    }}
+                  >
+                    <FaComments className="me-1" />
+                    المراسلة
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
 export default HomeProvider;
-

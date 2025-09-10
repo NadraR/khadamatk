@@ -1,34 +1,33 @@
-from django.urls import path
-from .views import *
+# backend/admin_api/urls.py
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import (
+    UserViewSet, ServiceViewSet, OrderViewSet, ReviewViewSet, RatingViewSet,
+    InvoiceViewSet, AdminActionLogViewSet, AdminNotificationViewSet,
+    AdminStatsView, AdminMeView, CategoryViewSet, FinancialReportView,
+    PlatformSettingViewSet, AdminLoginView, AdminRegisterView,OrdersTrendView, RecentOrdersView,
+    SettingsViewSet
+)
+
+router = DefaultRouter()
+router.register("users", UserViewSet, basename="users")
+router.register("services", ServiceViewSet, basename="services")
+router.register("categories", CategoryViewSet, basename="categories")
+router.register("orders", OrderViewSet, basename="orders")
+router.register("reviews", ReviewViewSet, basename="reviews")
+router.register("ratings", RatingViewSet, basename="ratings")
+router.register("invoices", InvoiceViewSet, basename="invoices")
+router.register("logs", AdminActionLogViewSet, basename="logs")
+router.register("notifications", AdminNotificationViewSet, basename="notifications")
+router.register("settings", SettingsViewSet, basename="settings")
 
 urlpatterns = [
-    path('stats/', admin_stats, name='admin-stats'),
-
-    # Users
-    path('users/', admin_users, name='admin-users-list'),
-    path('users/<int:pk>/', admin_user_detail, name='admin-users-detail'),
-
-    # Services
-    path('services/', admin_services, name='admin-services-list'),
-    path('services/<int:pk>/', admin_service_detail, name='admin-service-detail'),
-
-    # Orders
-    path('orders/', admin_orders, name='admin-orders-list'),
-    path('orders/<int:pk>/', admin_order_detail, name='admin-order-detail'),
-
-    # Reviews
-    path('reviews/', admin_reviews, name='admin-reviews-list'),
-    path('reviews/<int:pk>/', admin_review_detail, name='admin-review-detail'),
-
-    # Ratings
-    path('ratings/', admin_ratings, name='admin-ratings-list'),
-    path('ratings/<int:pk>/', admin_rating_detail, name='admin-rating-detail'),
-
-    # Invoices
-    path('invoices/', admin_invoices, name='admin-invoices-list'),
-    path('invoices/<int:pk>/', admin_invoice_detail, name='admin-invoice-detail'),
-
-    path("me/",AdminMeView.as_view(), name="admin-me"),
-    path("logs/", admin_logs_view),
-
+    path("login/", AdminLoginView.as_view(), name="admin-login"),
+    path("register/", AdminRegisterView.as_view(), name="admin-register"),
+    path("stats/", AdminStatsView.as_view(), name="admin-stats"),
+    path("orders-trend/", OrdersTrendView.as_view(), name="orders-trend"),
+    path("recent-orders/", RecentOrdersView.as_view(), name="recent-orders"),
+    path("financial-report/", FinancialReportView.as_view(), name="financial-report"),
+    path("me/", AdminMeView.as_view(), name="admin-me"),
+    path("", include(router.urls)),
 ]

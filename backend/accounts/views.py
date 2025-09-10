@@ -16,8 +16,10 @@ from allauth.socialaccount.models import SocialAccount
 from django.contrib.auth import get_user_model
 from google.oauth2 import id_token
 import requests as http
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from google.auth.transport import requests as google_requests
 import logging
+from django.shortcuts import get_object_or_404  
 
 User = get_user_model()
 logger = logging.getLogger(__name__)
@@ -46,9 +48,21 @@ class UserRegisterView(generics.CreateAPIView):
         has_location = UserLocation.objects.filter(user=user).exists()
         
         # Check if worker profile is complete (new workers won't have complete profiles)
-        profile_completed = True
+        profile_completed = False
         if user.role == 'worker':
-            profile_completed = False  # New workers need to complete their profile
+            profile_completed = False
+            # إنشاء طلب تحقق تلقائي (مع البيانات الأساسية إذا متوفرة)
+            national_id = request.data.get('national_id')
+            if national_id:
+                try:
+                    WorkerVerification.objects.create(
+                        worker=user.worker_profile,
+                        national_id=national_id,
+                        # سيحتاج لرفع الصور لاحقاً
+                        status='pending'
+                    )  # New workers need to complete their profile
+                except Exception as e:    
+                    print(f"Error creating verification: {e}")
         
         response_data.update({
             'refresh': str(refresh),
@@ -205,6 +219,134 @@ class ClientProfileView(generics.RetrieveUpdateAPIView):
             return ClientProfile.objects.get(user=self.request.user)
         except ClientProfile.DoesNotExist:
             raise NotFound("Client profile does not exist. Please create it first.")
+
+@api_view(['PUT', 'PATCH'])
+@permission_classes([permissions.IsAuthenticated])
+def update_client_profile(request):
+    """
+    Update the authenticated client's own profile
+    """
+    try:
+        profile = ClientProfile.objects.get(user=request.user)
+    except ClientProfile.DoesNotExist:
+        return Response(
+            {"detail": "Client profile does not exist. Please create it first."},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    serializer = ClientProfileSerializer(
+        profile, data=request.data, partial=True
+    )  # partial=True عشان يقدر يعدّل جزء بس من البيانات
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+@api_view(["PUT", "PATCH"])
+@permission_classes([IsAuthenticated])
+def update_worker_profile(request):
+    worker_profile = request.user.worker_profile
+    serializer = WorkerProfileSerializer(worker_profile, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['PUT'])
+@permission_classes([permissions.IsAuthenticated])
+def update_user(request):
+    user = request.user
+    serializer = UserSerializer(user, data=request.data, partial=True)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# ---------------- Client Full Update ----------------
+@api_view(['PUT'])
+@permission_classes([permissions.IsAuthenticated])
+def client_full_update(request):
+    user = request.user
+
+    # 1️⃣ حدّد البروفايل الخاص بالعميل
+    profile = get_object_or_404(ClientProfile, user=user)
+
+    # 2️⃣ قسم الداتا بين User + ClientProfile
+    user_fields = ['username', 'email', 'first_name', 'last_name', 'password']
+    user_data = {k: v for k, v in request.data.items() if k in user_fields}
+    profile_data = {k: v for k, v in request.data.items() if k not in user_fields}
+
+    # 3️⃣ عدّل بيانات الـ User
+    user_serializer = UserSerializer(user, data=user_data, partial=True)
+    # 4️⃣ عدّل بيانات الـ ClientProfile
+    profile_serializer = ClientProfileSerializer(profile, data=profile_data, partial=True)
+
+    if user_serializer.is_valid() and profile_serializer.is_valid():
+        user_serializer.save()
+        profile_serializer.save()
+        return Response({
+            "user": user_serializer.data,
+            "profile": profile_serializer.data
+        }, status=status.HTTP_200_OK)
+
+    return Response({
+        "user_errors": user_serializer.errors,
+        "profile_errors": profile_serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+
+# ---------------- Worker Full Update ----------------
+@api_view(['PUT'])
+@permission_classes([permissions.IsAuthenticated])
+def worker_full_update(request):
+    user = request.user
+
+    # 1️⃣ حدّد البروفايل الخاص بالوركر
+    profile = get_object_or_404(WorkerProfile, user=user)
+
+    # 2️⃣ قسم الداتا بين User + WorkerProfile
+    user_fields = ['username', 'email', 'first_name', 'last_name', 'password', 'bio']
+    user_data = {k: v for k, v in request.data.items() if k in user_fields}
+    profile_data = {k: v for k, v in request.data.items() if k not in user_fields}
+
+    # 3️⃣ عدّل بيانات الـ User
+    user_serializer = UserSerializer(user, data=user_data, partial=True)
+    # 4️⃣ عدّل بيانات الـ WorkerProfile
+    profile_serializer = WorkerProfileSerializer(profile, data=profile_data, partial=True)
+
+    if user_serializer.is_valid() and profile_serializer.is_valid():
+        user_serializer.save()
+        profile_serializer.save()
+        return Response({
+            "user": user_serializer.data,
+            "profile": profile_serializer.data
+        }, status=status.HTTP_200_OK)
+
+    return Response({
+        "user_errors": user_serializer.errors,
+        "profile_errors": profile_serializer.errors
+    }, status=status.HTTP_400_BAD_REQUEST)
+
+# لستة كل العمال (ممكن تبقى public)
+@api_view(["GET"])
+@permission_classes([AllowAny])   # كده أي حد يقدر يشوفهم حتى من غير login
+def list_workers(request):
+    workers = WorkerProfile.objects.all()
+    serializer = WorkerProfileSerializer(workers, many=True)
+    return Response(serializer.data)
+
+# بروفايل عامل واحد (read-only)
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def worker_detail(request, user_id):
+    worker = get_object_or_404(WorkerProfile, user__id=user_id)
+    serializer = WorkerProfileSerializer(worker)
+    return Response(serializer.data)
+
+
 
 class UserListView(generics.ListAPIView):
     queryset = User.objects.all()
@@ -710,3 +852,23 @@ class GoogleLoginView(APIView):
         except Exception as e:
             logger.exception("[GoogleLogin DEBUG] Unexpected error during Google login")
             return Response({"error": f"Authentication failed: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+# from .models import WorkerVerification
+# from .serializers import WorkerVerificationSerializer
+
+# class WorkerVerificationCreateView(generics.CreateAPIView):
+#     serializer_class = WorkerVerificationSerializer
+#     permission_classes = [permissions.IsAuthenticated]
+
+#     def perform_create(self, serializer):
+#         serializer.save(worker=self.request.user.worker_profile)
+
+
+# class WorkerVerificationDetailView(generics.RetrieveAPIView):
+#     serializer_class = WorkerVerificationSerializer
+#     permission_classes = [permissions.IsAuthenticated]
+
+#     def get_object(self):
+#         return self.request.user.worker_profile.verification

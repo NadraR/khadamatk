@@ -1,17 +1,20 @@
 import React from "react";
 import { 
   FaApple,
-  FaTools, 
-  FaHeadset, 
   FaAndroid, 
   FaPhoneAlt, 
   FaEnvelope, 
-  FaMapMarkerAlt, 
-  FaStar, 
-  FaShieldAlt 
+  FaMapMarkerAlt
 } from "react-icons/fa";
+import {
+  Star,
+  Shield,
+  Headphones,
+  Wrench,
+  Settings
+} from "lucide-react";
 import "./Footer.css";
-import { useTranslation } from "react-i18next";
+import { useTranslation } from "../hooks/useTranslation";
 
 const Footer = () => {
   const { t } = useTranslation();
@@ -20,22 +23,22 @@ const Footer = () => {
     <footer className="footer" dir="rtl">
       <div className="footer-stats">
         <div className="statItem">
-          <FaStar className="stat-icon" />
+          <Star className="stat-icon" size={2} />
           <h3>4.9</h3>
           <p>{t("footer.customerRating")}</p>
         </div>
         <div className="statItem">
-          <FaShieldAlt className="stat-icon" />
+          <Shield className="stat-icon" size={2} />
           <h3>10K+</h3>
           <p>{t("footer.trustedClients")}</p>
         </div>
         <div className="statItem">
-          <FaHeadset className="stat-icon" />
+          <Headphones className="stat-icon" size={2} />
           <h3>24/7</h3>
           <p>{t("footer.support")}</p>
         </div>
         <div className="statItem">
-          <FaTools className="stat-icon" />
+          <Settings className="stat-icon" size={2} />
           <h3>500+</h3>
           <p>{t("footer.providers")}</p>
         </div>
@@ -44,16 +47,16 @@ const Footer = () => {
       <div className="footer-main">
         <div className="footer-about">
           <h2>
-            <FaTools style={{ marginRight: "8px" }} />
-            <span> {t("platformTitle")}</span>
+            <Wrench style={{ marginRight: "4px" }} size={16} />
+            <span>{t("platformTitle")}</span>
           </h2>
-          <p>{t("footer.about")}</p>
-          <p><FaPhoneAlt /> +966 11 123 4567</p>
-          <p><FaEnvelope /> support@khadamatak.com</p>
-          <p><FaMapMarkerAlt /> {t("footer.address")}</p>
+          <p style={{ fontSize: "11px", margin: "4px 0", color: "#94a3b8" }}>{t("footer.about")}</p>
+          <div style={{ fontSize: "10px", color: "#94a3b8" }}>
+            <p style={{ margin: "2px 0" }}><FaPhoneAlt style={{ marginRight: "3px", fontSize: "12px" }} /> +966 11 123 4567</p>
+            <p style={{ margin: "2px 0" }}><FaEnvelope style={{ marginRight: "3px", fontSize: "12px" }} /> support@khadamatak.com</p>
+          </div>
         </div>
 
-        {/* روابط */}
         <div className="footer-links">
           <h3>{t("footer.servicesTitle")}</h3>
           <ul>
@@ -61,7 +64,6 @@ const Footer = () => {
             <li>{t("electricity")}</li>
             <li>{t("carpentry")}</li>
             <li>{t("cleaning")}</li>
-            <li>{t("appliances")}</li>
           </ul>
         </div>
 
@@ -71,8 +73,7 @@ const Footer = () => {
             <li>{t("footer.aboutUs")}</li>
             <li>{t("footer.howWeWork")}</li>
             <li>{t("footer.careers")}</li>
-            <li>{t("footer.partnerships")}</li>
-            <li>{t("footer.news")}</li>
+            <li>{t("footer.contact")}</li>
           </ul>
         </div>
 
@@ -80,26 +81,15 @@ const Footer = () => {
           <h3>{t("footer.supportTitle")}</h3>
           <ul>
             <li>{t("footer.helpCenter")}</li>
-            <li>{t("footer.contact")}</li>
             <li>{t("footer.faq")}</li>
-            <li>{t("footer.report")}</li>
-            <li>{t("footer.systemStatus")}</li>
-          </ul>
-        </div>
-
-        <div className="footer-links">
-          <h3>{t("footer.legalTitle")}</h3>
-          <ul>
             <li>{t("footer.terms")}</li>
             <li>{t("footer.privacy")}</li>
-            <li>{t("footer.cancellation")}</li>
-            <li>{t("footer.compliance")}</li>
           </ul>
         </div>
 
         <div className="footer-newsletter">
           <h3>{t("footer.newsletterTitle")}</h3>
-          <p>{t("footer.newsletterText")}</p>
+          <p style={{ fontSize: "10px", margin: "4px 0", color: "#94a3b8" }}>{t("footer.newsletterText")}</p>
           <input type="email" placeholder={t("footer.emailPlaceholder")} />
           <button>{t("footer.subscribe")}</button>
         </div>
@@ -109,8 +99,8 @@ const Footer = () => {
         <p>© 2024 {t("platformTitle")}. {t("footer.rights")}</p>
         <div className="apps">
           <span>{t("footer.availableOn")}</span>
-          <FaApple className="app-icon" /> iOS
-          <FaAndroid className="app-icon" /> Android
+          <FaApple className="app-icon" style={{ fontSize: "14px" }} /> iOS
+          <FaAndroid className="app-icon" style={{ fontSize: "14px" }} /> Android
         </div>
       </div>
     </footer>

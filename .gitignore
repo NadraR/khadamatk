@@ -27,9 +27,10 @@ Thumbs.db
 .idea/
 
 # Docker
+.dockerignore
 .dockerignore.env
-backend/.env
-frontend/.env
+
+# Environment files
 .env
 backend/.env
 frontend/.env

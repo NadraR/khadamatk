@@ -29,6 +29,13 @@ class User(AbstractUser):
         choices=ROLE_CHOICES,
         verbose_name="Role"
     )
+    
+    bio = models.TextField(
+        blank=True,
+        null=True,
+        verbose_name="Bio",
+        help_text="User biography"
+    )
 
     auth_provider = models.CharField(
         max_length=50,
@@ -109,6 +116,11 @@ class WorkerProfile(BaseProfile):
         verbose_name="Services Provided",
         help_text="List of services this worker can provide"
     )
+    certifications = models.TextField(
+        blank=True,
+        verbose_name="Certifications",
+        help_text="Worker certifications and qualifications"
+    )
     estimated_price = models.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -145,7 +157,8 @@ class WorkerProfile(BaseProfile):
         return has_job_title and has_skills and has_services
 
     def __str__(self):
-        return f"{self.user.username} - {self.job_title or 'No Title'}"
+        # return f"{self.user.username} - {self.job_title or 'No Title'}"
+            return self.user.get_full_name() or self.user.username
 
     def clean(self):
         if self.user.role != 'worker':
@@ -207,3 +220,23 @@ class ClientProfile(BaseProfile):
     def clean(self):
         if self.user.role != 'client':
             raise ValidationError("This profile is for clients only")
+
+
+class WorkerVerification(models.Model):
+    """Model to handle worker identity verification"""
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+    ]
+    
+    worker = models.OneToOneField("accounts.WorkerProfile", on_delete=models.CASCADE, related_name="verification")
+    national_id = models.CharField(max_length=20, unique=True, null=False, blank=False)    
+    id_card_front = models.ImageField(upload_to="verifications/id_cards/front/")
+    id_card_back = models.ImageField(upload_to="verifications/id_cards/back/")
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="pending")
+    submitted_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    
+    def __str__(self):
+        return f"{self.worker.user.username} - {self.status}"

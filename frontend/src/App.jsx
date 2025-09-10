@@ -2,9 +2,12 @@ import React from 'react';
 import { Routes, Route } from 'react-router-dom';
 import FontProvider from './components/FontProvider';
 import FontOptimizer from './components/FontOptimizer';
+import { AdminAuthProvider } from './contexts/AdminAuthContext';
+import { CustomThemeProvider } from './contexts/ThemeContext';
 
 // Auth & Layout
 import AuthPage from './pages/AuthPage';
+import AdminLogin from './pages/admin/AdminLogin';
 import Layout from './Layout';
 import OAuthCallback from "./pages/OAuthCallback";
 
@@ -12,7 +15,18 @@ import OAuthCallback from "./pages/OAuthCallback";
 import Home from './pages/Home';
 import HomeClient from './pages/HomeClient';
 import HomeProvider from './pages/HomeProvider';
-import AdminDashboard from './pages/AdminDashboard';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import UsersPage from './pages/admin/UsersPage';
+import ServicesPage from './pages/admin/ServicesPage';
+import OrdersPage from './pages/admin/OrdersPage';
+import InvoicesPage from './pages/admin/InvoicesPage';
+import SettingsPage from './pages/admin/SettingsPage';
+import CategoriesPage from './pages/admin/CategoriesPage';
+import RatingsPage from './pages/admin/RatingsPage';
+import ReviewsPage from './pages/admin/ReviewsPage';
+import StatisticsPage from './pages/admin/StatisticsPage';
+import AdminNotifications from './pages/admin/AdminNotifications';
+import AdminLogsPage from './pages/admin/AdminLogsPage';
 import About from './pages/About';
 
 // Service-related pages
@@ -42,7 +56,6 @@ import MessagesPage from "./pages/MessagesPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import InvoiceDetails from "./pages/InvoiceDetails";
 import WorkerProfileCompletion from "./pages/WorkerProfileCompletion";
-import OrderStatusEdit from "./pages/OrderStatusEdit";
 import FontTest from "./components/FontTest";
 import ProviderProfile from "./pages/ProviderProfile";
 
@@ -85,11 +98,14 @@ function App() {
   }, []);
 
   return (
-    <FontProvider>
-      <FontOptimizer />
-      <Routes>
+    <CustomThemeProvider>
+      <AdminAuthProvider>
+        <FontProvider>
+          <FontOptimizer />
+          <Routes>
         {/* Auth */}
         <Route path="/auth" element={<AuthPage />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/worker" element={<WorkerProfileCompletion />} />
         <Route path="/worker-profile-completion" element={<WorkerProfileCompletion />} />
 
@@ -99,18 +115,32 @@ function App() {
         <Route path="/homeClient" element={<Layout><HomeClient /></Layout>} />
         <Route path="/home-client" element={<Layout><HomeClient /></Layout>} />
         <Route path="/homeProvider" element={<Layout><HomeProvider /></Layout>} />
-        <Route path="/adminDashboard" element={<Layout><AdminDashboard /></Layout>} />
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/dashboard" element={<AdminDashboard />} />
+        <Route path="/adminDashboard" element={<AdminDashboard />} />
+        
+        {/* Admin Pages */}
+        <Route path="/admin/users" element={<UsersPage />} />
+        <Route path="/admin/services" element={<ServicesPage />} />
+        <Route path="/admin/orders" element={<OrdersPage />} />
+        <Route path="/admin/invoices" element={<InvoicesPage />} />
+        <Route path="/admin/settings" element={<SettingsPage />} />
+        <Route path="/admin/categories" element={<CategoriesPage />} />
+        <Route path="/admin/ratings" element={<RatingsPage />} />
+        <Route path="/admin/reviews" element={<ReviewsPage />} />
+        <Route path="/admin/notifications" element={<AdminNotifications />} />
+        <Route path="/admin/logs" element={<AdminLogsPage />} />
+        <Route path="/admin/stats" element={<StatisticsPage />} />
+        <Route path="/admin/profile" element={<AdminDashboard />} />
         <Route path="/about" element={<Layout><About /></Layout>} />
 
         {/* Services */}
         <Route path="/service/:id" element={<Layout><ServiceDetails /></Layout>} />
-        <Route path="/service/:id/edit" element={<Layout><OrderStatusEdit /></Layout>} />
         <Route path="/services" element={<Layout><Services /></Layout>} />
         
         {/* Provider Profile */}
         <Route path="/provider/:providerId" element={<Layout><ProviderProfile /></Layout>} />
         <Route path="/order" element={<Layout><OrderPage /></Layout>} />
-        <Route path="/order/:id" element={<Layout><OrderPage /></Layout>} />
         <Route path="/order-page" element={<Layout><OrderPage /></Layout>} />
         <Route path="/orders" element={<Layout><Orders /></Layout>} />
         <Route path="/orders/:id" element={<Layout><Orders /></Layout>} />
@@ -132,7 +162,7 @@ function App() {
 
         {/* Location (without Layout wrapper, uses custom navbar) */}
         <Route path="/location" element={<ErrorBoundary><LocationPage /></ErrorBoundary>} />
-        <Route path="/location/my-location" element={<ErrorBoundary><LocationPage /></ErrorBoundary>} />
+        <Route path="/location/my-location" element={<ErrorBoundary><LocationPage /></ErrorBoundary>} />                                                                                      
 
         {/* Messages */}
         <Route path="/messages" element={<Layout><MessagesPage /></Layout>} />
@@ -149,8 +179,10 @@ function App() {
 
         {/* Chat */}
         {/* <Route path="/chat" element={<Layout><ChatBox /></Layout>} /> */}
-      </Routes>
-    </FontProvider>
+          </Routes>
+        </FontProvider>
+      </AdminAuthProvider>
+    </CustomThemeProvider>
   );
 }
 
