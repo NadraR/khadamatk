@@ -689,20 +689,20 @@ class GoogleLoginView(APIView):
 
 
 
-from .models import WorkerVerification
-from .serializers import WorkerVerificationSerializer
+# from .models import WorkerVerification
+# from .serializers import WorkerVerificationSerializer
 
-class WorkerVerificationCreateView(generics.CreateAPIView):
-    serializer_class = WorkerVerificationSerializer
-    permission_classes = [permissions.IsAuthenticated]
+# class WorkerVerificationCreateView(generics.CreateAPIView):
+#     serializer_class = WorkerVerificationSerializer
+#     permission_classes = [permissions.IsAuthenticated]
 
-    def perform_create(self, serializer):
-        serializer.save(worker=self.request.user.worker_profile)
+#     def perform_create(self, serializer):
+#         serializer.save(worker=self.request.user.worker_profile)
 
 
-class WorkerVerificationDetailView(generics.RetrieveAPIView):
-    serializer_class = WorkerVerificationSerializer
-    permission_classes = [permissions.IsAuthenticated]
+# class WorkerVerificationDetailView(generics.RetrieveAPIView):
+#     serializer_class = WorkerVerificationSerializer
+#     permission_classes = [permissions.IsAuthenticated]
 
-    def get_object(self):
-        return self.request.user.worker_profile.verification
+#     def get_object(self):
+#         return self.request.user.worker_profile.verification

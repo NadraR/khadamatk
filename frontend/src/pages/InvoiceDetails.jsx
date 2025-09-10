@@ -16,18 +16,17 @@ import {
 } from 'react-icons/fa';
 import invoiceService from '../services/InvoiceService';
 import Navbar from '../components/Navbar';
-import { toast } from 'react-toastify';
+import { useTranslation } from '../hooks/useTranslation';
 import './InvoiceDetails.css';
 
 const InvoiceDetails = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { id } = useParams();
   const [invoice, setInvoice] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [paymentLoading, setPaymentLoading] = useState(false);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
 
   useEffect(() => {
     const loadInvoiceData = async () => {
@@ -102,47 +101,19 @@ const InvoiceDetails = () => {
     return methods[method] || 'غير محدد';
   };
 
-  const handlePaymentClick = (paymentMethod) => {
-    setSelectedPaymentMethod(paymentMethod);
-    setShowPaymentModal(true);
-  };
-
-  const handlePaymentConfirm = async () => {
+  const handlePayment = async (paymentMethod) => {
     try {
       setPaymentLoading(true);
-      const result = await invoiceService.markAsPaid(id, selectedPaymentMethod);
+      const result = await invoiceService.markAsPaid(id, paymentMethod);
       if (result.success) {
-        // إعادة تحميل الفاتورة
-        await loadInvoice();
+        loadInvoice(); // إعادة تحميل الفاتورة
         setError('');
-        setShowPaymentModal(false);
-        
-        // إظهار رسالة نجاح وإعادة التوجيه
-        toast.success('تم دفع الفاتورة بنجاح!', {
-          position: "top-center",
-          autoClose: 2000,
-        });
-        
-        // إعادة التوجيه للفاتورة المحدثة بعد ثانيتين
-        setTimeout(() => {
-          // تحديث localStorage لإشعار الصفحة الرئيسية
-          const event = new CustomEvent('invoicePaid', { 
-            detail: { invoiceId: id, paymentMethod: selectedPaymentMethod } 
-          });
-          window.dispatchEvent(event);
-          
-          // إعادة تحميل الصفحة
-          window.location.reload();
-        }, 2000);
       } else {
         setError(result.error);
-        toast.error(result.error || 'حدث خطأ في معالجة الدفع');
       }
     } catch (error) {
       console.error('Error processing payment:', error);
-      const errorMessage = error.response?.data?.error || 'حدث خطأ في معالجة الدفع';
-      setError(errorMessage);
-      toast.error(errorMessage);
+      setError('حدث خطأ في معالجة الدفع');
     } finally {
       setPaymentLoading(false);
     }
@@ -214,7 +185,7 @@ const InvoiceDetails = () => {
               </button>
               <h2 className="fw-bold text-primary mb-2">
                 <FaFileInvoiceDollar className="me-2" />
-                تفاصيل الفاتورة #{invoice.id}
+                {t('invoice_details')} #{invoice.id}
               </h2>
               <p className="text-muted mb-0">
                 {invoice.order_title}
@@ -248,7 +219,7 @@ const InvoiceDetails = () => {
               <div className="invoice-card-header">
                 <h5>
                   <FaReceipt className="me-2" />
-                  تفاصيل الفاتورة
+                  {t('invoice_details')}
                 </h5>
                 {getStatusBadge(invoice.status)}
               </div>
@@ -377,7 +348,7 @@ const InvoiceDetails = () => {
                       <div className="payment-buttons">
                         <button 
                           className="btn btn-payment"
-                          onClick={() => handlePaymentClick('cash')}
+                          onClick={() => handlePayment('cash')}
                           disabled={paymentLoading}
                         >
                           <FaMoneyBillWave className="me-2" />
@@ -385,7 +356,7 @@ const InvoiceDetails = () => {
                         </button>
                         <button 
                           className="btn btn-payment"
-                          onClick={() => handlePaymentClick('card')}
+                          onClick={() => handlePayment('card')}
                           disabled={paymentLoading}
                         >
                           <FaCreditCard className="me-2" />
@@ -393,7 +364,7 @@ const InvoiceDetails = () => {
                         </button>
                         <button 
                           className="btn btn-payment"
-                          onClick={() => handlePaymentClick('wallet')}
+                          onClick={() => handlePayment('wallet')}
                           disabled={paymentLoading}
                         >
                           <FaReceipt className="me-2" />
@@ -401,7 +372,7 @@ const InvoiceDetails = () => {
                         </button>
                         <button 
                           className="btn btn-payment"
-                          onClick={() => handlePaymentClick('bank')}
+                          onClick={() => handlePayment('bank')}
                           disabled={paymentLoading}
                         >
                           <FaInfoCircle className="me-2" />
@@ -416,7 +387,7 @@ const InvoiceDetails = () => {
 
             {/* Invoice Summary */}
             <div className="invoice-summary">
-              <h6>ملخص الفاتورة</h6>
+              <h6>{t('invoice_summary')}</h6>
               <div className="summary-row">
                 <span>المبلغ الأساسي:</span>
                 <span>{invoice.amount} ج.م</span>
@@ -433,69 +404,6 @@ const InvoiceDetails = () => {
           </div>
         </div>
       </div>
-
-      {/* Payment Confirmation Modal */}
-      {showPaymentModal && (
-        <div className="modal fade show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999 }}>
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">
-                  <FaCreditCard className="me-2" />
-                  تأكيد الدفع
-                </h5>
-                <button 
-                  type="button" 
-                  className="btn-close" 
-                  onClick={() => setShowPaymentModal(false)}
-                  disabled={paymentLoading}
-                ></button>
-              </div>
-              <div className="modal-body">
-                <div className="text-center mb-4">
-                  <div className="payment-icon mb-3">
-                    <FaMoneyBillWave size={48} className="text-primary" />
-                  </div>
-                  <h6>هل أنت متأكد من تأكيد اكتمال هذا الطلب؟</h6>
-                  <p className="text-muted">سيتم إنشاء فاتورة تلقائياً</p>
-                  <div className="payment-details p-3 bg-light rounded">
-                    <p className="mb-1"><strong>المبلغ:</strong> {invoice?.amount} ج.م</p>
-                    <p className="mb-0"><strong>طريقة الدفع:</strong> {getPaymentMethodText(selectedPaymentMethod)}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button 
-                  type="button" 
-                  className="btn btn-secondary" 
-                  onClick={() => setShowPaymentModal(false)}
-                  disabled={paymentLoading}
-                >
-                  إلغاء
-                </button>
-                <button 
-                  type="button" 
-                  className="btn btn-primary"
-                  onClick={handlePaymentConfirm}
-                  disabled={paymentLoading}
-                >
-                  {paymentLoading ? (
-                    <>
-                      <div className="spinner-border spinner-border-sm me-2" role="status" />
-                      جاري المعالجة...
-                    </>
-                  ) : (
-                    <>
-                      <FaCheck className="me-2" />
-                      تأكيد الدفع
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

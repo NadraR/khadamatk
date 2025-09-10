@@ -11,9 +11,31 @@ User = get_user_model()
 
 # ---------------- Users ----------------
 class AdminUserSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, required=False)
+    
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'is_active', 'is_staff', 'role', 'phone']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'phone', 'is_active', 'is_staff', 'role', 'password']
+    
+    def create(self, validated_data):
+        password = validated_data.pop('password', None)
+        # إضافة قيمة افتراضية للـ role إذا لم يتم توفيرها
+        if 'role' not in validated_data:
+            validated_data['role'] = 'client'
+        user = User.objects.create(**validated_data)
+        if password:
+            user.set_password(password)
+            user.save()
+        return user
+    
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        if password:
+            instance.set_password(password)
+        instance.save()
+        return instance
 
 # ---------------- Services ----------------
 class AdminServiceSerializer(serializers.ModelSerializer):

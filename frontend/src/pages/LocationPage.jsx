@@ -16,9 +16,11 @@ import RatingService from '../services/RatingService';
 import RatingStars from '../components/RatingStars';
 import LocationPicker from '../components/LocationPicker';
 import Navbar from '../components/Navbar';
+import { useTranslation } from '../hooks/useTranslation';
 import "bootstrap/dist/css/bootstrap.min.css";
 
 export default function LocationPage() {
+  const { t } = useTranslation();
   
   // الموقع المختار
   const [selectedLocation, setSelectedLocation] = useState(null);
@@ -630,7 +632,7 @@ export default function LocationPage() {
                     ))}
                     {customService && (
                       <MenuItem value="custom" style={{ backgroundColor: '#e3f2fd' }}>
-                        <em>{customService.name} (خدمة مخصصة)</em>
+                        <em>{customService.name} ({t('custom_service')})</em>
                       </MenuItem>
                     )}
                   </Select>
@@ -647,7 +649,7 @@ export default function LocationPage() {
                         <div className="text-muted small">
                           {selectedService === 'custom' && customService ? (
                             <>
-                              <div>{customService.name} (خدمة مخصصة)</div>
+                              <div>{customService.name} ({t('custom_service')})</div>
                               {customService.originalData?.price && <div className="text-primary fw-bold">{customService.originalData.price}</div>}
                               <div className="text-muted" style={{ fontSize: '0.75rem' }}>
                                 تم الاختيار من: {customService.originalData?.fromSearch ? 'البحث' : 'الصفحة الرئيسية'}

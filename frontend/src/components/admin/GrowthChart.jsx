@@ -24,8 +24,10 @@ import {
   Bar
 } from 'recharts';
 import { dashboardApi } from '../../services/adminApiService';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const GrowthChart = () => {
+  const { t } = useTranslation();
   const [trendData, setTrendData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -146,21 +148,28 @@ const GrowthChart = () => {
   }
 
   return (
-    <Card sx={{ height: 500 }}>
+    <Card sx={{ 
+      height: 500,
+      borderRadius: '12px',
+      boxShadow: '0 2px 8px rgba(0,123,255,0.08)',
+      border: '1px solid rgba(0,123,255,0.1)',
+      background: 'linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(249,251,255,0.9) 100%)',
+      backdropFilter: 'blur(10px)'
+    }}>
       <CardContent sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Typography variant="h6" sx={{ fontWeight: 600 }} >
-            معدل النمو والإحصائيات
+            {t('growth_rate')} & {t('statistics')}
           </Typography>
           <FormControl size="small" sx={{ minWidth: 120 }}>
-            <InputLabel>نوع الرسم</InputLabel>
+            <InputLabel>{t('chart_type')}</InputLabel>
             <Select
               value={chartType}
-              label="نوع الرسم"
+              label={t('chart_type')}
               onChange={(e) => setChartType(e.target.value)}
             >
-              <MenuItem value="line">خطي</MenuItem>
-              <MenuItem value="bar">أعمدة</MenuItem>
+              <MenuItem value="line">{t('line')}</MenuItem>
+              <MenuItem value="bar">{t('bar')}</MenuItem>
             </Select>
           </FormControl>
         </Box>
@@ -185,7 +194,7 @@ const GrowthChart = () => {
                   dataKey="orders"
                   stroke="#0077ff"
                   strokeWidth={3}
-                  name="الطلبات"
+                  name={t('orders')}
                   dot={{ fill: '#0077ff', strokeWidth: 2, r: 4 }}
                   activeDot={{ r: 6, stroke: '#0077ff', strokeWidth: 2 }}
                 />
@@ -194,7 +203,7 @@ const GrowthChart = () => {
                   dataKey="services"
                   stroke="#10b981"
                   strokeWidth={3}
-                  name="الخدمات"
+                  name={t('services')}
                   dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
                   activeDot={{ r: 6, stroke: '#10b981', strokeWidth: 2 }}
                 />
@@ -203,7 +212,7 @@ const GrowthChart = () => {
                   dataKey="growthRate"
                   stroke="#f59e0b"
                   strokeWidth={3}
-                  name="معدل النمو %"
+                  name={t('growth_rate_percent')}
                   dot={{ fill: '#f59e0b', strokeWidth: 2, r: 4 }}
                   activeDot={{ r: 6, stroke: '#f59e0b', strokeWidth: 2 }}
                 />
@@ -221,9 +230,9 @@ const GrowthChart = () => {
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip content={<CustomTooltip />} />
                 <Legend />
-                <Bar dataKey="orders" fill="#0077ff" name="الطلبات" radius={[2, 2, 0, 0]} />
-                <Bar dataKey="services" fill="#10b981" name="الخدمات" radius={[2, 2, 0, 0]} />
-                <Bar dataKey="total" fill="#f59e0b" name="المجموع" radius={[2, 2, 0, 0]} />
+                <Bar dataKey="orders" fill="#0077ff" name={t('orders')} radius={[2, 2, 0, 0]} />
+                <Bar dataKey="services" fill="#10b981" name={t('services')} radius={[2, 2, 0, 0]} />
+                <Bar dataKey="total" fill="#f59e0b" name={t('total')} radius={[2, 2, 0, 0]} />
               </BarChart>
             )}
           </ResponsiveContainer>
@@ -240,7 +249,7 @@ const GrowthChart = () => {
                 minWidth: '120px'
               }}>
                 <Typography variant="caption" sx={{ color: '#1976d2', fontWeight: 600 }}>
-                  إجمالي الطلبات
+                  {t('total_orders')}
                 </Typography>
                 <Typography variant="h6" sx={{ color: '#1976d2', fontWeight: 700 }}>
                   {trendData.reduce((sum, item) => sum + item.orders, 0)}
@@ -254,7 +263,7 @@ const GrowthChart = () => {
                 minWidth: '120px'
               }}>
                 <Typography variant="caption" sx={{ color: '#4caf50', fontWeight: 600 }}>
-                  إجمالي الخدمات
+                  {t('total_services')}
                 </Typography>
                 <Typography variant="h6" sx={{ color: '#4caf50', fontWeight: 700 }}>
                   {trendData.reduce((sum, item) => sum + item.services, 0)}
@@ -268,7 +277,7 @@ const GrowthChart = () => {
                 minWidth: '120px'
               }}>
                 <Typography variant="caption" sx={{ color: '#ff9800', fontWeight: 600 }}>
-                  متوسط النمو
+                  {t('average_growth')}
                 </Typography>
                 <Typography variant="h6" sx={{ color: '#ff9800', fontWeight: 700 }}>
                   {trendData.length > 1 
