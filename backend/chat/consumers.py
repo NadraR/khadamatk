@@ -98,7 +98,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     @database_sync_to_async
     def user_can_access_order(self, user, order):
         """Check if user can access this order (client or worker)"""
-        return (user == order.client or user == order.worker or user.is_staff)
+        return (user == order.customer or user == order.worker or user.is_staff)
 
     @database_sync_to_async
     def save_message(self, sender_id, order_id, message):
