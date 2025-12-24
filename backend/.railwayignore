@@ -1,0 +1,74 @@
+# Railway ignore file
+# Files and directories to exclude from deployment
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environment
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Database
+db.sqlite3
+*.db
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+
+# Static files (will be collected during deployment)
+staticfiles/
+static/
+
+# Media files
+media/
+
+# Test files
+tests/
+test_*.py
+*_test.py
+
+# Documentation
+README.md
+docs/
+*.md
+
+# Git
+.git/
+.gitignore
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Railway specific
+.railway/
+railway-production-env.txt
+RAILWAY_DEPLOYMENT_CHECKLIST.md
+deploy.sh
+

@@ -344,76 +344,6 @@ def favorite_remove(request, service_id):
         return Response({"error": "Favorite not found"}, status=status.HTTP_404_NOT_FOUND)
 
 
-@api_view(["POST"])
-@permission_classes([permissions.IsAuthenticated])
-def create_service_for_worker(request):
-    """
-    Create a service for a worker automatically based on their profile
-    """
-    from accounts.models import User
-    
-    worker_id = request.data.get('worker_id')
-    if not worker_id:
-        return Response({"error": "worker_id is required"}, status=status.HTTP_400_BAD_REQUEST)
-    
-    try:
-        worker = User.objects.get(id=worker_id, role='worker')
-    except User.DoesNotExist:
-        return Response({"error": "Worker not found"}, status=status.HTTP_404_NOT_FOUND)
-    
-    # Check if worker already has services
-    existing_services = Service.objects.filter(provider=worker, is_deleted=False)
-    if existing_services.exists():
-        # Return the first existing service
-        service = existing_services.first()
-        serializer = ServiceDetailSerializer(service)
-        return Response({
-            "message": "Service already exists",
-            "service": serializer.data
-        })
-    
-    # Create a service for this worker
-    try:
-        worker_profile = worker.worker_profile
-        
-        # Get or create appropriate category
-        category_name = 'خدمات عامة'
-        if worker_profile.job_title:
-            if 'كهربائي' in worker_profile.job_title or 'electrical' in worker_profile.job_title.lower():
-                category_name = 'Electricians'
-            elif 'سباك' in worker_profile.job_title or 'plumb' in worker_profile.job_title.lower():
-                category_name = 'Plumbers'
-            elif 'نظافة' in worker_profile.job_title or 'clean' in worker_profile.job_title.lower():
-                category_name = 'تنظيف'
-        
-        category, created = ServiceCategory.objects.get_or_create(
-            name=category_name,
-            defaults={'is_deleted': False}
-        )
-        
-        # Create the service
-        service = Service.objects.create(
-            provider=worker,
-            category=category,
-            title=f'{worker_profile.job_title or "خدمات عامة"} - {worker.username}',
-            description=f'خدمات {worker_profile.job_title or "متنوعة"}: {worker_profile.skills or "خدمات عامة"}',
-            price=worker_profile.hourly_rate or 100.00,
-            is_active=True,
-            is_deleted=False
-        )
-        
-        serializer = ServiceDetailSerializer(service)
-        return Response({
-            "message": "Service created successfully",
-            "service": serializer.data
-        }, status=status.HTTP_201_CREATED)
-        
-    except Exception as e:
-        return Response({
-            "error": f"Failed to create service: {str(e)}"
-        }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
 @api_view(["GET"])
 @permission_classes([permissions.IsAuthenticated])
 def favorites_list(request):
@@ -455,8 +385,8 @@ def favorite_remove(request, service_id):
         return Response({"error": "Favorite not found"}, status=status.HTTP_404_NOT_FOUND)
 
 
-@api_view(["POST"])
-@permission_classes([permissions.IsAuthenticated])
+@api_view(['POST'])
+@permission_classes([permissions.AllowAny])
 def create_service_for_worker(request):
     """
     Create a service for a worker automatically based on their profile

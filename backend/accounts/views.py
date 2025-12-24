@@ -167,7 +167,7 @@ class WorkerProfileCreateView(generics.CreateAPIView, generics.RetrieveAPIView):
                 
                 # Create a mock request for the service creation
                 factory = RequestFactory()
-                service_request = factory.post('/api/services/create-for-worker/', {
+                service_request = factory.post('/api/services/create-service-for-worker/', {
                     'worker_id': request.user.id
                 })
                 service_request.user = request.user

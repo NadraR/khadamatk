@@ -51,12 +51,29 @@ def order_list(request):
             orders = Order.objects.filter(
                 models.Q(worker=request.user) | models.Q(service__provider=request.user),
                 is_deleted=False
-            ).select_related('customer', 'service').order_by('-created_at')
+            ).select_related(
+                'customer', 
+                'service', 
+                'service__provider',  # تحميل مقدم الخدمة مسبقاً
+                'worker'  # تحميل العامل مسبقاً
+            ).order_by('-created_at')
         elif request.user.is_staff:
-            orders = Order.objects.filter(is_deleted=False).select_related('customer', 'service')
+            orders = Order.objects.filter(is_deleted=False).select_related(
+                'customer', 
+                'service', 
+                'service__provider',  # تحميل مقدم الخدمة مسبقاً
+                'worker'  # تحميل العامل مسبقاً
+            )
         else:
             # For clients: show their own orders
-            orders = Order.objects.filter(customer=request.user, is_deleted=False).select_related('service')
+            orders = Order.objects.filter(
+                customer=request.user, 
+                is_deleted=False
+            ).select_related(
+                'service', 
+                'service__provider',  # تحميل مقدم الخدمة مسبقاً
+                'worker'  # تحميل العامل مسبقاً
+            )
         
         # Apply status filter if provided
         status_filter = request.GET.get('status')
@@ -81,25 +98,6 @@ def order_list(request):
             'page_size': page_size,
             'total_pages': (total_count + page_size - 1) // page_size
         })
-
-    elif request.method == "POST":
-        # Check if user has the right role to create orders
-        if hasattr(request.user, 'role') and request.user.role == 'worker':
-            return Response(
-                {"error": "Workers cannot create orders. They can only make offers."},
-                status=status.HTTP_403_FORBIDDEN,
-            )
-        
-        serializer = OrderSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save(customer=request.user)
-            return Response(
-                {"message": "Order created", "order": serializer.data},
-                status=status.HTTP_201_CREATED,
-            )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
 @api_view(["GET", "PUT", "DELETE"])
 @permission_classes([permissions.IsAuthenticated])
 def order_detail(request, pk):
