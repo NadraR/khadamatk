@@ -128,11 +128,15 @@ TEMPLATES = [
 WSGI_APPLICATION = 'core.wsgi.application'
 ASGI_APPLICATION = 'core.asgi.application'
 
+# Redis Configuration for Django Channels
+# Support both Redis URL (Railway) and local development
+REDIS_URL = os.environ.get("REDIS_URL", "redis://127.0.0.1:6379")
+
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("127.0.0.1", 6379)], 
+            "hosts": [REDIS_URL], 
         },
     },
 }

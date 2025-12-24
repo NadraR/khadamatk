@@ -1,7 +1,17 @@
 from django.contrib import admin
 from django.urls import path, include
+from django.http import JsonResponse
+
+def health_check(request):
+    """Health check endpoint for Railway deployment"""
+    return JsonResponse({
+        "status": "ok",
+        "message": "Khadamat service is running",
+        "service": "backend"
+    })
 
 urlpatterns = [
+    path('', health_check, name='health_check'),  # Root health check endpoint
     path('admin/', admin.site.urls),
 
     # Accounts

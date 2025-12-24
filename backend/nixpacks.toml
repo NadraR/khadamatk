@@ -1,0 +1,14 @@
+# Nixpacks configuration for Railway deployment
+# This file tells Railway to install system-level dependencies needed for GeoDjango
+
+[phases.setup]
+# Install GDAL, GEOS, and PROJ libraries required for Django GIS (PostGIS)
+nixPkgs = ["gdal", "geos", "proj"]
+
+[phases.install]
+# Install Python dependencies
+cmds = ["pip install --upgrade pip", "pip install -r requirements.txt"]
+
+[start]
+# Start command is defined in Procfile
+
