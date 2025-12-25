@@ -1,8 +1,15 @@
 # Nixpacks configuration for Railway deployment with GeoDjango
 
 [phases.setup]
-# Install system packages required for GDAL/GEOS/PROJ
-aptPkgs = ["gdal-bin", "libgdal-dev", "libgeos-dev", "libproj-dev"]
+# Install system packages required for GDAL/GEOS/PROJ and their dependencies
+aptPkgs = [
+    "gdal-bin",
+    "libgdal-dev",
+    "libgeos-dev",
+    "libproj-dev",
+    "libcurl4",
+    "libcurl4-openssl-dev"
+]
 
 # Note: [phases.install] removed to let nixpacks auto-detect requirements.txt
 # This fixes "pip: command not found" error by letting nixpacks handle Python setup
