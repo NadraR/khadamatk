@@ -26,7 +26,7 @@ CORS_ALLOWED_ORIGINS = config("CORS_ALLOWED_ORIGINS", cast=Csv(), default=[
     "http://localhost:5173", 
     "http://localhost:5174", 
     "http://localhost:3000", 
-    "https://your-frontend-domain.netlify.app"  # Or any other hosting service
+    "https://khadamatk.vercel.app/" 
 ])
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
