@@ -272,9 +272,18 @@ DJOSER = {
     "LOGIN_FIELD": "username",   # أو "email" لو عايزة تسجيل/تسجيل دخول بالإيميل
 }
 
-# MAPS
-GDAL_LIBRARY_PATH = os.environ.get("GDAL_LIBRARY_PATH")
-GEOS_LIBRARY_PATH = os.environ.get("GEOS_LIBRARY_PATH")
+# MAPS & GIS Configuration
+# Set explicit library paths for Railway/Docker deployment
+# Conda installs libraries in /opt/conda/lib, apt installs in /usr/lib
+if os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('DOCKER_CONTAINER'):
+    # Production: use Conda paths
+    GDAL_LIBRARY_PATH = os.environ.get("GDAL_LIBRARY_PATH", "/opt/conda/lib/libgdal.so")
+    GEOS_LIBRARY_PATH = os.environ.get("GEOS_LIBRARY_PATH", "/opt/conda/lib/libgeos_c.so")
+else:
+    # Development: let Django auto-detect
+    GDAL_LIBRARY_PATH = os.environ.get("GDAL_LIBRARY_PATH")
+    GEOS_LIBRARY_PATH = os.environ.get("GEOS_LIBRARY_PATH")
+
 SOCIALACCOUNT_ADAPTER = 'accounts.adapters.CustomSocialAccountAdapter'
 GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
