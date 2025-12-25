@@ -5,7 +5,6 @@ FROM continuumio/miniconda3:latest
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     LD_LIBRARY_PATH=/opt/conda/lib:/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH \
-    RAILWAY_ENVIRONMENT=production \
     LANG=C.UTF-8 \
     LC_ALL=C.UTF-8
 
@@ -36,12 +35,6 @@ RUN conda install -c conda-forge -y \
 RUN ln -sf /opt/conda/lib/libgeos_c.so /opt/conda/lib/libgeos_c.so.1 && \
     ln -sf /opt/conda/lib/libgeos.so /opt/conda/lib/libgeos.so.1 && \
     ln -sf /opt/conda/lib/libgdal.so /opt/conda/lib/libgdal.so.32
-
-# Set explicit library paths for Django
-ENV GEOS_LIBRARY_PATH=/opt/conda/lib/libgeos_c.so.1 \
-    GDAL_LIBRARY_PATH=/opt/conda/lib/libgdal.so
-
-# Set working directory
 WORKDIR /app
 
 # Copy and install Python dependencies

@@ -273,16 +273,10 @@ DJOSER = {
 }
 
 # MAPS & GIS Configuration
-# Set explicit library paths for Railway/Docker deployment
-# Conda installs libraries in /opt/conda/lib, apt installs in /usr/lib
-if os.environ.get('RAILWAY_ENVIRONMENT') or os.environ.get('DOCKER_CONTAINER'):
-    # Production: use Conda paths
-    GDAL_LIBRARY_PATH = os.environ.get("GDAL_LIBRARY_PATH", "/opt/conda/lib/libgdal.so")
-    GEOS_LIBRARY_PATH = os.environ.get("GEOS_LIBRARY_PATH", "/opt/conda/lib/libgeos_c.so")
-else:
-    # Development: let Django auto-detect
-    GDAL_LIBRARY_PATH = os.environ.get("GDAL_LIBRARY_PATH")
-    GEOS_LIBRARY_PATH = os.environ.get("GEOS_LIBRARY_PATH")
+# Force explicit library paths - ignore any pre-existing environment variables
+# Use Conda paths with symbolic links created in Dockerfile
+GEOS_LIBRARY_PATH = "/opt/conda/lib/libgeos_c.so.1"
+GDAL_LIBRARY_PATH = "/opt/conda/lib/libgdal.so"
 
 SOCIALACCOUNT_ADAPTER = 'accounts.adapters.CustomSocialAccountAdapter'
 GOOGLE_MAPS_API_KEY = os.getenv('GOOGLE_MAPS_API_KEY')
