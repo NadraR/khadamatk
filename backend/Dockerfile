@@ -5,15 +5,20 @@ FROM python:3.11-slim-bookworm
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    GDAL_CONFIG=/usr/bin/gdal-config
 
 # Install system dependencies for GeoDjango
-# The -dev packages will install runtime libraries as dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     binutils \
-    libproj-dev \
     gdal-bin \
-    python3-gdal \
+    libgdal-dev \
+    libgeos-dev \
+    libgeos++-dev \
+    libproj-dev \
+    proj-bin \
+    gcc \
+    g++ \
     && rm -rf /var/lib/apt/lists/*
 
 # Set work directory
@@ -34,4 +39,3 @@ EXPOSE 8080
 
 # Start command - use shell to properly expand PORT variable
 CMD ["sh", "-c", "gunicorn core.wsgi --bind 0.0.0.0:${PORT:-8080} --workers 4 --timeout 120"]
-
