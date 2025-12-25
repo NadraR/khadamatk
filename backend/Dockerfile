@@ -91,5 +91,5 @@ RUN ln -sf /opt/conda/lib/libgeos_c.so /opt/conda/lib/libgeos_c.so.1 && \
 # Expose port
 EXPOSE 8080
 
-# Run migrations and start Gunicorn
-CMD ["sh", "-c", "python manage.py migrate --noinput && gunicorn core.wsgi:application --bind 0.0.0.0:${PORT:-8080} --workers 4 --timeout 120"]
+# Run migrations merge, migrate, then start Gunicorn
+CMD ["sh", "-c", "python manage.py makemigrations --merge --noinput && python manage.py migrate --noinput && gunicorn core.wsgi:application --bind 0.0.0.0:${PORT:-8080} --workers 4 --timeout 120"]
