@@ -1,41 +1,43 @@
-FROM python:3.11-slim-bookworm
+# Base image: Miniconda for Python + Conda package management
+FROM continuumio/miniconda3:latest
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    LD_LIBRARY_PATH=/opt/conda/lib:$LD_LIBRARY_PATH \
+    LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8
 
-# Install system dependencies for GeoDjango
+# Install system dependencies required for GIS
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    binutils \
-    libproj-dev \
-    gdal-bin \
-    libgdal-dev \
+    build-essential \
     libgeos-dev \
-    libgeos-c1v5 \
-    gcc \
-    g++ \
+    libgdal-dev \
+    libpq-dev \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Set library paths explicitly - NO 'v' prefix!
-ENV GDAL_LIBRARY_PATH=/usr/lib/libgdal.so.32 \
-    GEOS_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu/libgeos_c.so.1 \
-    LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
+# Install Python, GDAL, GEOS, PROJ via conda
+RUN conda install -c conda-forge -y \
+    python=3.11 \
+    gdal \
+    geos \
+    proj \
+    psycopg2 \
+    && conda clean -afy
 
 # Set working directory
 WORKDIR /app
 
-# Copy and install Python dependencies
+# Install Python dependencies
 COPY requirements.txt .
-RUN pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copy project files
 COPY . .
 
 # Expose port
 EXPOSE 8080
 
-# Run gunicorn
-CMD ["sh", "-c", "gunicorn core.wsgi --bind 0.0.0.0:${PORT:-8080} --workers 4 --timeout 120"]
+# Run Gunicorn with Railway PORT variable
+CMD ["sh", "-c", "gunicorn core.wsgi:application --bind 0.0.0.0:${PORT:-8080} --workers 4 --timeout 120"]
