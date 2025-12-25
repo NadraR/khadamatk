@@ -71,4 +71,4 @@ docker-compose.yml
 railway-production-env.txt
 RAILWAY_DEPLOYMENT_CHECKLIST.md
 deploy.sh
-
+RAILWAY_DEPLOYMENT.md
