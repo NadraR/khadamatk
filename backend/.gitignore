@@ -1,3 +1,38 @@
-env 
-e tarate
+# Virtual environment
+env/
+venv/
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Database
+*.sqlite3
+db.sqlite3
+
+# Environment variables
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Django static files (generated)
+staticfiles/
+
+# DO NOT ignore Railway deployment files:
+# - Aptfile
+# - Procfile
+# - nixpacks.toml
+# - RAILWAY_DEPLOYMENT.md
 RAILWAY_DEPLOYMENT.md

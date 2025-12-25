@@ -1,0 +1,14 @@
+# Nixpacks configuration for Railway deployment with GeoDjango
+
+[phases.setup]
+# Install system packages required for GDAL/GEOS/PROJ
+aptPkgs = ["gdal-bin", "libgdal-dev", "libgeos-dev", "libproj-dev"]
+
+[phases.install]
+# Install Python dependencies
+cmds = ["pip install --upgrade pip", "pip install -r requirements.txt"]
+
+[start]
+# Start command (will be overridden by railway.json but kept for reference)
+cmd = "gunicorn core.wsgi --bind 0.0.0.0:$PORT"
+
