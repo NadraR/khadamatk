@@ -1,14 +1,10 @@
 from django.contrib import admin
 from django.urls import path, include
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 
 def health_check(request):
-    """Health check endpoint for Railway deployment"""
-    return JsonResponse({
-        "status": "ok",
-        "message": "Khadamat service is running",
-        "service": "backend"
-    })
+    """Lightweight health check endpoint for Railway deployment - no DB required"""
+    return HttpResponse("OK", content_type="text/plain", status=200)
 
 urlpatterns = [
     path('', health_check, name='health_check'),  # Root health check endpoint
