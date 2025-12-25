@@ -33,6 +33,6 @@ COPY . .
 # Expose port (Railway will set PORT env var)
 EXPOSE 8080
 
-# Start command - use shell form to allow $PORT variable expansion
-CMD gunicorn core.wsgi --bind 0.0.0.0:${PORT:-8080} --workers 4 --timeout 120
+# Start command - use shell to properly expand PORT variable
+CMD ["sh", "-c", "gunicorn core.wsgi --bind 0.0.0.0:${PORT:-8080} --workers 4 --timeout 120"]
 
