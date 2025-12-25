@@ -4,9 +4,8 @@
 # Install system packages required for GDAL/GEOS/PROJ
 aptPkgs = ["gdal-bin", "libgdal-dev", "libgeos-dev", "libproj-dev"]
 
-[phases.install]
-# Install Python dependencies
-cmds = ["pip install --upgrade pip", "pip install -r requirements.txt"]
+# Note: [phases.install] removed to let nixpacks auto-detect requirements.txt
+# This fixes "pip: command not found" error by letting nixpacks handle Python setup
 
 [start]
 # Start command (will be overridden by railway.json but kept for reference)
