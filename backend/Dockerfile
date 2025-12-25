@@ -10,8 +10,11 @@ ENV PYTHONUNBUFFERED=1 \
 # Install system dependencies for GeoDjango
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gdal-bin \
+    libgdal32 \
     libgdal-dev \
+    libgeos-c1v5 \
     libgeos-dev \
+    libproj25 \
     libproj-dev \
     gcc \
     g++ \
