@@ -1,12 +1,8 @@
 # Nixpacks configuration for Railway deployment with GeoDjango
 
 [phases.setup]
-# Install system packages required for GDAL/GEOS/PROJ using Nix packages
-# This ensures compatibility and proper library linking
-nixPkgs = ["gdal", "geos", "proj", "curl", "libxml2"]
-
-# Let nixpacks auto-detect and install Python
-# Don't use aptPkgs as it conflicts with nixPkgs Python detection
+# Install Python and system packages required for GDAL/GEOS/PROJ
+nixPkgs = ["python311", "gdal", "geos", "proj", "curl", "libxml2"]
 
 [start]
 # Start command (will be overridden by railway.json but kept for reference)
