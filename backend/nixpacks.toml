@@ -1,14 +1,15 @@
 # Nixpacks configuration for Railway deployment with GeoDjango
 
 [phases.setup]
-# Install system packages required for GDAL/GEOS/PROJ and their dependencies
+# Install system packages required for GDAL/GEOS/PROJ using both nix and apt
+nixPkgs = ["gdal", "geos", "proj", "curl"]
 aptPkgs = [
     "gdal-bin",
     "libgdal-dev",
     "libgeos-dev",
     "libproj-dev",
-    "libcurl4",
-    "libcurl4-openssl-dev"
+    "libcurl4-gnutls-dev",
+    "libcurl3-gnutls"
 ]
 
 # Note: [phases.install] removed to let nixpacks auto-detect requirements.txt
