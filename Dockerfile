@@ -39,15 +39,15 @@ RUN ln -sf /opt/conda/lib/libgeos_c.so /opt/conda/lib/libgeos_c.so.1 && \
 # Set working directory
 WORKDIR /app
 
-# Copy backend requirements first for caching
-COPY ./backend/requirements.txt ./requirements.txt
+# Copy requirements.txt from backend folder (for layer caching)
+COPY backend/requirements.txt ./requirements.txt
 
 # Install Python dependencies
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Copy backend code
-COPY ./backend/ ./
+# Copy all backend application code to /app
+COPY backend/ ./
 
 
 # ===============================
@@ -55,7 +55,7 @@ COPY ./backend/ ./
 # ===============================
 FROM continuumio/miniconda3:latest
 
-# Set environment variables (including LD_LIBRARY_PATH!)
+# Environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     LANG=C.UTF-8 \
@@ -77,13 +77,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Set working directory
 WORKDIR /app
 
-# Copy Conda environment from builder (with symlinks preserved)
+# Copy Conda environment from builder (includes all GIS libraries + symlinks)
 COPY --from=builder /opt/conda /opt/conda
 
 # Copy application code from builder
 COPY --from=builder /app /app
 
-# Verify symbolic links exist (recreate if needed)
+# Recreate symbolic links (safety measure)
 RUN ln -sf /opt/conda/lib/libgeos_c.so /opt/conda/lib/libgeos_c.so.1 && \
     ln -sf /opt/conda/lib/libgeos.so /opt/conda/lib/libgeos.so.1 && \
     ln -sf /opt/conda/lib/libgdal.so /opt/conda/lib/libgdal.so.32
@@ -91,5 +91,5 @@ RUN ln -sf /opt/conda/lib/libgeos_c.so /opt/conda/lib/libgeos_c.so.1 && \
 # Expose port
 EXPOSE 8080
 
-# Run Gunicorn
+# Run Gunicorn with Railway PORT variable
 CMD ["sh", "-c", "gunicorn core.wsgi:application --bind 0.0.0.0:${PORT:-8080} --workers 4 --timeout 120"]

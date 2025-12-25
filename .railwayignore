@@ -1,0 +1,54 @@
+# Railway ignore file - Root level
+# Exclude unnecessary files from Railway build
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+env/
+venv/
+ENV/
+backend/env/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Database
+*.sqlite3
+*.db
+
+# Environment files (Railway uses its own env vars)
+.env
+.env.*
+
+# Frontend (not needed for backend deployment)
+frontend/
+node_modules/
+
+# Documentation
+*.md
+docs/
+
+# Git
+.git/
+.gitignore
+
+# Test files
+test_*.py
+*_test.py
+
+# Static files (collected during deployment)
+backend/staticfiles/
+
