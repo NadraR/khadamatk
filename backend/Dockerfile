@@ -8,14 +8,16 @@ ENV PYTHONUNBUFFERED=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # Install system dependencies for GeoDjango
+# Install all GIS libraries at once for better compatibility
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    binutils \
     gdal-bin \
-    libgdal32 \
     libgdal-dev \
-    libgeos-c1v5 \
     libgeos-dev \
-    libproj25 \
+    libgeos++-dev \
+    libgeos-3.11.1 \
     libproj-dev \
+    proj-bin \
     gcc \
     g++ \
     && rm -rf /var/lib/apt/lists/*
